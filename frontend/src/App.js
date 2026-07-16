@@ -1,0 +1,120 @@
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { Toaster } from '@/components/ui/sonner';
+import LoginPage from '@/pages/LoginPage';
+import AppShell from '@/components/layout/AppShell';
+import DashboardPage from '@/pages/DashboardPage';
+import '@/App.css';
+
+// Lazy routes — solo Login + Dashboard restano nel bundle iniziale. Tutto il
+// resto viene caricato al primo accesso alla rotta (~50% del bundle erano
+// pagine secondarie). Il Suspense fallback usa lo stesso spinner del loading
+// di auth context.
+const CustomersPage = lazy(() => import('@/pages/anagrafiche/CustomersPage'));
+const DestinationsPage = lazy(() => import('@/pages/anagrafiche/DestinationsPage'));
+const VehiclesPage = lazy(() => import('@/pages/anagrafiche/VehiclesPage'));
+const DriversPage = lazy(() => import('@/pages/anagrafiche/DriversPage'));
+const CarriersPage = lazy(() => import('@/pages/anagrafiche/CarriersPage'));
+const ProductsPage = lazy(() => import('@/pages/anagrafiche/ProductsPage'));
+const GaragesPage = lazy(() => import('@/pages/anagrafiche/GaragesPage'));
+const CountriesPage = lazy(() => import('@/pages/anagrafiche/CountriesPage'));
+const BanksPage = lazy(() => import('@/pages/anagrafiche/BanksPage'));
+const AccountingEntriesPage = lazy(() => import('@/pages/anagrafiche/AccountingEntriesPage'));
+const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
+const PlannerPage = lazy(() => import('@/pages/PlannerPage'));
+const TripsPage = lazy(() => import('@/pages/TripsPage'));
+const InvoicesPage = lazy(() => import('@/pages/InvoicesPage'));
+const PriceListsPage = lazy(() => import('@/pages/PriceListsPage'));
+const MapPage = lazy(() => import('@/pages/MapPage'));
+const CustomerDashboardPage = lazy(() => import('@/pages/CustomerDashboardPage'));
+const ProfilesPage = lazy(() => import('@/pages/admin/ProfilesPage'));
+const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
+const PlannerDnDPage = lazy(() => import('@/pages/PlannerDnDPage'));
+
+// staleTime 60s = liste UI che cambiano di rado; le mutazioni invalidate-ano
+// esplicitamente le query interessate. retry 1 evita di amplificare un 5xx
+// transitorio in cinque chiamate.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+    mutations: { retry: 0 },
+  },
+});
+
+const PageFallback = () => (
+  <div className="flex h-64 items-center justify-center">
+    <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+  </div>
+);
+
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex h-screen items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+function AppRoutes() {
+  const { user } = useAuth();
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <AppShell>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="anagrafiche/clienti" element={<CustomersPage />} />
+                <Route path="anagrafiche/clienti/:id/cruscotto" element={<CustomerDashboardPage />} />
+                <Route path="anagrafiche/destinazioni" element={<DestinationsPage />} />
+                <Route path="anagrafiche/veicoli" element={<VehiclesPage />} />
+                <Route path="anagrafiche/autisti" element={<DriversPage />} />
+                <Route path="anagrafiche/vettori" element={<CarriersPage />} />
+                <Route path="anagrafiche/prodotti" element={<ProductsPage />} />
+                <Route path="anagrafiche/garage" element={<GaragesPage />} />
+                <Route path="anagrafiche/nazioni" element={<CountriesPage />} />
+                <Route path="anagrafiche/banche" element={<BanksPage />} />
+                <Route path="anagrafiche/voci-contabili" element={<AccountingEntriesPage />} />
+                <Route path="listini" element={<PriceListsPage />} />
+                <Route path="ordini" element={<OrdersPage />} />
+                <Route path="planner" element={<PlannerPage />} />
+                <Route path="planner/dnd" element={<PlannerDnDPage />} />
+                <Route path="viaggi" element={<TripsPage />} />
+                <Route path="mappa" element={<MapPage />} />
+                <Route path="fatturazione" element={<InvoicesPage />} />
+                <Route path="admin/profili" element={<ProfilesPage />} />
+                <Route path="admin/utenti" element={<UsersPage />} />
+              </Routes>
+            </Suspense>
+          </AppShell>
+        </ProtectedRoute>
+      } />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+          <Toaster position="top-right" richColors closeButton />
+        </AuthProvider>
+      </BrowserRouter>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,52 @@
+# Pre-commit hook configurati per LoginBusiness (issue #23).
+#
+# Setup:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Run manuale completo:
+#   pre-commit run --all-files
+#
+# Le hook ruff/mypy/detect-secrets girano localmente prima di ogni commit.
+# In CI, ruff è già nel job Backend (Python).
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+        exclude: \.svg$|\.lock$
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: ^(frontend/yarn\.lock|backend/seed_demo\.py)$
+
+  # gitleaks (#43): scan commit-time per secrets pattern-known (AWS, Stripe,
+  # GitHub PAT, Slack, ecc). Complementare a detect-secrets di Yelp che
+  # lavora con ML/baseline; gitleaks ha regole curate fornite dal mantainer.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks

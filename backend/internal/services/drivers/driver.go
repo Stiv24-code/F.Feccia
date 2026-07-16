@@ -1,0 +1,116 @@
+package drivers
+
+import (
+	"context"
+	"strings"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
+	"fratelli-feccia/internal/dto"
+	"fratelli-feccia/internal/models"
+)
+
+const listLimit = 1000
+
+type DriverService struct {
+	db *gorm.DB
+}
+
+func NewDriverService(db *gorm.DB) *DriverService {
+	return &DriverService{db: db}
+}
+
+func escapeLike(term string) string {
+	if len(term) > 100 {
+		term = term[:100]
+	}
+	replacer := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return replacer.Replace(term)
+}
+
+// List searches nome OR cognome, mirroring backend/routers/drivers.py's `$or`.
+func (s *DriverService) List(ctx context.Context, search string) ([]dto.DriverResponse, error) {
+	query := s.db.WithContext(ctx).Model(&models.Driver{}).Where("active = ?", true)
+	if search != "" {
+		term := "%" + strings.ToLower(escapeLike(search)) + "%"
+		query = query.Where("LOWER(nome) LIKE ? OR LOWER(cognome) LIKE ?", term, term)
+	}
+
+	var drivers []models.Driver
+	if err := query.Order("cognome ASC").Limit(listLimit).Find(&drivers).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.DriverResponse, len(drivers))
+	for i, d := range drivers {
+		result[i] = ToResponse(d)
+	}
+	return result, nil
+}
+
+func (s *DriverService) Create(ctx context.Context, req dto.DriverRequest) (*dto.DriverResponse, error) {
+	d := models.Driver{
+		ID:              uuid.New(),
+		Nome:            req.Nome,
+		Cognome:         req.Cognome,
+		CodiceFiscale:   req.CodiceFiscale,
+		Patente:         req.Patente,
+		ScadenzaPatente: req.ScadenzaPatente,
+		Telefono:        req.Telefono,
+		Email:           req.Email,
+		Note:            req.Note,
+		Active:          true,
+	}
+
+	if err := s.db.WithContext(ctx).Create(&d).Error; err != nil {
+		return nil, err
+	}
+
+	resp := ToResponse(d)
+	return &resp, nil
+}
+
+func (s *DriverService) Update(ctx context.Context, id uuid.UUID, req dto.DriverRequest) (*dto.DriverResponse, error) {
+	var d models.Driver
+	if err := s.db.WithContext(ctx).First(&d, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+
+	d.Nome = req.Nome
+	d.Cognome = req.Cognome
+	d.CodiceFiscale = req.CodiceFiscale
+	d.Patente = req.Patente
+	d.ScadenzaPatente = req.ScadenzaPatente
+	d.Telefono = req.Telefono
+	d.Email = req.Email
+	d.Note = req.Note
+
+	if err := s.db.WithContext(ctx).Save(&d).Error; err != nil {
+		return nil, err
+	}
+
+	resp := ToResponse(d)
+	return &resp, nil
+}
+
+func (s *DriverService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.db.WithContext(ctx).Model(&models.Driver{}).Where("id = ?", id).Update("active", false).Error
+}
+
+func ToResponse(d models.Driver) dto.DriverResponse {
+	return dto.DriverResponse{
+		ID:              d.ID,
+		Nome:            d.Nome,
+		Cognome:         d.Cognome,
+		CodiceFiscale:   d.CodiceFiscale,
+		Patente:         d.Patente,
+		ScadenzaPatente: d.ScadenzaPatente,
+		Telefono:        d.Telefono,
+		Email:           d.Email,
+		Note:            d.Note,
+		Active:          d.Active,
+		CreatedAt:       d.CreatedAt,
+		UpdatedAt:       d.UpdatedAt,
+	}
+}

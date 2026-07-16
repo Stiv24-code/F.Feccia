@@ -1,0 +1,28 @@
+Version: "2"
+# output configuration options
+output:
+  # Format: colored-line-number|line-number|json|colored-tab|tab|checkstyle|code-climate|junit-xml|github-actions|teamcity
+  #
+  # Multiple can be specified by separating them by comma, output can be provided
+  # for each of them by separating format name and path by colon symbol.
+  # Output path can be either `stdout`, `stderr` or path to the file to write to.
+  # Example: "checkstyle:report.xml,json:stdout,colored-line-number"
+  #
+  # Default: colored-line-number
+  format: checkstyle:golint-result.xml,checkstyle:stdout
+linters:
+  # Disable all linters.
+  # Default: false
+
+  enable-all: false
+  # Run only fast linters from enabled linters set (first run won't be fast)
+  # Default: false
+  fast: false
+
+issues:
+  exclude-dirs:
+    - core/
+    - docs/
+  exclude-files:
+    - go.work
+    - go.work.sum

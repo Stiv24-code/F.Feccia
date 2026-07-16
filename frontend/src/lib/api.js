@@ -1,0 +1,277 @@
+import axios from 'axios';
+import { toast } from 'sonner';
+
+// VITE_BACKEND_URL viene iniettata al build (production) o letta da .env (dev).
+// Se vuota → URL relativi (`/api/...`), così in dev Vite proxia /api al backend
+// locale e in prod nginx serve sia SPA sia /api dallo stesso host.
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+const API = `${BACKEND_URL}/api`;
+
+// Crea un'istanza axios con credentials abilitate (per il cookie refresh httpOnly).
+const api = axios.create({
+  baseURL: API,
+  withCredentials: true,
+});
+
+// ─── Access token in memoria (non in localStorage: riduce esposizione XSS) ───
+let accessToken = null;
+let onAuthFailure = null;
+
+export const setAccessToken = (token) => { accessToken = token || null; };
+export const getAccessToken = () => accessToken;
+export const setOnAuthFailure = (fn) => { onAuthFailure = fn; };
+
+// ─── Request interceptor: aggiunge Authorization: Bearer se presente ───
+api.interceptors.request.use((config) => {
+  if (accessToken) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
+// ─── Response interceptor ───
+// Due comportamenti automatici:
+//   1. su 401 (token scaduto) tenta un refresh dedupato e ripropone la richiesta
+//   2. su 429 (rate limit) mostra un toast con il tempo d'attesa estratto
+//      dall'header Retry-After del backend
+let refreshInFlight = null;
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    const status = error.response?.status;
+
+    // Rate limit: lasciamo propagare l'errore ma diamo feedback immediato
+    // all'utente. Il messaggio backend in `detail` è gia' specifico se presente.
+    if (status === 429) {
+      const retryAfter = Number(error.response?.headers?.['retry-after']) || 0;
+      const waitMsg = retryAfter > 0
+        ? `Riprova tra ${retryAfter} secondi.`
+        : 'Riprova tra qualche minuto.';
+      toast.error('Troppi tentativi', { description: waitMsg });
+      return Promise.reject(error);
+    }
+
+    const isAuthEndpoint =
+      original?.url?.includes('/auth/login') ||
+      original?.url?.includes('/auth/refresh');
+
+    if (status !== 401 || original?._retry || isAuthEndpoint) {
+      return Promise.reject(error);
+    }
+
+    original._retry = true;
+    try {
+      // Dedup: se un refresh è già in corso, riusa la stessa Promise
+      if (!refreshInFlight) {
+        refreshInFlight = api.post('/auth/refresh').finally(() => {
+          refreshInFlight = null;
+        });
+      }
+      const res = await refreshInFlight;
+      if (res?.data?.access_token) {
+        accessToken = res.data.access_token;
+        original.headers = original.headers || {};
+        original.headers.Authorization = `Bearer ${accessToken}`;
+        return api(original);
+      }
+      throw new Error('refresh senza access_token');
+    } catch (refreshErr) {
+      accessToken = null;
+      if (typeof onAuthFailure === 'function') onAuthFailure();
+      return Promise.reject(refreshErr);
+    }
+  },
+);
+
+// Auth
+export const login = (data) => api.post('/auth/login', data);
+export const register = (data) => api.post('/auth/register', data);
+export const getMe = () => api.get('/auth/me');
+export const refreshSession = () => api.post('/auth/refresh');
+export const logout = () => api.post('/auth/logout');
+
+// Admin (#54): profili RBAC e gestione utenti
+export const getProfiles = () => api.get('/admin/profiles');
+export const createProfile = (data) => api.post('/admin/profiles', data);
+export const updateProfile = (id, data) => api.put(`/admin/profiles/${id}`, data);
+export const deleteProfile = (id) => api.delete(`/admin/profiles/${id}`);
+export const getAdminUsers = () => api.get('/admin/users');
+export const updateAdminUser = (id, data) => api.patch(`/admin/users/${id}`, data);
+
+// Dashboard
+export const getDashboardStats = () => api.get('/dashboard/stats');
+export const getRecentOrders = () => api.get('/dashboard/recent-orders');
+// Cruscotto commerciale per cliente (issue #30)
+export const getCustomerDashboard = (customerId) => api.get(`/dashboard/customer/${customerId}`);
+
+// Customers
+export const getCustomers = (search = '') => api.get(`/customers?search=${search}`);
+export const createCustomer = (data) => api.post('/customers', data);
+export const updateCustomer = (id, data) => api.put(`/customers/${id}`, data);
+export const deleteCustomer = (id) => api.delete(`/customers/${id}`);
+
+// Destinations
+export const getDestinations = (search = '') => api.get(`/destinations?search=${search}`);
+export const createDestination = (data) => api.post('/destinations', data);
+export const updateDestination = (id, data) => api.put(`/destinations/${id}`, data);
+export const deleteDestination = (id) => api.delete(`/destinations/${id}`);
+
+// Vehicles
+export const getVehicles = (search = '') => api.get(`/vehicles?search=${search}`);
+export const createVehicle = (data) => api.post('/vehicles', data);
+export const updateVehicle = (id, data) => api.put(`/vehicles/${id}`, data);
+export const deleteVehicle = (id) => api.delete(`/vehicles/${id}`);
+// Temperatura cisterna (issue #38)
+export const getVehicleTemperature = (id, params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '' && v !== false) qs.set(k, v); });
+  return api.get(`/vehicles/${id}/temperature?${qs.toString()}`);
+};
+export const setVehicleTemperatureThresholds = (id, data) =>
+  api.patch(`/vehicles/${id}/temperature-thresholds`, data);
+
+// Drivers
+export const getDrivers = (search = '') => api.get(`/drivers?search=${search}`);
+export const createDriver = (data) => api.post('/drivers', data);
+export const updateDriver = (id, data) => api.put(`/drivers/${id}`, data);
+export const deleteDriver = (id) => api.delete(`/drivers/${id}`);
+
+// Carriers
+export const getCarriers = (search = '') => api.get(`/carriers?search=${search}`);
+export const createCarrier = (data) => api.post('/carriers', data);
+export const updateCarrier = (id, data) => api.put(`/carriers/${id}`, data);
+export const deleteCarrier = (id) => api.delete(`/carriers/${id}`);
+
+// Products
+export const getProducts = (search = '') => api.get(`/products?search=${search}`);
+export const createProduct = (data) => api.post('/products', data);
+export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
+export const deleteProduct = (id) => api.delete(`/products/${id}`);
+
+// Garages
+export const getGarages = () => api.get('/garages');
+export const createGarage = (data) => api.post('/garages', data);
+export const updateGarage = (id, data) => api.put(`/garages/${id}`, data);
+export const deleteGarage = (id) => api.delete(`/garages/${id}`);
+
+// Vehicle Types
+export const getVehicleTypes = () => api.get('/vehicle-types');
+export const createVehicleType = (data) => api.post('/vehicle-types', data);
+
+// Accessory Costs
+export const getAccessoryCosts = () => api.get('/accessory-costs');
+export const createAccessoryCost = (data) => api.post('/accessory-costs', data);
+
+// Transport Categories
+export const getTransportCategories = () => api.get('/transport-categories');
+export const createTransportCategory = (data) => api.post('/transport-categories', data);
+
+// Price Lists
+export const getPriceLists = (clienteId = '') => api.get(`/pricelists?cliente_id=${clienteId}`);
+export const getPriceList = (id) => api.get(`/pricelists/${id}`);
+export const createPriceList = (data) => api.post('/pricelists', data);
+export const updatePriceList = (id, data) => api.put(`/pricelists/${id}`, data);
+export const deletePriceList = (id) => api.delete(`/pricelists/${id}`);
+export const addPriceListItem = (id, item) => api.post(`/pricelists/${id}/items`, item);
+export const updatePriceListItem = (id, itemId, item) => api.put(`/pricelists/${id}/items/${itemId}`, item);
+export const deletePriceListItem = (id, itemId) => api.delete(`/pricelists/${id}/items/${itemId}`);
+export const lookupTariff = (params) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/pricelists/lookup-tariff?${qs.toString()}`);
+};
+
+// Orders
+export const getOrders = (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/orders?${qs.toString()}`);
+};
+export const createOrder = (data) => api.post('/orders', data);
+export const getOrder = (id) => api.get(`/orders/${id}`);
+export const updateOrder = (id, data) => api.put(`/orders/${id}`, data);
+export const assignOrder = (id, data) => api.patch(`/orders/${id}/assign`, data);
+export const closeOrder = (id) => api.patch(`/orders/${id}/close`);
+export const deleteOrder = (id) => api.delete(`/orders/${id}`);
+// Suggerimenti ordini di ritorno per riempire viaggi vuoti (issue #32)
+export const getReturnSuggestions = (id, params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') qs.set(k, v); });
+  return api.get(`/orders/${id}/return-suggestions?${qs.toString()}`);
+};
+
+// Trips
+export const getTrips = (stato = '') => api.get(`/trips?stato=${stato}`);
+export const createTrip = (data) => api.post('/trips', data);
+export const getTrip = (id) => api.get(`/trips/${id}`);
+export const completeTrip = (id) => api.patch(`/trips/${id}/complete`);
+export const addOrderToTrip = (tripId, orderId) => api.patch(`/trips/${tripId}/add-order?order_id=${orderId}`);
+export const recomputeTripSegments = (tripId) => api.post(`/trips/${tripId}/recompute-segments`);
+// PDF Istruzioni Operative per autista (issue #33)
+export const downloadTripInstructionsPdf = (tripId) => api.get(`/trips/${tripId}/instructions/pdf`, { responseType: 'blob' });
+// PDF CMR per ordine internazionale (issue #34)
+export const downloadOrderCmrPdf = (orderId) => api.get(`/orders/${orderId}/cmr/pdf`, { responseType: 'blob' });
+
+// Invoices
+export const getInvoices = (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/invoices?${qs.toString()}`);
+};
+export const createInvoice = (data) => api.post('/invoices', data);
+export const getInvoice = (id) => api.get(`/invoices/${id}`);
+export const finalizeInvoice = (id) => api.patch(`/invoices/${id}/finalize`);
+export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
+// PDF: ritorna axios Response con responseType blob — il chiamante salva
+// con saveAs / window.URL.createObjectURL.
+export const downloadInvoicePdf = (id) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' });
+// Presigned URL S3 (issue #35). 404 se la fattura non è archiviata,
+// il chiamante deve fare fallback a downloadInvoicePdf.
+export const getInvoicePdfUrl = (id) => api.get(`/invoices/${id}/pdf-url`);
+
+// Anagrafiche extra (#29): Nazioni, Banche, Voci Contabili
+export const getCountries = (search = '') => api.get(`/countries?search=${search}`);
+export const createCountry = (data) => api.post('/countries', data);
+export const updateCountry = (id, data) => api.put(`/countries/${id}`, data);
+export const deleteCountry = (id) => api.delete(`/countries/${id}`);
+
+export const getBanks = (search = '') => api.get(`/banks?search=${search}`);
+export const createBank = (data) => api.post('/banks', data);
+export const updateBank = (id, data) => api.put(`/banks/${id}`, data);
+export const deleteBank = (id) => api.delete(`/banks/${id}`);
+
+export const getAccountingEntries = (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/accounting-entries?${qs.toString()}`);
+};
+export const createAccountingEntry = (data) => api.post('/accounting-entries', data);
+export const updateAccountingEntry = (id, data) => api.put(`/accounting-entries/${id}`, data);
+export const deleteAccountingEntry = (id) => api.delete(`/accounting-entries/${id}`);
+
+// Export
+export const exportOrdersExcel = (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/export/orders?${qs.toString()}`, { responseType: 'blob' });
+};
+
+// Mappa
+export const getMapTrips = () => api.get('/map/trips');
+
+// Availability
+export const getVehicleAvailability = (dataDa, dataA) => api.get(`/availability/vehicles?data_da=${dataDa}&data_a=${dataA}`);
+export const getDriverAvailability = (dataDa, dataA) => api.get(`/availability/drivers?data_da=${dataDa}&data_a=${dataA}`);
+
+// Driver Unavailability
+export const getDriverUnavailability = (params = {}) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return api.get(`/driver-unavailability?${qs.toString()}`);
+};
+export const createDriverUnavailability = (data) => api.post('/driver-unavailability', data);
+export const deleteDriverUnavailability = (id) => api.delete(`/driver-unavailability/${id}`);
+
+export default api;

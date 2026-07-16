@@ -1,0 +1,4907 @@
+basePath: /
+definitions:
+  dto.AccessoryCostRequest:
+    properties:
+      costo_default:
+        type: number
+      descrizione:
+        type: string
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.AccessoryCostResponse:
+    properties:
+      active:
+        type: boolean
+      costo_default:
+        type: number
+      descrizione:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+    type: object
+  dto.AccountingEntryRequest:
+    properties:
+      codice:
+        type: string
+      conto_contabile:
+        type: string
+      descrizione:
+        type: string
+      iva_codice:
+        type: string
+      tipo:
+        enum:
+        - ricavo
+        - costo
+        type: string
+    required:
+    - codice
+    - descrizione
+    type: object
+  dto.AccountingEntryResponse:
+    properties:
+      active:
+        type: boolean
+      codice:
+        type: string
+      conto_contabile:
+        type: string
+      created_at:
+        type: string
+      descrizione:
+        type: string
+      id:
+        type: string
+      iva_codice:
+        type: string
+      tipo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.AuthUserResponse:
+    properties:
+      active:
+        type: boolean
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      profile_id:
+        type: string
+      role:
+        type: string
+    type: object
+  dto.BankRequest:
+    properties:
+      bic_swift:
+        type: string
+      citta:
+        type: string
+      iban_prefix:
+        type: string
+      indirizzo:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.BankResponse:
+    properties:
+      active:
+        type: boolean
+      bic_swift:
+        type: string
+      citta:
+        type: string
+      created_at:
+        type: string
+      iban_prefix:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CarrierRequest:
+    properties:
+      citta:
+        type: string
+      email:
+        type: string
+      indirizzo:
+        type: string
+      note:
+        type: string
+      partita_iva:
+        type: string
+      ragione_sociale:
+        type: string
+      telefono:
+        type: string
+    required:
+    - ragione_sociale
+    type: object
+  dto.CarrierResponse:
+    properties:
+      active:
+        type: boolean
+      citta:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      note:
+        type: string
+      partita_iva:
+        type: string
+      ragione_sociale:
+        type: string
+      telefono:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CountryRequest:
+    properties:
+      eu:
+        type: boolean
+      iso2:
+        type: string
+      iso3:
+        type: string
+      nome:
+        type: string
+      valuta:
+        type: string
+    required:
+    - iso2
+    - nome
+    type: object
+  dto.CountryResponse:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      eu:
+        type: boolean
+      id:
+        type: string
+      iso2:
+        type: string
+      iso3:
+        type: string
+      nome:
+        type: string
+      updated_at:
+        type: string
+      valuta:
+        type: string
+    type: object
+  dto.CreateUserRequest:
+    properties:
+      login:
+        maxLength: 150
+        minLength: 3
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        enum:
+        - admin
+        - amministrazione
+        - planner
+        - operatore
+        type: string
+    required:
+    - login
+    - password
+    - role
+    type: object
+  dto.CustomerDashboardCategoria:
+    properties:
+      categoria:
+        type: string
+      ordini:
+        type: integer
+    type: object
+  dto.CustomerDashboardDestination:
+    properties:
+      fatturato:
+        type: number
+      nome:
+        type: string
+      ordini:
+        type: integer
+    type: object
+  dto.CustomerDashboardKPI:
+    properties:
+      fatturato_netto:
+        type: number
+      ordini_chiusi:
+        type: integer
+      ordini_fatturati:
+        type: integer
+      ordini_in_viaggio:
+        type: integer
+      ordini_pianificabili:
+        type: integer
+      ordini_totali:
+        type: integer
+      tariffa_media:
+        type: number
+    type: object
+  dto.CustomerDashboardMonthly:
+    properties:
+      fatturato:
+        type: number
+      mese:
+        type: string
+      ordini:
+        type: integer
+    type: object
+  dto.CustomerDashboardResponse:
+    properties:
+      customer:
+        $ref: '#/definitions/dto.CustomerDashboardSummary'
+      kpi:
+        $ref: '#/definitions/dto.CustomerDashboardKPI'
+      monthly_trend:
+        items:
+          $ref: '#/definitions/dto.CustomerDashboardMonthly'
+        type: array
+      per_categoria:
+        items:
+          $ref: '#/definitions/dto.CustomerDashboardCategoria'
+        type: array
+      per_tipologia:
+        items:
+          $ref: '#/definitions/dto.CustomerDashboardTipologia'
+        type: array
+      top_destinazioni:
+        items:
+          $ref: '#/definitions/dto.CustomerDashboardDestination'
+        type: array
+    type: object
+  dto.CustomerDashboardSummary:
+    properties:
+      citta:
+        type: string
+      id:
+        type: string
+      partita_iva:
+        type: string
+      ragione_sociale:
+        type: string
+    type: object
+  dto.CustomerDashboardTipologia:
+    properties:
+      ordini:
+        type: integer
+      tipologia:
+        type: string
+    type: object
+  dto.CustomerRequest:
+    properties:
+      cap:
+        type: string
+      citta:
+        type: string
+      codice_fiscale:
+        type: string
+      condizioni_pagamento:
+        type: string
+      email:
+        type: string
+      indirizzo:
+        type: string
+      nazione:
+        type: string
+      note:
+        type: string
+      partita_iva:
+        type: string
+      pec:
+        type: string
+      provincia:
+        type: string
+      ragione_sociale:
+        type: string
+      richiede_rif_ordine:
+        type: boolean
+      telefono:
+        type: string
+    required:
+    - ragione_sociale
+    type: object
+  dto.CustomerResponse:
+    properties:
+      active:
+        type: boolean
+      cap:
+        type: string
+      citta:
+        type: string
+      codice_fiscale:
+        type: string
+      condizioni_pagamento:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      nazione:
+        type: string
+      note:
+        type: string
+      partita_iva:
+        type: string
+      pec:
+        type: string
+      provincia:
+        type: string
+      ragione_sociale:
+        type: string
+      richiede_rif_ordine:
+        type: boolean
+      telefono:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.DashboardStatsResponse:
+    properties:
+      chiusi:
+        type: integer
+      fatturati:
+        type: integer
+      in_viaggio:
+        type: integer
+      monthly_trend:
+        items:
+          $ref: '#/definitions/dto.MonthlyOrderTrend'
+        type: array
+      pianificabili:
+        type: integer
+      total_customers:
+        type: integer
+      total_drivers:
+        type: integer
+      total_orders:
+        type: integer
+      total_revenue:
+        type: number
+      total_vehicles:
+        type: integer
+    type: object
+  dto.DestinationRequest:
+    properties:
+      cap:
+        type: string
+      citta:
+        type: string
+      indirizzo:
+        type: string
+      nazione:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      provincia:
+        type: string
+      vincoli_scarico:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.DestinationResponse:
+    properties:
+      active:
+        type: boolean
+      cap:
+        type: string
+      citta:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      nazione:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      provincia:
+        type: string
+      updated_at:
+        type: string
+      vincoli_scarico:
+        type: string
+    type: object
+  dto.DriverAvailabilityResponse:
+    properties:
+      active:
+        type: boolean
+      codice_fiscale:
+        type: string
+      cognome:
+        type: string
+      created_at:
+        type: string
+      disponibilita:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      motivo_indisponibilita:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      patente:
+        type: string
+      scadenza_patente:
+        type: string
+      telefono:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.DriverRequest:
+    properties:
+      codice_fiscale:
+        type: string
+      cognome:
+        type: string
+      email:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      patente:
+        type: string
+      scadenza_patente:
+        type: string
+      telefono:
+        type: string
+    required:
+    - cognome
+    - nome
+    type: object
+  dto.DriverResponse:
+    properties:
+      active:
+        type: boolean
+      codice_fiscale:
+        type: string
+      cognome:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      patente:
+        type: string
+      scadenza_patente:
+        type: string
+      telefono:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.DriverUnavailabilityRequest:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      data_a:
+        type: string
+      data_da:
+        type: string
+      motivo:
+        type: string
+      note:
+        type: string
+    required:
+    - autista_id
+    - data_a
+    - data_da
+    type: object
+  dto.DriverUnavailabilityResponse:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      created_at:
+        type: string
+      data_a:
+        type: string
+      data_da:
+        type: string
+      id:
+        type: string
+      motivo:
+        type: string
+      note:
+        type: string
+    type: object
+  dto.GPSHistoryResponse:
+    properties:
+      gps_source:
+        type: string
+      heading:
+        type: number
+      lat:
+        type: number
+      lng:
+        type: number
+      speed_kmh:
+        type: number
+      targa:
+        type: string
+      timestamp:
+        type: string
+      vehicle_id:
+        type: string
+    type: object
+  dto.GPSLiveVehicle:
+    properties:
+      gps_active:
+        type: boolean
+      gps_source:
+        type: string
+      gps_tracker_url:
+        type: string
+      id:
+        type: string
+      last_gps_update:
+        type: string
+      last_heading:
+        type: number
+      last_lat:
+        type: number
+      last_lng:
+        type: number
+      last_speed_kmh:
+        type: number
+      marca:
+        type: string
+      modello:
+        type: string
+      targa:
+        type: string
+      tipo_veicolo:
+        type: string
+    type: object
+  dto.GPSPositionShort:
+    properties:
+      lat:
+        type: number
+      lng:
+        type: number
+    type: object
+  dto.GPSUpdateResult:
+    properties:
+      gps_source:
+        type: string
+      ok:
+        type: boolean
+      position:
+        $ref: '#/definitions/dto.GPSPositionShort'
+      targa:
+        type: string
+    type: object
+  dto.GPSWebhookPayload:
+    properties:
+      heading:
+        type: number
+      lat:
+        type: number
+      lng:
+        type: number
+      speed_kmh:
+        type: number
+      targa:
+        type: string
+      timestamp:
+        type: string
+      vehicle_id:
+        type: string
+    type: object
+  dto.GarageRequest:
+    properties:
+      citta:
+        type: string
+      indirizzo:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.GarageResponse:
+    properties:
+      active:
+        type: boolean
+      citta:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      nome:
+        type: string
+      note:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.InvoiceFinalizeResult:
+    properties:
+      ok:
+        type: boolean
+      pdf_archived:
+        type: boolean
+      pdf_s3_key:
+        type: string
+    type: object
+  dto.InvoiceLineDTO:
+    properties:
+      descrizione:
+        type: string
+      iva_codice:
+        type: string
+      ordine_id:
+        type: string
+      peso:
+        type: number
+      prodotto:
+        type: string
+      quantita:
+        type: number
+      tariffa:
+        type: number
+      totale:
+        type: number
+    type: object
+  dto.InvoicePDFURLResult:
+    properties:
+      expires_in:
+        type: integer
+      retain_until:
+        type: string
+      url:
+        type: string
+    type: object
+  dto.InvoiceRequest:
+    properties:
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      condizioni_pagamento:
+        type: string
+      costi_accessori:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      data_fattura:
+        type: string
+      data_scadenza:
+        type: string
+      righe:
+        items:
+          $ref: '#/definitions/dto.InvoiceLineDTO'
+        type: array
+      totale:
+        type: number
+      totale_imponibile:
+        type: number
+      totale_iva:
+        type: number
+    required:
+    - cliente_id
+    type: object
+  dto.InvoiceResponse:
+    properties:
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      condizioni_pagamento:
+        type: string
+      costi_accessori:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      created_at:
+        type: string
+      data_fattura:
+        type: string
+      data_scadenza:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      numero:
+        type: string
+      pdf_retain_until:
+        type: string
+      pdf_s3_key:
+        type: string
+      pdf_uploaded_at:
+        type: string
+      righe:
+        items:
+          $ref: '#/definitions/dto.InvoiceLineDTO'
+        type: array
+      stato:
+        type: string
+      tipo:
+        type: string
+      totale:
+        type: number
+      totale_imponibile:
+        type: number
+      totale_iva:
+        type: number
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.LoginResult:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/dto.AuthUserResponse'
+    type: object
+  dto.MapGarage:
+    properties:
+      lat:
+        type: number
+      lng:
+        type: number
+      nome:
+        type: string
+    type: object
+  dto.MapPOI:
+    properties:
+      id:
+        type: string
+      lat:
+        type: number
+      lng:
+        type: number
+      nome:
+        type: string
+    type: object
+  dto.MapPoint:
+    properties:
+      lat:
+        type: number
+      lng:
+        type: number
+    type: object
+  dto.MapRoute:
+    properties:
+      autista_nome:
+        type: string
+      carico:
+        $ref: '#/definitions/dto.MapPoint'
+      cliente_nome:
+        type: string
+      current_position:
+        $ref: '#/definitions/dto.MapPoint'
+      data_consegna:
+        type: string
+      data_ritiro:
+        type: string
+      distance_km:
+        type: number
+      duration_hours:
+        type: number
+      eta_hours:
+        type: number
+      garage:
+        $ref: '#/definitions/dto.MapPoint'
+      gps_heading:
+        type: number
+      gps_last_update:
+        type: string
+      gps_live:
+        type: boolean
+      gps_source:
+        type: string
+      gps_speed_kmh:
+        type: number
+      gps_tracker_url:
+        type: string
+      id:
+        type: string
+      last_temp_alert:
+        type: boolean
+      last_temp_celsius:
+        type: number
+      progress:
+        type: number
+      progressivo:
+        type: string
+      remaining_km:
+        type: number
+      road_points:
+        items:
+          $ref: '#/definitions/dto.MapPoint'
+        type: array
+      scarico:
+        $ref: '#/definitions/dto.MapPoint'
+      stato:
+        type: string
+      targa_motrice:
+        type: string
+      tariffa:
+        type: number
+      tipologia:
+        type: string
+    type: object
+  dto.MapStats:
+    properties:
+      chiusi:
+        type: integer
+      gps_live:
+        type: integer
+      in_viaggio:
+        type: integer
+      pianificabili:
+        type: integer
+    type: object
+  dto.MapTripsResponse:
+    properties:
+      garages:
+        items:
+          $ref: '#/definitions/dto.MapGarage'
+        type: array
+      poi:
+        items:
+          $ref: '#/definitions/dto.MapPOI'
+        type: array
+      routes:
+        items:
+          $ref: '#/definitions/dto.MapRoute'
+        type: array
+      stats:
+        $ref: '#/definitions/dto.MapStats'
+    type: object
+  dto.MonthlyOrderTrend:
+    properties:
+      mese:
+        type: string
+      ordini:
+        type: integer
+      totale:
+        type: number
+    type: object
+  dto.OKResult:
+    properties:
+      ok:
+        type: boolean
+    type: object
+  dto.OrderAssignRequest:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      targa_motrice:
+        type: string
+      targa_rimorchio:
+        type: string
+      vettore_id:
+        type: string
+      vettore_nome:
+        type: string
+    type: object
+  dto.OrderItemDTO:
+    properties:
+      peso:
+        type: number
+      prodotto_codice:
+        type: string
+      prodotto_descrizione:
+        type: string
+      prodotto_id:
+        type: string
+      quantita:
+        type: number
+    type: object
+  dto.OrderRequest:
+    properties:
+      andata_ritorno:
+        type: boolean
+      categoria_trasporto:
+        type: string
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      costi_accessori:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      data_consegna:
+        type: string
+      data_ritiro:
+        type: string
+      destinazione_carico_id:
+        type: string
+      destinazione_carico_nome:
+        type: string
+      destinazione_scarico_id:
+        type: string
+      destinazione_scarico_nome:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItemDTO'
+        type: array
+      note:
+        type: string
+      ora_consegna_a:
+        type: string
+      ora_consegna_da:
+        type: string
+      ora_ritiro_a:
+        type: string
+      ora_ritiro_da:
+        type: string
+      rif_ordine_cliente:
+        type: string
+      servizi_accessori:
+        items:
+          type: string
+        type: array
+      tariffa:
+        type: number
+      tipo_tariffa:
+        type: string
+      tipologia:
+        type: string
+    required:
+    - cliente_id
+    type: object
+  dto.OrderResponse:
+    properties:
+      andata_ritorno:
+        type: boolean
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      categoria_trasporto:
+        type: string
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      costi_accessori:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      created_at:
+        type: string
+      data_consegna:
+        type: string
+      data_ritiro:
+        type: string
+      destinazione_carico_id:
+        type: string
+      destinazione_carico_nome:
+        type: string
+      destinazione_scarico_id:
+        type: string
+      destinazione_scarico_nome:
+        type: string
+      fattura_id:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItemDTO'
+        type: array
+      note:
+        type: string
+      ora_consegna_a:
+        type: string
+      ora_consegna_da:
+        type: string
+      ora_ritiro_a:
+        type: string
+      ora_ritiro_da:
+        type: string
+      progressivo:
+        type: string
+      rif_ordine_cliente:
+        type: string
+      servizi_accessori:
+        items:
+          type: string
+        type: array
+      stato:
+        type: string
+      targa_motrice:
+        type: string
+      targa_rimorchio:
+        type: string
+      tariffa:
+        type: number
+      tipo_tariffa:
+        type: string
+      tipologia:
+        type: string
+      updated_at:
+        type: string
+      vettore_id:
+        type: string
+      vettore_nome:
+        type: string
+      viaggio_id:
+        type: string
+    type: object
+  dto.OrderReturnSuggestion:
+    properties:
+      order:
+        $ref: '#/definitions/dto.OrderResponse'
+      reasons:
+        items:
+          type: string
+        type: array
+      score:
+        type: integer
+    type: object
+  dto.OrderReturnSuggestionsResponse:
+    properties:
+      candidates:
+        items:
+          $ref: '#/definitions/dto.OrderReturnSuggestion'
+        type: array
+      count:
+        type: integer
+      source_order:
+        $ref: '#/definitions/dto.OrderSourceSummary'
+    type: object
+  dto.OrderSourceSummary:
+    properties:
+      cliente_nome:
+        type: string
+      data_consegna:
+        type: string
+      destinazione_scarico_nome:
+        type: string
+      id:
+        type: string
+      progressivo:
+        type: string
+    type: object
+  dto.PatchUserRequest:
+    properties:
+      active:
+        type: boolean
+      name:
+        type: string
+      profile_id:
+        type: string
+    type: object
+  dto.PriceListItemAddResult:
+    properties:
+      item_id:
+        type: string
+      items_count:
+        type: integer
+      ok:
+        type: boolean
+    type: object
+  dto.PriceListItemDTO:
+    properties:
+      destinazione_carico_id:
+        type: string
+      destinazione_carico_nome:
+        type: string
+      destinazione_scarico_id:
+        type: string
+      destinazione_scarico_nome:
+        type: string
+      item_id:
+        type: string
+      minimo_tassabile:
+        type: number
+      perc_adeguamento_carburante:
+        type: number
+      prodotto_id:
+        type: string
+      prodotto_nome:
+        type: string
+      range_peso_max:
+        type: number
+      range_peso_min:
+        type: number
+      tariffa:
+        type: number
+      tipo_tariffa:
+        type: string
+      tipo_trasporto:
+        type: string
+      unita_peso:
+        type: string
+    type: object
+  dto.PriceListItemDeleteResult:
+    properties:
+      items_count:
+        type: integer
+      ok:
+        type: boolean
+    type: object
+  dto.PriceListItemUpdateResult:
+    properties:
+      item_id:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  dto.PriceListRequest:
+    properties:
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      data_fine:
+        type: string
+      data_inizio:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.PriceListItemDTO'
+        type: array
+      note:
+        type: string
+    required:
+    - cliente_id
+    type: object
+  dto.PriceListResponse:
+    properties:
+      active:
+        type: boolean
+      cliente_id:
+        type: string
+      cliente_nome:
+        type: string
+      created_at:
+        type: string
+      data_fine:
+        type: string
+      data_inizio:
+        type: string
+      id:
+        type: string
+      in_uso:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/dto.PriceListItemDTO'
+        type: array
+      note:
+        type: string
+    type: object
+  dto.PriceListUpdateResult:
+    properties:
+      duplicated:
+        type: boolean
+      new_id:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  dto.ProductRequest:
+    properties:
+      codice:
+        type: string
+      descrizione:
+        type: string
+      note:
+        type: string
+      unita_misura:
+        type: string
+    required:
+    - codice
+    - descrizione
+    type: object
+  dto.ProductResponse:
+    properties:
+      active:
+        type: boolean
+      codice:
+        type: string
+      created_at:
+        type: string
+      descrizione:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      unita_misura:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.RecomputeSegmentsResult:
+    properties:
+      km_totali:
+        type: number
+      ok:
+        type: boolean
+      segmenti_count:
+        type: integer
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      password:
+        minLength: 12
+        type: string
+      role:
+        enum:
+        - admin
+        - amministrazione
+        - planner
+        - operatore
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - role
+    type: object
+  dto.TariffLookupResult:
+    properties:
+      found:
+        type: boolean
+      item_id:
+        type: string
+      listino_id:
+        type: string
+      minimo_tassabile:
+        type: number
+      perc_adeguamento_carburante:
+        type: number
+      score:
+        type: integer
+      tariffa:
+        type: number
+      tariffa_base:
+        type: number
+      tipo_tariffa:
+        type: string
+    type: object
+  dto.TemperatureReadingResponse:
+    properties:
+      out_of_range:
+        type: boolean
+      sensor_id:
+        type: string
+      source:
+        type: string
+      targa:
+        type: string
+      temp_celsius:
+        type: number
+      ts:
+        type: string
+      vehicle_id:
+        type: string
+    type: object
+  dto.TemperatureThresholdsRequest:
+    properties:
+      temp_max:
+        type: number
+      temp_min:
+        type: number
+    type: object
+  dto.TemperatureThresholdsResult:
+    properties:
+      ok:
+        type: boolean
+      temp_max:
+        type: number
+      temp_min:
+        type: number
+    type: object
+  dto.TemperatureWebhookRequest:
+    properties:
+      sensor_id:
+        type: string
+      targa:
+        type: string
+      temp_celsius:
+        type: number
+      ts:
+        type: string
+      vehicle_id:
+        type: string
+    required:
+    - temp_celsius
+    type: object
+  dto.TemperatureWebhookResult:
+    properties:
+      alert:
+        type: boolean
+      ok:
+        type: boolean
+      out_of_range:
+        type: boolean
+    type: object
+  dto.TransportCategoryRequest:
+    properties:
+      descrizione:
+        type: string
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.TransportCategoryResponse:
+    properties:
+      active:
+        type: boolean
+      descrizione:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+    type: object
+  dto.TripDetailResponse:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      costo_stimato:
+        type: number
+      created_at:
+        type: string
+      data_arrivo:
+        type: string
+      data_partenza:
+        type: string
+      garage_id:
+        type: string
+      garage_nome:
+        type: string
+      id:
+        type: string
+      km_totali:
+        type: number
+      note:
+        type: string
+      ordini:
+        items:
+          $ref: '#/definitions/dto.OrderResponse'
+        type: array
+      ordini_ids:
+        items:
+          type: string
+        type: array
+      segmenti:
+        items:
+          $ref: '#/definitions/dto.TripSegmentDTO'
+        type: array
+      stato:
+        type: string
+      targa_motrice:
+        type: string
+      targa_rimorchio:
+        type: string
+      vettore_id:
+        type: string
+      vettore_nome:
+        type: string
+    type: object
+  dto.TripRequest:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      data_arrivo:
+        type: string
+      data_partenza:
+        type: string
+      garage_id:
+        type: string
+      garage_nome:
+        type: string
+      note:
+        type: string
+      ordini_ids:
+        items:
+          type: string
+        type: array
+      targa_motrice:
+        type: string
+      targa_rimorchio:
+        type: string
+      vettore_id:
+        type: string
+      vettore_nome:
+        type: string
+    type: object
+  dto.TripResponse:
+    properties:
+      autista_id:
+        type: string
+      autista_nome:
+        type: string
+      costo_stimato:
+        type: number
+      created_at:
+        type: string
+      data_arrivo:
+        type: string
+      data_partenza:
+        type: string
+      garage_id:
+        type: string
+      garage_nome:
+        type: string
+      id:
+        type: string
+      km_totali:
+        type: number
+      note:
+        type: string
+      ordini_ids:
+        items:
+          type: string
+        type: array
+      segmenti:
+        items:
+          $ref: '#/definitions/dto.TripSegmentDTO'
+        type: array
+      stato:
+        type: string
+      targa_motrice:
+        type: string
+      targa_rimorchio:
+        type: string
+      vettore_id:
+        type: string
+      vettore_nome:
+        type: string
+    type: object
+  dto.TripSegmentDTO:
+    properties:
+      destinazione_lat:
+        type: number
+      destinazione_lng:
+        type: number
+      destinazione_nome:
+        type: string
+      km:
+        type: number
+      ordine:
+        type: integer
+      ordine_id:
+        type: string
+      origine_lat:
+        type: number
+      origine_lng:
+        type: number
+      origine_nome:
+        type: string
+      tempo_stimato_min:
+        type: integer
+      tipo:
+        type: string
+    type: object
+  dto.UpdateUserRequest:
+    properties:
+      login:
+        maxLength: 150
+        minLength: 3
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        enum:
+        - admin
+        - amministrazione
+        - planner
+        - operatore
+        type: string
+    required:
+    - login
+    - role
+    type: object
+  dto.VehicleAvailabilityResponse:
+    properties:
+      active:
+        type: boolean
+      anno:
+        type: integer
+      created_at:
+        type: string
+      disponibilita:
+        type: string
+      gps_active:
+        type: boolean
+      gps_api_key:
+        type: string
+      gps_source:
+        type: string
+      gps_tracker_tipo:
+        type: string
+      gps_tracker_url:
+        type: string
+      id:
+        type: string
+      last_gps_update:
+        type: string
+      last_heading:
+        type: number
+      last_lat:
+        type: number
+      last_lng:
+        type: number
+      last_speed_kmh:
+        type: number
+      last_temp_alert:
+        type: boolean
+      last_temp_celsius:
+        type: number
+      last_temp_sensor_id:
+        type: string
+      last_temp_ts:
+        type: string
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      temp_max:
+        type: number
+      temp_min:
+        type: number
+      tipo_veicolo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.VehicleGPSUpdateRequest:
+    properties:
+      heading:
+        type: number
+      lat:
+        type: number
+      lng:
+        type: number
+      speed_kmh:
+        type: number
+      timestamp:
+        type: string
+    required:
+    - lat
+    - lng
+    type: object
+  dto.VehicleRequest:
+    properties:
+      anno:
+        type: integer
+      gps_api_key:
+        type: string
+      gps_tracker_tipo:
+        type: string
+      gps_tracker_url:
+        type: string
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      tipo_veicolo:
+        type: string
+    required:
+    - targa
+    type: object
+  dto.VehicleResponse:
+    properties:
+      active:
+        type: boolean
+      anno:
+        type: integer
+      created_at:
+        type: string
+      gps_active:
+        type: boolean
+      gps_api_key:
+        type: string
+      gps_source:
+        type: string
+      gps_tracker_tipo:
+        type: string
+      gps_tracker_url:
+        type: string
+      id:
+        type: string
+      last_gps_update:
+        type: string
+      last_heading:
+        type: number
+      last_lat:
+        type: number
+      last_lng:
+        type: number
+      last_speed_kmh:
+        type: number
+      last_temp_alert:
+        type: boolean
+      last_temp_celsius:
+        type: number
+      last_temp_sensor_id:
+        type: string
+      last_temp_ts:
+        type: string
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      temp_max:
+        type: number
+      temp_min:
+        type: number
+      tipo_veicolo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.VehicleTypeRequest:
+    properties:
+      descrizione:
+        type: string
+      nome:
+        type: string
+    required:
+    - nome
+    type: object
+  dto.VehicleTypeResponse:
+    properties:
+      active:
+        type: boolean
+      descrizione:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+    type: object
+  models.User:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: integer
+      last_login_at:
+        type: string
+      login:
+        maxLength: 150
+        minLength: 3
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      password_hash:
+        type: string
+      role:
+        enum:
+        - admin
+        - amministrazione
+        - planner
+        - operatore
+        type: string
+      updated_at:
+        type: string
+    required:
+    - login
+    - password_hash
+    - role
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: fratelli-feccia backend API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: fratelli-feccia API
+  version: "1.0"
+paths:
+  /api/v1/accessory-costs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.AccessoryCostResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List accessory costs
+      tags:
+      - Masterdata
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Accessory cost data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AccessoryCostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AccessoryCostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create accessory cost
+      tags:
+      - Masterdata
+  /api/v1/accounting-entries:
+    get:
+      parameters:
+      - description: Filter by codice/descrizione
+        in: query
+        name: search
+        type: string
+      - description: Filter by tipo (ricavo|costo)
+        in: query
+        name: tipo
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.AccountingEntryResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List accounting entries
+      tags:
+      - Anagrafiche
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Accounting entry data
+        in: body
+        name: entry
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AccountingEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AccountingEntryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create accounting entry
+      tags:
+      - Anagrafiche
+  /api/v1/accounting-entries/{id}:
+    delete:
+      parameters:
+      - description: Accounting entry ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete accounting entry (logical, sets active=false)
+      tags:
+      - Anagrafiche
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Accounting entry ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Accounting entry data
+        in: body
+        name: entry
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AccountingEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AccountingEntryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update accounting entry (full replace)
+      tags:
+      - Anagrafiche
+  /api/v1/admin/users:
+    get:
+      description: Full unpaginated roster with email/profile_id/active, mirrors admin.py's
+        GET /admin/users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.AuthUserResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all users (frontend admin panel)
+      tags:
+      - Admin Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - Admin Users
+  /api/v1/admin/users-list:
+    get:
+      description: Returns paginated list of users
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - Admin Users
+  /api/v1/admin/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Admin Users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Admin Users
+    patch:
+      consumes:
+      - application/json
+      description: Updates name/active only, mirrors admin.py's PATCH /admin/users/{id}
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Partially update a user (frontend admin panel)
+      tags:
+      - Admin Users
+    put:
+      consumes:
+      - application/json
+      description: Update existing user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Admin Users
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user; access token in body, refresh token as httpOnly
+        cookie
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - Auth
+  /api/v1/auth/logout:
+    post:
+      description: Clears the refresh cookie; best-effort, works without a valid token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Logout
+      tags:
+      - Auth
+  /api/v1/auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthUserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Current user
+      tags:
+      - Auth
+  /api/v1/auth/refresh:
+    post:
+      description: Exchange the httpOnly refresh cookie for a new access token (and
+        rotate the cookie)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginResult'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh tokens
+      tags:
+      - Auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Register a new user (admin-only)
+      tags:
+      - Auth
+  /api/v1/availability/drivers:
+    get:
+      parameters:
+      - description: Range start (YYYY-MM-DD)
+        in: query
+        name: data_da
+        required: true
+        type: string
+      - description: Range end (YYYY-MM-DD)
+        in: query
+        name: data_a
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.DriverAvailabilityResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Driver availability for a date range
+      tags:
+      - Availability
+  /api/v1/availability/vehicles:
+    get:
+      parameters:
+      - description: Range start (YYYY-MM-DD)
+        in: query
+        name: data_da
+        required: true
+        type: string
+      - description: Range end (YYYY-MM-DD)
+        in: query
+        name: data_a
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.VehicleAvailabilityResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Vehicle availability for a date range
+      tags:
+      - Availability
+  /api/v1/banks:
+    get:
+      parameters:
+      - description: Filter by nome/bic_swift
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.BankResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List banks
+      tags:
+      - Anagrafiche
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bank data
+        in: body
+        name: bank
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BankRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.BankResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create bank
+      tags:
+      - Anagrafiche
+  /api/v1/banks/{id}:
+    delete:
+      parameters:
+      - description: Bank ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete bank (logical, sets active=false)
+      tags:
+      - Anagrafiche
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bank ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Bank data
+        in: body
+        name: bank
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BankRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BankResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update bank (full replace)
+      tags:
+      - Anagrafiche
+  /api/v1/carriers:
+    get:
+      parameters:
+      - description: Filter by ragione sociale
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CarrierResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List carriers
+      tags:
+      - Carriers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Carrier data
+        in: body
+        name: carrier
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CarrierRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CarrierResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create carrier
+      tags:
+      - Carriers
+  /api/v1/carriers/{id}:
+    delete:
+      parameters:
+      - description: Carrier ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete carrier (logical, sets active=false)
+      tags:
+      - Carriers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Carrier ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Carrier data
+        in: body
+        name: carrier
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CarrierRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CarrierResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update carrier (full replace)
+      tags:
+      - Carriers
+  /api/v1/countries:
+    get:
+      parameters:
+      - description: Filter by nome/iso2
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CountryResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List countries
+      tags:
+      - Anagrafiche
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Country data
+        in: body
+        name: country
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CountryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CountryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create country
+      tags:
+      - Anagrafiche
+  /api/v1/countries/{id}:
+    delete:
+      parameters:
+      - description: Country ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete country (logical, sets active=false)
+      tags:
+      - Anagrafiche
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Country ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Country data
+        in: body
+        name: country
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CountryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CountryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update country (full replace)
+      tags:
+      - Anagrafiche
+  /api/v1/customers:
+    get:
+      description: Returns active customers, optionally filtered by ragione sociale
+      parameters:
+      - description: Filter by ragione sociale (substring, case-insensitive)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CustomerResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List customers
+      tags:
+      - Customers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Customer data
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CustomerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create customer
+      tags:
+      - Customers
+  /api/v1/customers/{id}:
+    delete:
+      parameters:
+      - description: Customer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete customer (logical, sets active=false)
+      tags:
+      - Customers
+    get:
+      parameters:
+      - description: Customer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CustomerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get customer by ID
+      tags:
+      - Customers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Customer ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer data
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CustomerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update customer (full replace)
+      tags:
+      - Customers
+  /api/v1/dashboard/customer/{customer_id}:
+    get:
+      parameters:
+      - description: Customer ID (UUID)
+        in: path
+        name: customer_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CustomerDashboardResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Per-customer commercial dashboard
+      tags:
+      - Dashboard
+  /api/v1/dashboard/recent-orders:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.OrderResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Recent orders (last 10)
+      tags:
+      - Dashboard
+  /api/v1/dashboard/stats:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DashboardStatsResponse'
+      security:
+      - BearerAuth: []
+      summary: Global dashboard KPIs
+      tags:
+      - Dashboard
+  /api/v1/destinations:
+    get:
+      parameters:
+      - description: Filter by nome (substring, case-insensitive)
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.DestinationResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List destinations
+      tags:
+      - Destinations
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Destination data
+        in: body
+        name: destination
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DestinationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.DestinationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create destination
+      tags:
+      - Destinations
+  /api/v1/destinations/{id}:
+    delete:
+      parameters:
+      - description: Destination ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete destination (logical, sets active=false)
+      tags:
+      - Destinations
+    get:
+      parameters:
+      - description: Destination ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DestinationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get destination by ID
+      tags:
+      - Destinations
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Destination ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Destination data
+        in: body
+        name: destination
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DestinationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DestinationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update destination (full replace)
+      tags:
+      - Destinations
+  /api/v1/driver-unavailability:
+    get:
+      parameters:
+      - description: Filter by driver ID (UUID)
+        in: query
+        name: autista_id
+        type: string
+      - description: Range start (overlap filter, requires data_a too)
+        in: query
+        name: data_da
+        type: string
+      - description: Range end (overlap filter, requires data_da too)
+        in: query
+        name: data_a
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.DriverUnavailabilityResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List driver unavailability periods
+      tags:
+      - DriverUnavailability
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Driver unavailability data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DriverUnavailabilityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.DriverUnavailabilityResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create driver unavailability period
+      tags:
+      - DriverUnavailability
+  /api/v1/driver-unavailability/{id}:
+    delete:
+      parameters:
+      - description: Record ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete driver unavailability period (hard delete)
+      tags:
+      - DriverUnavailability
+  /api/v1/drivers:
+    get:
+      parameters:
+      - description: Filter by nome/cognome
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.DriverResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List drivers
+      tags:
+      - Drivers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Driver data
+        in: body
+        name: driver
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DriverRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.DriverResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create driver
+      tags:
+      - Drivers
+  /api/v1/drivers/{id}:
+    delete:
+      parameters:
+      - description: Driver ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete driver (logical, sets active=false)
+      tags:
+      - Drivers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Driver ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Driver data
+        in: body
+        name: driver
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DriverRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DriverResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update driver (full replace)
+      tags:
+      - Drivers
+  /api/v1/export/orders:
+    get:
+      parameters:
+      - description: Filter by stato
+        in: query
+        name: stato
+        type: string
+      - description: data_ritiro >= (YYYY-MM-DD)
+        in: query
+        name: data_da
+        type: string
+      - description: data_ritiro <= (YYYY-MM-DD)
+        in: query
+        name: data_a
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: Export orders to xlsx
+      tags:
+      - Export
+  /api/v1/garages:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GarageResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List garages
+      tags:
+      - Garages
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Garage data
+        in: body
+        name: garage
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GarageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.GarageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create garage
+      tags:
+      - Garages
+  /api/v1/garages/{id}:
+    delete:
+      parameters:
+      - description: Garage ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete garage (logical, sets active=false)
+      tags:
+      - Garages
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Garage ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Garage data
+        in: body
+        name: garage
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GarageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GarageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update garage (full replace)
+      tags:
+      - Garages
+  /api/v1/invoices:
+    get:
+      parameters:
+      - description: Filter by stato
+        in: query
+        name: stato
+        type: string
+      - description: Filter by cliente_id
+        in: query
+        name: cliente_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.InvoiceResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List invoices
+      tags:
+      - Invoices
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Invoice data
+        in: body
+        name: invoice
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.InvoiceResponse'
+      security:
+      - BearerAuth: []
+      summary: Create invoice (PROFORMA)
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}:
+    delete:
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete invoice (only PROFORMA, hard delete)
+      tags:
+      - Invoices
+    get:
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InvoiceResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get invoice by ID
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}/finalize:
+    patch:
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InvoiceFinalizeResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Finalize invoice (PROFORMA -> DEFINITIVA)
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}/pdf:
+    get:
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Invoice PDF (S3 archived copy if available, else generated on the fly)
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}/pdf-url:
+    get:
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InvoicePDFURLResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Presigned S3 URL for the invoice PDF (DEFINITIVA + archived only)
+      tags:
+      - Invoices
+  /api/v1/map/trips:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MapTripsResponse'
+      security:
+      - BearerAuth: []
+      summary: 'Live map: active trips, POI, garages, stats'
+      tags:
+      - Map
+  /api/v1/orders:
+    get:
+      parameters:
+      - description: Filter by stato
+        in: query
+        name: stato
+        type: string
+      - description: Filter by cliente_id
+        in: query
+        name: cliente_id
+        type: string
+      - description: data_ritiro >= data_da
+        in: query
+        name: data_da
+        type: string
+      - description: data_ritiro <= data_a
+        in: query
+        name: data_a
+        type: string
+      - description: Filter by cliente_nome/progressivo/rif_ordine_cliente/destinazioni
+        in: query
+        name: search
+        type: string
+      - description: Filter by tipologia
+        in: query
+        name: tipologia
+        type: string
+      - description: Max results (default 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.OrderResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List orders
+      tags:
+      - Orders
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Order data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create order
+      tags:
+      - Orders
+  /api/v1/orders/{id}:
+    delete:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete order (only PIANIFICABILE, hard delete)
+      tags:
+      - Orders
+    get:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - Orders
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Order data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update order (full replace of the create-able fields)
+      tags:
+      - Orders
+  /api/v1/orders/{id}/assign:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignment data
+        in: body
+        name: assign
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderAssignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign order to a vehicle/driver/carrier (PIANIFICABILE -> VIAGGIO)
+      tags:
+      - Orders
+  /api/v1/orders/{id}/close:
+    patch:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Close order (VIAGGIO -> CHIUSO)
+      tags:
+      - Orders
+  /api/v1/orders/{id}/cmr/pdf:
+    get:
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: CMR waybill PDF for an order
+      tags:
+      - Orders
+  /api/v1/orders/{id}/return-suggestions:
+    get:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Days after data_consegna to search (0-14, default 2)
+        in: query
+        name: max_days_gap
+        type: integer
+      - description: Max candidates (1-100, default 20)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderReturnSuggestionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Return-trip order suggestions
+      tags:
+      - Orders
+  /api/v1/pricelists:
+    get:
+      parameters:
+      - description: Filter by cliente_id
+        in: query
+        name: cliente_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.PriceListResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List pricelists
+      tags:
+      - PriceLists
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Pricelist data
+        in: body
+        name: pricelist
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PriceListRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PriceListResponse'
+      security:
+      - BearerAuth: []
+      summary: Create pricelist
+      tags:
+      - PriceLists
+  /api/v1/pricelists/{id}:
+    delete:
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete pricelist (logical, sets active=false)
+      tags:
+      - PriceLists
+    get:
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PriceListResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get pricelist by ID
+      tags:
+      - PriceLists
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Pricelist data
+        in: body
+        name: pricelist
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PriceListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PriceListUpdateResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update pricelist (duplicates if in_uso, else in-place)
+      tags:
+      - PriceLists
+  /api/v1/pricelists/{id}/items:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PriceListItemDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PriceListItemAddResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a tariff rule to a pricelist
+      tags:
+      - PriceLists
+  /api/v1/pricelists/{id}/items/{item_id}:
+    delete:
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item ID (UUID)
+        in: path
+        name: item_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PriceListItemDeleteResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a tariff rule
+      tags:
+      - PriceLists
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Pricelist ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item ID (UUID)
+        in: path
+        name: item_id
+        required: true
+        type: string
+      - description: Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PriceListItemDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PriceListItemUpdateResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a tariff rule
+      tags:
+      - PriceLists
+  /api/v1/pricelists/lookup-tariff:
+    get:
+      parameters:
+      - description: Cliente ID
+        in: query
+        name: cliente_id
+        required: true
+        type: string
+      - description: Destinazione carico ID
+        in: query
+        name: carico_id
+        type: string
+      - description: Destinazione scarico ID
+        in: query
+        name: scarico_id
+        type: string
+      - description: Prodotto ID
+        in: query
+        name: prodotto_id
+        type: string
+      - description: Peso (Kg)
+        in: query
+        name: peso
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TariffLookupResult'
+      security:
+      - BearerAuth: []
+      summary: Lookup the best matching tariff for an order context
+      tags:
+      - PriceLists
+  /api/v1/products:
+    get:
+      parameters:
+      - description: Filter by codice/descrizione
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProductResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create product
+      tags:
+      - Products
+  /api/v1/products/{id}:
+    delete:
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete product (logical, sets active=false)
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Product ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update product (full replace)
+      tags:
+      - Products
+  /api/v1/transport-categories:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.TransportCategoryResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List transport categories
+      tags:
+      - Masterdata
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Transport category data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransportCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TransportCategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create transport category
+      tags:
+      - Masterdata
+  /api/v1/trips:
+    get:
+      parameters:
+      - description: Filter by stato
+        in: query
+        name: stato
+        type: string
+      - description: Max results (default 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.TripResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List trips
+      tags:
+      - Trips
+    post:
+      consumes:
+      - application/json
+      description: Syncs any PIANIFICABILE orders in ordini_ids to VIAGGIO and computes
+        route segments via OSRM
+      parameters:
+      - description: Trip data
+        in: body
+        name: trip
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TripRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TripResponse'
+      security:
+      - BearerAuth: []
+      summary: Create trip
+      tags:
+      - Trips
+  /api/v1/trips/{id}:
+    get:
+      parameters:
+      - description: Trip ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TripDetailResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get trip by ID (includes joined orders)
+      tags:
+      - Trips
+  /api/v1/trips/{id}/add-order:
+    patch:
+      parameters:
+      - description: Trip ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Order ID (UUID)
+        in: query
+        name: order_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OKResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add an order to a trip
+      tags:
+      - Trips
+  /api/v1/trips/{id}/complete:
+    patch:
+      parameters:
+      - description: Trip ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OKResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Complete a trip (closes its VIAGGIO orders)
+      tags:
+      - Trips
+  /api/v1/trips/{id}/instructions/pdf:
+    get:
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Operational instructions PDF for a trip
+      tags:
+      - Trips
+  /api/v1/trips/{id}/recompute-segments:
+    post:
+      parameters:
+      - description: Trip ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RecomputeSegmentsResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Recompute a trip's route segments
+      tags:
+      - Trips
+  /api/v1/vehicle-types:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.VehicleTypeResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List vehicle types
+      tags:
+      - Masterdata
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle type data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VehicleTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.VehicleTypeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create vehicle type
+      tags:
+      - Masterdata
+  /api/v1/vehicles:
+    get:
+      parameters:
+      - description: Filter by targa
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.VehicleResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List vehicles
+      tags:
+      - Vehicles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle data
+        in: body
+        name: vehicle
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VehicleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.VehicleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create vehicle
+      tags:
+      - Vehicles
+  /api/v1/vehicles/{id}:
+    delete:
+      parameters:
+      - description: Vehicle ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete vehicle (logical, sets active=false)
+      tags:
+      - Vehicles
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Vehicle data
+        in: body
+        name: vehicle
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VehicleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VehicleResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update vehicle (full replace of the create-able fields)
+      tags:
+      - Vehicles
+  /api/v1/vehicles/{id}/gps-history:
+    get:
+      parameters:
+      - description: Vehicle ID (UUID) or targa
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Max results (default 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GPSHistoryResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: GPS history for a vehicle
+      tags:
+      - Vehicles
+  /api/v1/vehicles/{id}/gps-position:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle ID (UUID) or targa
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: GPS position
+        in: body
+        name: position
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VehicleGPSUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GPSUpdateResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update vehicle GPS position (by id or targa)
+      tags:
+      - Vehicles
+  /api/v1/vehicles/{id}/temperature:
+    get:
+      parameters:
+      - description: Vehicle ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Max results (default 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Only out-of-range readings
+        in: query
+        name: only_alerts
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.TemperatureReadingResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Temperature history for a vehicle
+      tags:
+      - Vehicles
+  /api/v1/vehicles/{id}/temperature-thresholds:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Thresholds
+        in: body
+        name: thresholds
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TemperatureThresholdsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TemperatureThresholdsResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set temperature thresholds for a vehicle
+      tags:
+      - Vehicles
+  /api/v1/vehicles/gps-live:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GPSLiveVehicle'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Live GPS positions for all active vehicles
+      tags:
+      - Vehicles
+  /api/v1/vehicles/gps-position-by-plate/{targa}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vehicle targa
+        in: path
+        name: targa
+        required: true
+        type: string
+      - description: GPS position
+        in: body
+        name: position
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VehicleGPSUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GPSUpdateResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update vehicle GPS position by targa
+      tags:
+      - Vehicles
+  /api/v1/webhooks/gps/{vendor}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: GPS vendor
+        in: path
+        name: vendor
+        required: true
+        type: string
+      - description: Normalized GPS payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GPSWebhookPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GPSUpdateResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: GPS provider webhook ingestion
+      tags:
+      - Vehicles
+  /api/v1/webhooks/temperature/{vendor}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Sensor vendor
+        in: path
+        name: vendor
+        required: true
+        type: string
+      - description: Temperature reading
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TemperatureWebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TemperatureWebhookResult'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Temperature sensor webhook ingestion
+      tags:
+      - Vehicles
+schemes:
+- https
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

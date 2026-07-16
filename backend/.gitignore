@@ -1,0 +1,63 @@
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Build output
+main
+main.exe
+*.exe
+
+# Dependencies
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Documents
+documents/
+
+# Coverage reports
+coverage.out
+coverage.html
+
+# Test files
+test-results/
+
+# Debug
+debug
+__debug_bin
+*.debug
+
+# Go debug
+__debug_bin*
+*.exe
+
+# Devcontainer configuration
+.devcontainer/devcontainer.json

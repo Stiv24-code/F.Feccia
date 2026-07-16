@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 12%;
+    --muted: 210 18% 96%;
+    --muted-foreground: 215 16% 38%;
+    --border: 214 18% 88%;
+    --input: 214 18% 88%;
+    --ring: 195 92% 28%;
+    --primary: 195 92% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 18% 96%;
+    --secondary-foreground: 222 30% 12%;
+    --accent: 195 40% 92%;
+    --accent-foreground: 222 30% 12%;
+    --destructive: 0 74% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --chart-1: 195 92% 28%;
+    --chart-2: 195 60% 45%;
+    --chart-3: 210 30% 60%;
+    --chart-4: 40 80% 55%;
+    --chart-5: 15 75% 55%;
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-bg: #0B1220;
+    --sidebar-bg-2: #0F1A2E;
+    --sidebar-text: #E7EEF9;
+    --sidebar-muted: #9FB0C7;
+    --sidebar-border: rgba(231,238,249,0.10);
+    --sidebar-active-bg: rgba(34,211,238,0.10);
+    --sidebar-active-ring: rgba(34,211,238,0.35);
+  }
+
+  .dark {
+    --background: 222 22% 9%;
+    --foreground: 210 20% 98%;
+    --card: 222 22% 11%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 22% 11%;
+    --popover-foreground: 210 20% 98%;
+    --muted: 222 18% 15%;
+    --muted-foreground: 215 14% 72%;
+    --border: 222 16% 18%;
+    --input: 222 16% 18%;
+    --ring: 195 92% 48%;
+    --primary: 195 92% 48%;
+    --primary-foreground: 222 22% 9%;
+    --secondary: 222 18% 15%;
+    --secondary-foreground: 210 20% 98%;
+    --accent: 195 35% 18%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62% 42%;
+    --destructive-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+  code, .font-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+}
+
+@layer base {
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Status badge colors */
+.status-pianificabile {
+  background-color: #FFF4CC;
+  color: #6A4B00;
+  border-color: #F1D98A;
+}
+.status-viaggio {
+  background-color: #FFE2E2;
+  color: #7A1F1F;
+  border-color: #F3B8B8;
+}
+.status-chiuso {
+  background-color: #FFE9D6;
+  color: #7A3B08;
+  border-color: #F6C7A0;
+}
+.status-fatturato {
+  background-color: #DFF7E9;
+  color: #0F5132;
+  border-color: #BFECD2;
+}
+
+/* Selection */
+::selection {
+  background-color: hsl(195 92% 28% / 0.2);
+  color: hsl(222 30% 12%);
+}
+
+/* ── Accessibility (issue #28) ─────────────────────────────────────────── */
+
+/* Focus ring esplicito e visibile per keyboard nav.
+   Tailwind ring va bene, ma utility class garantisce coerenza tra
+   shadcn primitives e elementi nativi (a/button non-shadcn). */
+.focus-ring:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid hsl(195 92% 28%);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Rispetta prefers-reduced-motion: l'animazione spinning, gli skeleton
+   pulse e qualunque transition >0 collassano a stato finale. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip-link per screen reader: invisibile finché non riceve focus,
+   poi salta direttamente al contenuto principale (#main-content). */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  background: hsl(195 92% 28%);
+  color: white;
+  font-weight: 500;
+  border-radius: 0 0 0.5rem 0;
+}
+.skip-to-main:focus {
+  left: 0;
+}

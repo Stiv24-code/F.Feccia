@@ -1,0 +1,8 @@
+# Backend state config per ambiente prod.
+# Copia in `prod.backend.hcl` e compila. Il file è git-ignored.
+#
+# Uso:
+#   terraform init -backend-config=environments/prod.backend.hcl
+
+bucket = "tms-tfstate-<YOUR_AWS_ACCOUNT_ID>"
+key    = "prod/terraform.tfstate"

@@ -1,0 +1,25 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -buildvcs=false -o ./tmp/main ."
+bin = "./tmp/main"
+
+# Watch all directories, including the root (where main.go is located)
+include_dir = ["."]
+include_ext = ["go", "tpl", "tmpl", "html"]
+exclude_dir = ["assets", "tmp", "vendor"]
+delay = 1000
+
+# CRITICAL FOR WINDOWS/WSL: Enable polling for file changes
+poll = true
+poll_interval = 500
+
+stop_on_error = true
+log = "build-errors.log"
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"

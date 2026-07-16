@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+.github
+
+# IDEs and editors
+.idea/
+.vscode/
+**/*.swp
+**/*.swo
+.DS_Store
+
+# Environment variables and local secrets
+.env
+.env.local
+.env.*
+
+# Logs and temporary files
+**/*.log
+tmp/
+temp/
+
+# We no longer ignore Go source code (**.go, go.mod, go.sum) 
+# because your Dockerfile.compose uses multi-stage builds 
+# and needs these files to compile the binary inside Docker.
+
+# Documentation and Docker configs
+README.md
+Dockerfile
+Dockerfile.compose
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml

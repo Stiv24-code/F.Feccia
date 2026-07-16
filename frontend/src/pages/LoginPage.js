@@ -1,0 +1,103 @@
+import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Truck, LogIn, Loader2 } from 'lucide-react';
+
+export default function LoginPage() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await login(email, password);
+      toast.success('Accesso effettuato');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Credenziali non valide');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Brand */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'var(--sidebar-bg)' }}>
+        <div>
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(34,211,238,0.15)' }}>
+              <Truck className="h-5 w-5" style={{ color: '#22D3EE' }} />
+            </div>
+            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>LoginBusiness</span>
+          </div>
+          <h2 className="text-4xl font-bold leading-tight mb-4" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+            Transport Management<br />System
+          </h2>
+          <p className="text-base leading-relaxed max-w-md" style={{ color: 'var(--sidebar-muted)' }}>
+            Gestione trasporti e pianificazione operativa per FECCIA F.lli. Ordini, pianificazione, viaggi e fatturazione in un unico sistema.
+          </p>
+        </div>
+      </div>
+
+      {/* Right side - Form */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'hsl(195 92% 28%)' }}>
+              <Truck className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>LoginBusiness</span>
+          </div>
+
+          <Card className="border shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Accedi</CardTitle>
+              <CardDescription>Gestione trasporti e pianificazione operativa</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    data-testid="login-email-input"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nome@azienda.it"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    data-testid="login-password-input"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
+                <Button type="submit" data-testid="login-submit-button" className="w-full mt-2" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
+                  Entra
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

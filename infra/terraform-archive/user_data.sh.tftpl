@@ -1,0 +1,353 @@
+#!/bin/bash
+# cloud-init / user_data — bootstrap completo host EC2.
+#
+# Variabili iniettate da `templatefile()`:
+#   $${admin_email}           - email per certbot (notifiche rinnovo)
+#   $${app_fqdn}              - es. tms.wheretech.it
+#   $${api_fqdn}              - es. api.tms.wheretech.it
+#   $${environment}           - prod|staging|dev
+#   $${deploy_ssh_public_key} - chiave pubblica CI/CD (opzionale al primo apply)
+#
+# NOTA: questo file è un template Terraform (`templatefile()`), dove `$${...}`
+# viene sostituito al rendering (dopo l'escape qui raddoppiato per commento).
+# Per i sigilli Bash `$${VAR}` nativi usiamo il raddoppio che Terraform
+# emette come singolo `$${VAR}`.
+#
+# Il file `/var/log/tms-user-data.log` raccoglie tutto l'output; il marker
+# `/var/log/tms-user-data.done` segnala il completamento riuscito.
+
+set -euxo pipefail
+exec > >(tee -a /var/log/tms-user-data.log) 2>&1
+
+echo "[$(date -Iseconds)] cloud-init START env=${environment} app=${app_fqdn} api=${api_fqdn}"
+
+export DEBIAN_FRONTEND=noninteractive
+
+# ── 1. Aggiornamento base + unattended-upgrades ─────────────────────────
+apt-get update
+apt-get upgrade -y
+apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    ufw \
+    fail2ban \
+    unattended-upgrades \
+    apt-listchanges \
+    xfsprogs \
+    awscli \
+    cron
+
+# Abilita update di sicurezza in automatico (reboot solo se richiesto, non
+# automaticamente per non sorprendere l'utente — fare reboot manuali guidati).
+cat > /etc/apt/apt.conf.d/50unattended-upgrades-custom <<'EOF'
+Unattended-Upgrade::Allowed-Origins {
+    "$${distro_id}:$${distro_codename}-security";
+    "$${distro_id}ESMApps:$${distro_codename}-apps-security";
+    "$${distro_id}ESM:$${distro_codename}-infra-security";
+};
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+EOF
+cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+EOF
+
+# ── 2. Formattazione e mount del volume EBS dati ────────────────────────
+# Su istanze Nitro il device /dev/sdf viene presentato come /dev/nvme1n1.
+DATA_DEV=""
+for candidate in /dev/nvme1n1 /dev/sdf /dev/xvdf; do
+    if [ -b "$candidate" ]; then
+        DATA_DEV="$candidate"
+        break
+    fi
+done
+
+if [ -z "$DATA_DEV" ]; then
+    echo "[$(date -Iseconds)] ATTENZIONE: nessun device EBS dati trovato" >&2
+else
+    # Se non c'è già un filesystem, ne creiamo uno. blkid ritorna vuoto su disco
+    # vergine; usiamo questo come idempotency guard: il filesystem viene creato
+    # una sola volta, mai sovrascritto.
+    if ! blkid "$DATA_DEV" >/dev/null 2>&1; then
+        mkfs.ext4 -L tms-data "$DATA_DEV"
+    fi
+    mkdir -p /data
+    DATA_UUID=$(blkid -s UUID -o value "$DATA_DEV")
+    # fstab idempotente: aggiunge la riga solo se l'UUID non è già presente.
+    if ! grep -q "$DATA_UUID" /etc/fstab; then
+        echo "UUID=$DATA_UUID /data ext4 defaults,nofail,noatime 0 2" >> /etc/fstab
+    fi
+    mount -a
+    # /data/mongo appartiene all'uid/gid che il container mongo:7 usa (999).
+    mkdir -p /data/mongo /data/backups
+    chown -R 999:999 /data/mongo
+fi
+
+# ── 3. Docker Engine + docker compose plugin (repository ufficiale) ─────
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+
+ARCH=$(dpkg --print-architecture)
+CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" \
+    > /etc/apt/sources.list.d/docker.list
+
+apt-get update
+apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
+
+systemctl enable --now docker
+
+# ── 4. Utente `deploy` per CI/CD (issue #18) ────────────────────────────
+if ! id -u deploy >/dev/null 2>&1; then
+    useradd -m -s /bin/bash deploy
+fi
+usermod -aG docker deploy
+
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+
+# Cartella dove la CI/CD manterrà compose file + .env del deploy.
+mkdir -p /opt/tms
+chown -R deploy:deploy /opt/tms
+
+# ── Wrapper di deploy ───────────────────────────────────────────────────
+# Lo script riceve da stdin un tar.gz con i file di deploy (compose,
+# nginx conf, scripts/) e un file interno `tms-deploy.env` con IMAGE_TAG.
+# Lo estrae in /opt/tms, aggiorna IMAGE_TAG nel .env e fa docker compose
+# pull + up -d. Usato dall'authorized_keys con restriction command="...".
+cat > /usr/local/bin/tms-deploy <<'DEPLOY_EOF'
+#!/bin/bash
+set -euo pipefail
+
+APP_DIR=/opt/tms
+LOG=/var/log/tms-deploy.log
+TS=$(date -Iseconds)
+
+exec >>"$LOG" 2>&1
+echo "[$TS] deploy START"
+
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+
+# Legge stdin; se c'è payload tar, lo estrae in TMP.
+if [ ! -t 0 ]; then
+    tar xzf - -C "$TMP" 2>/dev/null || true
+fi
+
+# Sincronizza i file ricevuti dentro /opt/tms (se ce ne sono).
+if [ -n "$(ls -A "$TMP" 2>/dev/null || true)" ]; then
+    echo "[$TS] syncing payload to $APP_DIR"
+    rsync -a --delete-excluded \
+        --exclude='.env' \
+        "$TMP"/ "$APP_DIR"/
+fi
+
+# Aggiorna IMAGE_TAG nel .env se presente un file tms-deploy.env estratto.
+if [ -f "$APP_DIR/tms-deploy.env" ]; then
+    source "$APP_DIR/tms-deploy.env"
+    if [ -n "$${IMAGE_TAG:-}" ] && [ -f "$APP_DIR/.env" ]; then
+        sed -i -E "s|^IMAGE_TAG=.*$|IMAGE_TAG=$IMAGE_TAG|" "$APP_DIR/.env"
+        echo "[$TS] IMAGE_TAG updated to $IMAGE_TAG"
+    fi
+    rm -f "$APP_DIR/tms-deploy.env"
+fi
+
+cd "$APP_DIR"
+
+# Pull + up con override production. Timeout generoso per pull grosso.
+timeout 600 docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+timeout 300 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker image prune -f
+
+echo "[$TS] deploy DONE"
+DEPLOY_EOF
+chmod 755 /usr/local/bin/tms-deploy
+
+# Logrotate per il log del deploy.
+cat > /etc/logrotate.d/tms-deploy <<'EOF'
+/var/log/tms-deploy.log {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 root root
+}
+EOF
+
+# Authorized_keys del deploy user: chiave pubblica CI/CD con restriction
+# `command="/usr/local/bin/tms-deploy"`. Qualsiasi connessione ssh con
+# questa chiave esegue SOLO quello script, leggendo lo stdin del tunnel.
+# no-port-forwarding + no-agent-forwarding + no-X11 + restrict = deny all else.
+DEPLOY_KEY="${deploy_ssh_public_key}"
+if [ -n "$DEPLOY_KEY" ]; then
+    cat > /home/deploy/.ssh/authorized_keys <<EOF
+command="/usr/local/bin/tms-deploy",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,restrict $DEPLOY_KEY
+EOF
+    chmod 600 /home/deploy/.ssh/authorized_keys
+fi
+chown -R deploy:deploy /home/deploy/.ssh
+
+# `rsync` serve al wrapper per sincronizzare i file ricevuti.
+apt-get install -y rsync
+
+# ── 11. CloudWatch Agent (issue #19) ─────────────────────────────────────
+# Legge la config dal SSM Parameter Store creato da Terraform. L'instance
+# profile EC2 (issue #17) ha già CloudWatchAgentServerPolicy attaccata.
+CW_AGENT_DEB=/tmp/amazon-cloudwatch-agent.deb
+curl -fsSL -o "$CW_AGENT_DEB" https://s3.${region}.amazonaws.com/amazoncloudwatch-agent-${region}/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+dpkg -i -E "$CW_AGENT_DEB"
+rm -f "$CW_AGENT_DEB"
+
+# Fetch config + start. `-s` = also start; `-c` = source; `ssm:` = param name.
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+    -a fetch-config \
+    -m ec2 \
+    -c ssm:/tms/${environment}/cloudwatch-agent-config \
+    -s || echo "[$(date -Iseconds)] CW Agent config fetch failed (SSM param not yet created?)"
+
+# ── 5. UFW firewall ─────────────────────────────────────────────────────
+# Allinea il firewall dell'host al Security Group AWS (difesa in profondità).
+ufw default deny incoming
+ufw default allow outgoing
+# L'SSH è ristretto via SG, ma aggiungiamo anche UFW per sicurezza:
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+
+# ── 6. fail2ban per SSH ──────────────────────────────────────────────────
+# 5 tentativi SSH sbagliati in 10 min → ban 1 ora.
+cat > /etc/fail2ban/jail.d/ssh.local <<'EOF'
+[sshd]
+enabled = true
+port = ssh
+maxretry = 5
+findtime = 600
+bantime = 3600
+EOF
+systemctl enable --now fail2ban
+
+# ── 7. certbot (snap — metodo raccomandato da Let's Encrypt su Ubuntu) ──
+snap install core
+snap refresh core
+snap install --classic certbot
+ln -sf /snap/bin/certbot /usr/local/bin/certbot
+
+# Hook per ricarica nginx container dopo rinnovo (Let's Encrypt fa renew
+# automatici via timer di systemd `snap.certbot.renew.timer`).
+mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+cat > /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh <<'EOF'
+#!/bin/bash
+# Ricarica il container nginx quando certbot rinnova un certificato.
+# Il container monta /etc/letsencrypt in read-only e legge i nuovi file.
+if command -v docker >/dev/null 2>&1; then
+    cd /opt/tms 2>/dev/null && docker compose exec -T nginx nginx -s reload 2>/dev/null || true
+fi
+EOF
+chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+
+# NOTA: il PRIMO certificato deve essere richiesto manualmente DOPO che il DNS
+# risolve correttamente (vedi output `dns_instructions` di terraform).
+# Comando one-shot, da eseguire via SSH:
+#
+#   sudo certbot certonly --standalone \
+#     -d ${app_fqdn} -d ${api_fqdn} \
+#     -m ${admin_email} --agree-tos -n
+#
+# Non lo eseguiamo qui perché:
+#   a) il DNS potrebbe non essere ancora propagato al primo boot
+#   b) prima richiesta richiede che nginx NON sia in ascolto sulla 80
+#      (certbot usa `standalone`), quindi l'ordine è: DNS OK → certbot →
+#      poi docker compose up del nginx.
+
+# ── 8. Template .env iniziale ───────────────────────────────────────────
+# Questo file minimo fa partire il docker compose anche senza deploy CI/CD:
+# la CI/CD lo sovrascrive con valori completi (JWT_SECRET da GitHub Secrets).
+if [ ! -f /opt/tms/.env ]; then
+    cat > /opt/tms/.env <<EOF
+ENVIRONMENT=${environment}
+DB_NAME=loginbusiness
+MONGO_URL=mongodb://mongo:27017
+REDIS_URL=redis://redis:6379/0
+RATE_LIMIT_STORAGE_URI=redis://redis:6379/0
+JWT_SECRET=PLACEHOLDER-CHANGE-ME-BEFORE-STARTING-GENERATE-WITH-openssl-rand-hex-32
+JWT_ACCESS_TTL_MINUTES=15
+JWT_REFRESH_TTL_DAYS=7
+CORS_ORIGINS=https://${app_fqdn},https://${api_fqdn}
+SECURE_COOKIES=true
+ENABLE_GPS_SIMULATION=false
+LOG_LEVEL=INFO
+IMAGE_TAG=prod-latest
+# Bucket S3 iniettati da Terraform (issue #17)
+BACKUPS_BUCKET=${backups_bucket}
+INVOICES_BUCKET=${invoices_bucket}
+AWS_REGION=${region}
+EOF
+    chmod 640 /opt/tms/.env
+    chown deploy:deploy /opt/tms/.env
+fi
+
+# ── 10. Cron settimanale per dump MongoDB su S3 ──────────────────────────
+# Lo script /opt/tms/scripts/backup_mongo.sh viene sincronizzato dalla CI/CD
+# (issue #18) al primo deploy. Il cron dopo la prima apply non fallisce anche
+# se lo script non c'è ancora: cron passa un warning sul missing file che
+# ignoriamo. Il primo run utile sarà la domenica successiva al primo deploy.
+cat > /etc/cron.d/tms-backup-mongo <<'EOF'
+# m h dom mon dow user command
+# Domenica alle 02:00 UTC (mongo è low-traffic di notte).
+0 2 * * 0 root /opt/tms/scripts/backup_mongo.sh >> /var/log/tms-backup-mongo.log 2>&1
+EOF
+chmod 644 /etc/cron.d/tms-backup-mongo
+
+# logrotate per il log del backup (evita che cresca all'infinito).
+cat > /etc/logrotate.d/tms-backup-mongo <<'EOF'
+/var/log/tms-backup-mongo.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 root root
+}
+EOF
+
+# ── 9. Completamento ────────────────────────────────────────────────────
+touch /var/log/tms-user-data.done
+echo "[$(date -Iseconds)] cloud-init DONE successfully"
+
+# Promemoria per il primo SSH dopo provisioning:
+cat > /etc/motd <<'EOF'
+╔═══════════════════════════════════════════════════════════════╗
+║   LoginBusiness TMS — host EC2                                ║
+║                                                               ║
+║   Primo setup una tantum (dopo aver configurato DNS):         ║
+║     sudo certbot certonly --standalone \                      ║
+║       -d <app_fqdn> -d <api_fqdn> \                           ║
+║       -m <admin_email> --agree-tos -n                         ║
+║                                                               ║
+║   Deploy (normalmente via CI/CD):                             ║
+║     cd /opt/tms                                               ║
+║     # .env va completato con JWT_SECRET reale                 ║
+║     docker compose -f docker-compose.yml \                    ║
+║                    -f docker-compose.prod.yml pull            ║
+║     docker compose -f docker-compose.yml \                    ║
+║                    -f docker-compose.prod.yml up -d           ║
+║                                                               ║
+║   Log user_data: sudo cat /var/log/tms-user-data.log          ║
+║   Status:        ls -la /var/log/tms-user-data.done           ║
+╚═══════════════════════════════════════════════════════════════╝
+EOF

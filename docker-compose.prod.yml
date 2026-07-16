@@ -1,0 +1,82 @@
+# docker-compose.prod.yml — override per host EC2 (issue #15-#19).
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Differenze rispetto al compose base:
+#   - nginx monta i certificati Let's Encrypt letti dall'host (gestiti da
+#     certbot, vedi user_data cloud-init issue #16) e espone anche la 443.
+#   - Restart policy `always` (contrappone a `unless-stopped` del dev).
+#   - Volume mongo puntato sul device EBS separato (`/data/mongo` sull'host,
+#     montato in user_data).
+#   - Resource limits: evitano che un container esaurisca la memoria della
+#     t3.small (2 GB totali).
+#   - Logging JSON driver con rotazione (evita log file illimitati).
+
+services:
+  nginx:
+    image: ghcr.io/gcaporossi-wheretech/loginbusiness/frontend:${IMAGE_TAG:-prod-latest}
+    pull_policy: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certificati Let's Encrypt gestiti da certbot sull'host (issue #16).
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Webroot ACME per renew http-01 challenge.
+      - /var/www/certbot:/var/www/certbot:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    image: ghcr.io/gcaporossi-wheretech/loginbusiness/backend:${IMAGE_TAG:-prod-latest}
+    pull_policy: always
+    # In prod le env vars vengono da .env dell'host (create in user_data o
+    # via scp durante il primo deploy) oppure da AWS SSM Parameter Store.
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mongo:
+    volumes:
+      # In prod monta il volume EBS dedicato /data (issue #15 + #16 formattano
+      # e montano /dev/nvme1n1 su /data via fstab).
+      - /data/mongo:/data/db
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
