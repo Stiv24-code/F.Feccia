@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
-  useGetGaragesQuery,
-  useCreateGarageMutation,
-  useUpdateGarageMutation,
-  useDeleteGarageMutation,
+  useGetWashStationsQuery,
+  useCreateWashStationMutation,
+  useUpdateWashStationMutation,
+  useDeleteWashStationMutation,
 } from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
@@ -17,15 +17,15 @@ import { Pencil, Trash2 } from 'lucide-react';
 
 const emptyForm = { nome: '', indirizzo: '', citta: '', lat: null, lng: null, note: '' };
 
-export default function GaragesPage() {
+export default function WashStationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
 
-  const { data = [], isLoading: loading } = useGetGaragesQuery();
-  const [createGarage, { isLoading: creating }] = useCreateGarageMutation();
-  const [updateGarage, { isLoading: updating }] = useUpdateGarageMutation();
-  const [deleteGarage] = useDeleteGarageMutation();
+  const { data = [], isLoading: loading } = useGetWashStationsQuery();
+  const [createWashStation, { isLoading: creating }] = useCreateWashStationMutation();
+  const [updateWashStation, { isLoading: updating }] = useUpdateWashStationMutation();
+  const [deleteWashStation] = useDeleteWashStationMutation();
   const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
@@ -34,21 +34,21 @@ export default function GaragesPage() {
   const handleSave = async () => {
     if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
     try {
-      if (editId) { await updateGarage({ id: editId, body: form }).unwrap(); toast.success('Garage aggiornato'); } else { await createGarage(form).unwrap(); toast.success('Garage creato'); }
+      if (editId) { await updateWashStation({ id: editId, body: form }).unwrap(); toast.success('Punto di lavaggio aggiornato'); } else { await createWashStation(form).unwrap(); toast.success('Punto di lavaggio creato'); }
       setDialogOpen(false);
     } catch (e) { toast.error('Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare?')) return;
-    try { await deleteGarage(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
+    try { await deleteWashStation(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const columns = [{ key: 'nome', label: 'Nome' }, { key: 'citta', label: 'Città' }, { key: 'actions', label: '', className: 'w-20' }];
 
   return (
-    <div data-testid="garages-page">
-      <DataTable columns={columns} data={data} loading={loading} searchValue="" onSearchChange={() => {}} onAdd={openNew} addLabel="Nuovo Garage" testId="masterdata-table"
+    <div data-testid="wash-stations-page">
+      <DataTable columns={columns} data={data} loading={loading} searchValue="" onSearchChange={() => {}} onAdd={openNew} addLabel="Nuovo Punto di Lavaggio" testId="masterdata-table"
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>
@@ -57,7 +57,7 @@ export default function GaragesPage() {
           </TableRow>
         )}
       />
-      <FormDialog open={dialogOpen} onClose={setDialogOpen} title={editId ? 'Modifica Garage' : 'Nuovo Garage'} onSubmit={handleSave} loading={saving}>
+      <FormDialog open={dialogOpen} onClose={setDialogOpen} title={editId ? 'Modifica Punto di Lavaggio' : 'Nuovo Punto di Lavaggio'} onSubmit={handleSave} loading={saving}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} required /></div>
           <div className="space-y-1.5"><Label>Indirizzo</Label><Input value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} /></div>

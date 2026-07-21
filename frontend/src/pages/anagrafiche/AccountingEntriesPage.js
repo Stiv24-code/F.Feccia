@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getAccountingEntries, createAccountingEntry, updateAccountingEntry, deleteAccountingEntry } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetAccountingEntriesQuery,
+  useCreateAccountingEntryMutation,
+  useUpdateAccountingEntryMutation,
+  useDeleteAccountingEntryMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -14,19 +19,16 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { codice: '', descrizione: '', tipo: 'ricavo', conto_contabile: '', iva_codice: 'N8' };
 
 export default function AccountingEntriesPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    getAccountingEntries({ search }).then(r => setData(r.data)).finally(() => setLoading(false));
-  }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetAccountingEntriesQuery(search);
+  const [createAccountingEntry, { isLoading: creating }] = useCreateAccountingEntryMutation();
+  const [updateAccountingEntry, { isLoading: updating }] = useUpdateAccountingEntryMutation();
+  const [deleteAccountingEntry] = useDeleteAccountingEntryMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => {
@@ -39,17 +41,16 @@ export default function AccountingEntriesPage() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateAccountingEntry(editId, form); toast.success('Voce aggiornata'); }
-      else { await createAccountingEntry(form); toast.success('Voce creata'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); } finally { setSaving(false); }
+      if (editId) { await updateAccountingEntry({ id: editId, body: form }).unwrap(); toast.success('Voce aggiornata'); }
+      else { await createAccountingEntry(form).unwrap(); toast.success('Voce creata'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error(e?.data?.detail || 'Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questa voce contabile?')) return;
-    try { await deleteAccountingEntry(id); toast.success('Eliminata'); fetchData(); }
+    try { await deleteAccountingEntry(id).unwrap(); toast.success('Eliminata'); }
     catch (e) { toast.error('Errore'); }
   };
 

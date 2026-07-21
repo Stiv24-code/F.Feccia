@@ -16,6 +16,8 @@ type Destination struct {
 	Cap            string    `gorm:"type:varchar(20)" json:"cap"`
 	Provincia      string    `gorm:"type:varchar(50)" json:"provincia"`
 	Nazione        string    `gorm:"type:varchar(100);default:Italia" json:"nazione"`
+	Lat            *float64  `gorm:"not null" json:"lat"`
+	Lng            *float64  `gorm:"not null" json:"lng"`
 	VincoliScarico string    `gorm:"type:text" json:"vincoli_scarico"`
 	Note           string    `gorm:"type:text" json:"note"`
 	Active         bool      `gorm:"not null;default:true;index:idx_destinations_active_nome,priority:1" json:"active"`

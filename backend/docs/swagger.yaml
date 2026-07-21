@@ -411,6 +411,10 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        type: number
+      lng:
+        type: number
       nazione:
         type: string
       nome:
@@ -422,6 +426,8 @@ definitions:
       vincoli_scarico:
         type: string
     required:
+    - lat
+    - lng
     - nome
     type: object
   dto.DestinationResponse:
@@ -438,6 +444,10 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        type: number
+      lng:
+        type: number
       nazione:
         type: string
       nome:
@@ -658,11 +668,17 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        type: number
+      lng:
+        type: number
       nome:
         type: string
       note:
         type: string
     required:
+    - lat
+    - lng
     - nome
     type: object
   dto.GarageResponse:
@@ -677,6 +693,10 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        type: number
+      lng:
+        type: number
       nome:
         type: string
       note:
@@ -1774,6 +1794,48 @@ definitions:
       id:
         type: string
       nome:
+        type: string
+    type: object
+  dto.WashStationRequest:
+    properties:
+      citta:
+        type: string
+      indirizzo:
+        type: string
+      lat:
+        type: number
+      lng:
+        type: number
+      nome:
+        type: string
+      note:
+        type: string
+    required:
+    - lat
+    - lng
+    - nome
+    type: object
+  dto.WashStationResponse:
+    properties:
+      active:
+        type: boolean
+      citta:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      indirizzo:
+        type: string
+      lat:
+        type: number
+      lng:
+        type: number
+      nome:
+        type: string
+      note:
+        type: string
+      updated_at:
         type: string
     type: object
   models.User:
@@ -4826,6 +4888,111 @@ paths:
       summary: Update vehicle GPS position by targa
       tags:
       - Vehicles
+  /api/v1/wash-stations:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.WashStationResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List wash stations
+      tags:
+      - WashStations
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Wash station data
+        in: body
+        name: washStation
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WashStationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.WashStationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create wash station
+      tags:
+      - WashStations
+  /api/v1/wash-stations/{id}:
+    delete:
+      parameters:
+      - description: Wash station ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete wash station (logical, sets active=false)
+      tags:
+      - WashStations
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Wash station ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Wash station data
+        in: body
+        name: washStation
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WashStationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WashStationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update wash station (full replace)
+      tags:
+      - WashStations
   /api/v1/webhooks/gps/{vendor}:
     post:
       consumes:

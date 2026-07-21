@@ -599,6 +599,88 @@ func (mr *MockGarageMockRecorder) Update(ctx, id, req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockGarage)(nil).Update), ctx, id, req)
 }
 
+// MockWashStation is a mock of WashStation interface.
+type MockWashStation struct {
+	ctrl     *gomock.Controller
+	recorder *MockWashStationMockRecorder
+}
+
+// MockWashStationMockRecorder is the mock recorder for MockWashStation.
+type MockWashStationMockRecorder struct {
+	mock *MockWashStation
+}
+
+// NewMockWashStation creates a new mock instance.
+func NewMockWashStation(ctrl *gomock.Controller) *MockWashStation {
+	mock := &MockWashStation{ctrl: ctrl}
+	mock.recorder = &MockWashStationMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWashStation) EXPECT() *MockWashStationMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockWashStation) Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret0, _ := ret[0].(*dto.WashStationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockWashStationMockRecorder) Create(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockWashStation)(nil).Create), ctx, req)
+}
+
+// Delete mocks base method.
+func (m *MockWashStation) Delete(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockWashStationMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockWashStation)(nil).Delete), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockWashStation) List(ctx context.Context) ([]dto.WashStationResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx)
+	ret0, _ := ret[0].([]dto.WashStationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockWashStationMockRecorder) List(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockWashStation)(nil).List), ctx)
+}
+
+// Update mocks base method.
+func (m *MockWashStation) Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, req)
+	ret0, _ := ret[0].(*dto.WashStationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockWashStationMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockWashStation)(nil).Update), ctx, id, req)
+}
+
 // MockDriver is a mock of Driver interface.
 type MockDriver struct {
 	ctrl     *gomock.Controller

@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { getVehicleTemperature, setVehicleTemperatureThresholds } from '@/lib/api';
 import {
-  getVehicles, createVehicle, updateVehicle, deleteVehicle,
-  getVehicleTemperature, setVehicleTemperatureThresholds,
-} from '@/lib/api';
+  useGetVehiclesQuery,
+  useCreateVehicleMutation,
+  useUpdateVehicleMutation,
+  useDeleteVehicleMutation,
+} from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
@@ -21,13 +24,16 @@ import { format, parseISO, isValid } from 'date-fns';
 const emptyForm = { targa: '', tipo_veicolo: 'motrice', marca: '', modello: '', anno: 0, scompartature: 1, portata_kg: 0, note: '', gps_tracker_url: '', gps_tracker_tipo: '' };
 
 export default function VehiclesPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
+
+  const { data = [], isLoading: loading, refetch } = useGetVehiclesQuery(search);
+  const [createVehicle, { isLoading: creating }] = useCreateVehicleMutation();
+  const [updateVehicle, { isLoading: updating }] = useUpdateVehicleMutation();
+  const [deleteVehicle] = useDeleteVehicleMutation();
+  const saving = creating || updating;
 
   // Temperatura cisterna (#38)
   const [tempDialog, setTempDialog] = useState(null);  // veicolo selezionato
@@ -36,25 +42,20 @@ export default function VehiclesPage() {
   const [tempForm, setTempForm] = useState({ temp_min: '', temp_max: '' });
   const [tempSaving, setTempSaving] = useState(false);
 
-  // API imports e state setters sono riferimenti stabili in React
-  const fetchData = useCallback(() => { setLoading(true); getVehicles(search).then(r => setData(r.data)).finally(() => setLoading(false)); }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
-
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => { setForm({ targa: item.targa, tipo_veicolo: item.tipo_veicolo || 'motrice', marca: item.marca || '', modello: item.modello || '', anno: item.anno || 0, scompartature: item.scompartature || 1, portata_kg: item.portata_kg || 0, note: item.note || '', gps_tracker_url: item.gps_tracker_url || '', gps_tracker_tipo: item.gps_tracker_tipo || '' }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateVehicle(editId, form); toast.success('Veicolo aggiornato'); }
-      else { await createVehicle(form); toast.success('Veicolo creato'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error('Errore'); } finally { setSaving(false); }
+      if (editId) { await updateVehicle({ id: editId, body: form }).unwrap(); toast.success('Veicolo aggiornato'); }
+      else { await createVehicle(form).unwrap(); toast.success('Veicolo creato'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error('Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questo veicolo?')) return;
-    try { await deleteVehicle(id); toast.success('Eliminato'); fetchData(); } catch(e) { toast.error('Errore'); }
+    try { await deleteVehicle(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const openTemp = async (vehicle) => {
@@ -85,7 +86,7 @@ export default function VehiclesPage() {
       await setVehicleTemperatureThresholds(tempDialog.id, payload);
       toast.success('Soglie aggiornate');
       setTempDialog(null);
-      fetchData();
+      refetch();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Errore salvataggio soglie');
     } finally {

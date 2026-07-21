@@ -95,6 +95,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Destination{},
 		&models.Carrier{},
 		&models.Garage{},
+		&models.WashStation{},
 		&models.Driver{},
 		&models.Product{},
 		&models.VehicleType{},

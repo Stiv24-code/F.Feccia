@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getTrips, createTrip, getTrip, completeTrip, recomputeTripSegments, downloadTripInstructionsPdf, getOrders, getVehicles, getDrivers, getCarriers, getGarages } from '@/lib/api';
 import { FileText } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { Plus, Route, Eye, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Eye, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function TripsPage() {
   const [trips, setTrips] = useState([]);

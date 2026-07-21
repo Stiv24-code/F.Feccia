@@ -2,10 +2,13 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 // VITE_BACKEND_URL viene iniettata al build (production) o letta da .env (dev).
-// Se vuota → URL relativi (`/api/...`), così in dev Vite proxia /api al backend
-// locale e in prod nginx serve sia SPA sia /api dallo stesso host.
+// Se vuota → URL relativi (`/api/v1/...`), così in dev Vite proxia /api al
+// backend locale e in prod nginx serve sia SPA sia /api dallo stesso host.
+// nginx (dev.conf e default.conf) fa passthrough 1:1 su /api/*, quindi il
+// prefisso /v1 lo mettiamo qui — le route Go vivono sotto /api/v1 (vedi
+// anche src/api/, il client generato da swagger che usa gli stessi path pieni).
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
+const API = `${BACKEND_URL}/api/v1`;
 
 // Crea un'istanza axios con credentials abilitate (per il cookie refresh httpOnly).
 const api = axios.create({
@@ -21,69 +24,78 @@ export const setAccessToken = (token) => { accessToken = token || null; };
 export const getAccessToken = () => accessToken;
 export const setOnAuthFailure = (fn) => { onAuthFailure = fn; };
 
-// ─── Request interceptor: aggiunge Authorization: Bearer se presente ───
-api.interceptors.request.use((config) => {
-  if (accessToken) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return config;
-});
-
-// ─── Response interceptor ───
-// Due comportamenti automatici:
-//   1. su 401 (token scaduto) tenta un refresh dedupato e ripropone la richiesta
-//   2. su 429 (rate limit) mostra un toast con il tempo d'attesa estratto
-//      dall'header Retry-After del backend
+// ─── Interceptor auth condivisi ───
+// Estratti in una funzione applicabile a più istanze axios (questa `api` +
+// l'HttpClient del client generato da swagger in src/lib/apiClient.ts), così
+// il token in memoria, il refresh dedupato e il feedback 429 restano un'unica
+// fonte di verità invece di duplicare la logica per ogni client.
+//
+//   1. request: aggiunge Authorization: Bearer se presente
+//   2. response: su 401 (token scaduto) tenta un refresh dedupato e ripropone
+//      la richiesta; su 429 (rate limit) mostra un toast con il tempo
+//      d'attesa estratto dall'header Retry-After del backend
 let refreshInFlight = null;
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const original = error.config;
-    const status = error.response?.status;
 
-    // Rate limit: lasciamo propagare l'errore ma diamo feedback immediato
-    // all'utente. Il messaggio backend in `detail` è gia' specifico se presente.
-    if (status === 429) {
-      const retryAfter = Number(error.response?.headers?.['retry-after']) || 0;
-      const waitMsg = retryAfter > 0
-        ? `Riprova tra ${retryAfter} secondi.`
-        : 'Riprova tra qualche minuto.';
-      toast.error('Troppi tentativi', { description: waitMsg });
-      return Promise.reject(error);
+export const attachAuthInterceptors = (instance) => {
+  instance.interceptors.request.use((config) => {
+    if (accessToken) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
+    return config;
+  });
 
-    const isAuthEndpoint =
-      original?.url?.includes('/auth/login') ||
-      original?.url?.includes('/auth/refresh');
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const original = error.config;
+      const status = error.response?.status;
 
-    if (status !== 401 || original?._retry || isAuthEndpoint) {
-      return Promise.reject(error);
-    }
-
-    original._retry = true;
-    try {
-      // Dedup: se un refresh è già in corso, riusa la stessa Promise
-      if (!refreshInFlight) {
-        refreshInFlight = api.post('/auth/refresh').finally(() => {
-          refreshInFlight = null;
-        });
+      // Rate limit: lasciamo propagare l'errore ma diamo feedback immediato
+      // all'utente. Il messaggio backend in `detail` è gia' specifico se presente.
+      if (status === 429) {
+        const retryAfter = Number(error.response?.headers?.['retry-after']) || 0;
+        const waitMsg = retryAfter > 0
+          ? `Riprova tra ${retryAfter} secondi.`
+          : 'Riprova tra qualche minuto.';
+        toast.error('Troppi tentativi', { description: waitMsg });
+        return Promise.reject(error);
       }
-      const res = await refreshInFlight;
-      if (res?.data?.access_token) {
-        accessToken = res.data.access_token;
-        original.headers = original.headers || {};
-        original.headers.Authorization = `Bearer ${accessToken}`;
-        return api(original);
+
+      const isAuthEndpoint =
+        original?.url?.includes('/auth/login') ||
+        original?.url?.includes('/auth/refresh');
+
+      if (status !== 401 || original?._retry || isAuthEndpoint) {
+        return Promise.reject(error);
       }
-      throw new Error('refresh senza access_token');
-    } catch (refreshErr) {
-      accessToken = null;
-      if (typeof onAuthFailure === 'function') onAuthFailure();
-      return Promise.reject(refreshErr);
-    }
-  },
-);
+
+      original._retry = true;
+      try {
+        // Dedup: se un refresh è già in corso, riusa la stessa Promise
+        if (!refreshInFlight) {
+          refreshInFlight = api.post('/auth/refresh').finally(() => {
+            refreshInFlight = null;
+          });
+        }
+        const res = await refreshInFlight;
+        if (res?.data?.access_token) {
+          accessToken = res.data.access_token;
+          original.headers = original.headers || {};
+          original.headers.Authorization = `Bearer ${accessToken}`;
+          return instance(original);
+        }
+        throw new Error('refresh senza access_token');
+      } catch (refreshErr) {
+        accessToken = null;
+        if (typeof onAuthFailure === 'function') onAuthFailure();
+        return Promise.reject(refreshErr);
+      }
+    },
+  );
+};
+
+attachAuthInterceptors(api);
 
 // Auth
 export const login = (data) => api.post('/auth/login', data);
@@ -100,29 +112,16 @@ export const deleteProfile = (id) => api.delete(`/admin/profiles/${id}`);
 export const getAdminUsers = () => api.get('/admin/users');
 export const updateAdminUser = (id, data) => api.patch(`/admin/users/${id}`, data);
 
-// Dashboard
-export const getDashboardStats = () => api.get('/dashboard/stats');
-export const getRecentOrders = () => api.get('/dashboard/recent-orders');
-// Cruscotto commerciale per cliente (issue #30)
-export const getCustomerDashboard = (customerId) => api.get(`/dashboard/customer/${customerId}`);
+// Dashboard e CRUD clienti: migrati su RTK Query (src/store/api/appApi.ts,
+// client generato da swagger).
 
-// Customers
-export const getCustomers = (search = '') => api.get(`/customers?search=${search}`);
-export const createCustomer = (data) => api.post('/customers', data);
-export const updateCustomer = (id, data) => api.put(`/customers/${id}`, data);
-export const deleteCustomer = (id) => api.delete(`/customers/${id}`);
-
-// Destinations
+// Destinations, Vehicles, Drivers, Carriers, Products, Garages: CRUD
+// migrato su RTK Query (src/store/api/appApi.ts). Le liste restano qui
+// perché usate anche da pagine non ancora migrate (Orders, PriceLists,
+// Planner, Trips).
 export const getDestinations = (search = '') => api.get(`/destinations?search=${search}`);
-export const createDestination = (data) => api.post('/destinations', data);
-export const updateDestination = (id, data) => api.put(`/destinations/${id}`, data);
-export const deleteDestination = (id) => api.delete(`/destinations/${id}`);
 
-// Vehicles
 export const getVehicles = (search = '') => api.get(`/vehicles?search=${search}`);
-export const createVehicle = (data) => api.post('/vehicles', data);
-export const updateVehicle = (id, data) => api.put(`/vehicles/${id}`, data);
-export const deleteVehicle = (id) => api.delete(`/vehicles/${id}`);
 // Temperatura cisterna (issue #38)
 export const getVehicleTemperature = (id, params = {}) => {
   const qs = new URLSearchParams();
@@ -132,29 +131,13 @@ export const getVehicleTemperature = (id, params = {}) => {
 export const setVehicleTemperatureThresholds = (id, data) =>
   api.patch(`/vehicles/${id}/temperature-thresholds`, data);
 
-// Drivers
 export const getDrivers = (search = '') => api.get(`/drivers?search=${search}`);
-export const createDriver = (data) => api.post('/drivers', data);
-export const updateDriver = (id, data) => api.put(`/drivers/${id}`, data);
-export const deleteDriver = (id) => api.delete(`/drivers/${id}`);
 
-// Carriers
 export const getCarriers = (search = '') => api.get(`/carriers?search=${search}`);
-export const createCarrier = (data) => api.post('/carriers', data);
-export const updateCarrier = (id, data) => api.put(`/carriers/${id}`, data);
-export const deleteCarrier = (id) => api.delete(`/carriers/${id}`);
 
-// Products
 export const getProducts = (search = '') => api.get(`/products?search=${search}`);
-export const createProduct = (data) => api.post('/products', data);
-export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
-export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
-// Garages
 export const getGarages = () => api.get('/garages');
-export const createGarage = (data) => api.post('/garages', data);
-export const updateGarage = (id, data) => api.put(`/garages/${id}`, data);
-export const deleteGarage = (id) => api.delete(`/garages/${id}`);
 
 // Vehicle Types
 export const getVehicleTypes = () => api.get('/vehicle-types');
@@ -231,25 +214,8 @@ export const downloadInvoicePdf = (id) => api.get(`/invoices/${id}/pdf`, { respo
 // il chiamante deve fare fallback a downloadInvoicePdf.
 export const getInvoicePdfUrl = (id) => api.get(`/invoices/${id}/pdf-url`);
 
-// Anagrafiche extra (#29): Nazioni, Banche, Voci Contabili
-export const getCountries = (search = '') => api.get(`/countries?search=${search}`);
-export const createCountry = (data) => api.post('/countries', data);
-export const updateCountry = (id, data) => api.put(`/countries/${id}`, data);
-export const deleteCountry = (id) => api.delete(`/countries/${id}`);
-
-export const getBanks = (search = '') => api.get(`/banks?search=${search}`);
-export const createBank = (data) => api.post('/banks', data);
-export const updateBank = (id, data) => api.put(`/banks/${id}`, data);
-export const deleteBank = (id) => api.delete(`/banks/${id}`);
-
-export const getAccountingEntries = (params = {}) => {
-  const qs = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
-  return api.get(`/accounting-entries?${qs.toString()}`);
-};
-export const createAccountingEntry = (data) => api.post('/accounting-entries', data);
-export const updateAccountingEntry = (id, data) => api.put(`/accounting-entries/${id}`, data);
-export const deleteAccountingEntry = (id) => api.delete(`/accounting-entries/${id}`);
+// Anagrafiche extra (#29): Nazioni, Banche, Voci Contabili — CRUD completo
+// migrato su RTK Query (src/store/api/appApi.ts).
 
 // Export
 export const exportOrdersExcel = (params = {}) => {

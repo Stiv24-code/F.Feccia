@@ -13,6 +13,8 @@ import (
 	"fratelli-feccia/internal/models"
 )
 
+func ptr(v float64) *float64 { return &v }
+
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -29,7 +31,7 @@ func TestDestinationService_CreateDefaultsNazione(t *testing.T) {
 	ctx := context.Background()
 	svc := NewDestinationService(newTestDB(t))
 
-	resp, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Nord"})
+	resp, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Nord", Lat: ptr(45.0), Lng: ptr(9.0)})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -45,11 +47,11 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 	ctx := context.Background()
 	svc := NewDestinationService(newTestDB(t))
 
-	nord, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Nord"})
+	nord, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Nord", Lat: ptr(45.0), Lng: ptr(9.0)})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Sud"}); err != nil {
+	if _, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Sud", Lat: ptr(41.0), Lng: ptr(12.0)}); err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
 	if err := svc.Delete(ctx, nord.ID); err != nil {
@@ -100,7 +102,7 @@ func TestDestinationService_Delete_IsLogical(t *testing.T) {
 	ctx := context.Background()
 	svc := NewDestinationService(newTestDB(t))
 
-	created, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Est"})
+	created, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Est", Lat: ptr(45.0), Lng: ptr(9.0)})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}

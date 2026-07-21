@@ -6,9 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// Garage represents a depot / start-end point for trips (garage/deposito).
-// Deletion is logical (Active=false), mirroring backend/routers/garages.py.
-type Garage struct {
+// WashStation represents a tank/trailer washing point (punto di lavaggio):
+// a location a trip can route through, or start from, but never a pickup or
+// discharge point (those live on Destination). Deletion is logical
+// (Active=false), mirroring Garage/Destination.
+type WashStation struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
 	Nome      string    `gorm:"type:varchar(255);not null" json:"nome" validate:"required"`
 	Indirizzo string    `gorm:"type:varchar(255)" json:"indirizzo"`

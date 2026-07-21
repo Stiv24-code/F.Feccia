@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getOrders, createOrder, deleteOrder, downloadOrderCmrPdf, getReturnSuggestions, getCustomers, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
+import { getOrders, createOrder, deleteOrder, downloadOrderCmrPdf, getReturnSuggestions, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
+import { useGetCustomersQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,9 +34,8 @@ export default function OrdersPage() {
   const [returnsData, setReturnsData] = useState(null);
 
   // Lookup data
-  const [customers, setCustomers] = useState([]);
+  const { data: customers = [] } = useGetCustomersQuery();
   const [destinations, setDestinations] = useState([]);
-  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const [form, setForm] = useState({
@@ -60,11 +60,9 @@ export default function OrdersPage() {
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   useEffect(() => {
-    Promise.all([getCustomers(), getDestinations(), getProducts(), getTransportCategories()])
-      .then(([c, d, p, cat]) => {
-        setCustomers(c.data);
+    Promise.all([getDestinations(), getProducts(), getTransportCategories()])
+      .then(([d, , cat]) => {
         setDestinations(d.data);
-        setProducts(p.data);
         setCategories(cat.data);
       });
   }, []);

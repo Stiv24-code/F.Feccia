@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getCarriers, createCarrier, updateCarrier, deleteCarrier } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetCarriersQuery,
+  useCreateCarrierMutation,
+  useUpdateCarrierMutation,
+  useDeleteCarrierMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -12,32 +17,30 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { ragione_sociale: '', partita_iva: '', indirizzo: '', citta: '', telefono: '', email: '', note: '' };
 
 export default function CarriersPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  // API imports e state setters sono riferimenti stabili in React
-  const fetchData = useCallback(() => { setLoading(true); getCarriers(search).then(r => setData(r.data)).finally(() => setLoading(false)); }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetCarriersQuery(search);
+  const [createCarrier, { isLoading: creating }] = useCreateCarrierMutation();
+  const [updateCarrier, { isLoading: updating }] = useUpdateCarrierMutation();
+  const [deleteCarrier] = useDeleteCarrierMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => { setForm({ ragione_sociale: item.ragione_sociale, partita_iva: item.partita_iva || '', indirizzo: item.indirizzo || '', citta: item.citta || '', telefono: item.telefono || '', email: item.email || '', note: item.note || '' }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateCarrier(editId, form); toast.success('Vettore aggiornato'); } else { await createCarrier(form); toast.success('Vettore creato'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error('Errore'); } finally { setSaving(false); }
+      if (editId) { await updateCarrier({ id: editId, body: form }).unwrap(); toast.success('Vettore aggiornato'); } else { await createCarrier(form).unwrap(); toast.success('Vettore creato'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error('Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questo vettore?')) return;
-    try { await deleteCarrier(id); toast.success('Eliminato'); fetchData(); } catch(e) { toast.error('Errore'); }
+    try { await deleteCarrier(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const columns = [{ key: 'ragione_sociale', label: 'Ragione Sociale' }, { key: 'citta', label: 'Città' }, { key: 'telefono', label: 'Telefono' }, { key: 'actions', label: '', className: 'w-20' }];

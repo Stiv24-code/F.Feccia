@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { formatEuro } from '@/lib/format';
-import { getDashboardStats, getRecentOrders } from '@/lib/api';
+import { useGetDashboardStatsQuery, useGetRecentOrdersQuery } from '@/store/api/appApi';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClipboardList, Truck, Users, FileText, TrendingUp } from 'lucide-react';
@@ -28,14 +26,8 @@ const KPICard = ({ title, value, icon: Icon, description, testId }) => (
 );
 
 export default function DashboardPage() {
-  const statsQuery = useQuery({
-    queryKey: ['dashboard', 'stats'],
-    queryFn: async () => (await getDashboardStats()).data,
-  });
-  const ordersQuery = useQuery({
-    queryKey: ['dashboard', 'recent-orders'],
-    queryFn: async () => (await getRecentOrders()).data,
-  });
+  const statsQuery = useGetDashboardStatsQuery();
+  const ordersQuery = useGetRecentOrdersQuery();
 
   const stats = statsQuery.data;
   const orders = ordersQuery.data ?? [];

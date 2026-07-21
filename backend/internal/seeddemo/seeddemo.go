@@ -83,31 +83,31 @@ func Seed(db *gorm.DB) error {
 
 	// ─────────────────────────── DESTINAZIONI ───────────────────────────
 	destinations := []models.Destination{
-		{Nome: "Laives (BZ)", Citta: "Laives", Provincia: "BZ", Nazione: "Italia"},
-		{Nome: "Calvörde (DE)", Citta: "Calvörde", Nazione: "Germania"},
-		{Nome: "Bruxelles (BE)", Citta: "Bruxelles", Nazione: "Belgio"},
-		{Nome: "Zurigo (CH)", Citta: "Zurigo", Nazione: "Svizzera"},
-		{Nome: "Milano (MI)", Citta: "Milano", Provincia: "MI", Nazione: "Italia"},
-		{Nome: "Lodi (LO)", Citta: "Lodi", Provincia: "LO", Nazione: "Italia"},
-		{Nome: "Cuneo (CN)", Citta: "Cuneo", Provincia: "CN", Nazione: "Italia"},
-		{Nome: "Oosterhout (NL)", Citta: "Oosterhout", Nazione: "Paesi Bassi"},
-		{Nome: "Saint Denis de l'Hôtel (FR)", Citta: "Saint Denis de l'Hôtel", Nazione: "Francia"},
-		{Nome: "Rinteln (DE)", Citta: "Rinteln", Nazione: "Germania"},
-		{Nome: "Zeebrugge (BE)", Citta: "Zeebrugge", Nazione: "Belgio"},
-		{Nome: "Pevestorf (DE)", Citta: "Pevestorf", Nazione: "Germania"},
-		{Nome: "Parma (PR)", Citta: "Parma", Provincia: "PR", Nazione: "Italia"},
-		{Nome: "Bologna (BO)", Citta: "Bologna", Provincia: "BO", Nazione: "Italia"},
-		{Nome: "Roma (RM)", Citta: "Roma", Provincia: "RM", Nazione: "Italia"},
-		{Nome: "Torino (TO)", Citta: "Torino", Provincia: "TO", Nazione: "Italia"},
-		{Nome: "Verona (VR)", Citta: "Verona", Provincia: "VR", Nazione: "Italia"},
-		{Nome: "Amburgo (DE)", Citta: "Amburgo", Nazione: "Germania"},
-		{Nome: "Monaco di Baviera (DE)", Citta: "Monaco di Baviera", Nazione: "Germania"},
-		{Nome: "Lione (FR)", Citta: "Lione", Nazione: "Francia"},
-		{Nome: "Barcellona (ES)", Citta: "Barcellona", Nazione: "Spagna"},
-		{Nome: "Rotterdam (NL)", Citta: "Rotterdam", Nazione: "Paesi Bassi"},
-		{Nome: "Vienna (AT)", Citta: "Vienna", Nazione: "Austria"},
-		{Nome: "Innsbruck (AT)", Citta: "Innsbruck", Nazione: "Austria"},
-		{Nome: "Marsiglia (FR)", Citta: "Marsiglia", Nazione: "Francia"},
+		{Nome: "Laives (BZ)", Citta: "Laives", Provincia: "BZ", Nazione: "Italia", Lat: geoPtr(46.4283), Lng: geoPtr(11.3394)},
+		{Nome: "Calvörde (DE)", Citta: "Calvörde", Nazione: "Germania", Lat: geoPtr(52.3833), Lng: geoPtr(11.3000)},
+		{Nome: "Bruxelles (BE)", Citta: "Bruxelles", Nazione: "Belgio", Lat: geoPtr(50.8503), Lng: geoPtr(4.3517)},
+		{Nome: "Zurigo (CH)", Citta: "Zurigo", Nazione: "Svizzera", Lat: geoPtr(47.3769), Lng: geoPtr(8.5417)},
+		{Nome: "Milano (MI)", Citta: "Milano", Provincia: "MI", Nazione: "Italia", Lat: geoPtr(45.4642), Lng: geoPtr(9.1900)},
+		{Nome: "Lodi (LO)", Citta: "Lodi", Provincia: "LO", Nazione: "Italia", Lat: geoPtr(45.3138), Lng: geoPtr(9.5032)},
+		{Nome: "Cuneo (CN)", Citta: "Cuneo", Provincia: "CN", Nazione: "Italia", Lat: geoPtr(44.3845), Lng: geoPtr(7.5427)},
+		{Nome: "Oosterhout (NL)", Citta: "Oosterhout", Nazione: "Paesi Bassi", Lat: geoPtr(51.6439), Lng: geoPtr(4.8600)},
+		{Nome: "Saint Denis de l'Hôtel (FR)", Citta: "Saint Denis de l'Hôtel", Nazione: "Francia", Lat: geoPtr(47.9167), Lng: geoPtr(2.1333)},
+		{Nome: "Rinteln (DE)", Citta: "Rinteln", Nazione: "Germania", Lat: geoPtr(52.1867), Lng: geoPtr(9.0794)},
+		{Nome: "Zeebrugge (BE)", Citta: "Zeebrugge", Nazione: "Belgio", Lat: geoPtr(51.3333), Lng: geoPtr(3.1833)},
+		{Nome: "Pevestorf (DE)", Citta: "Pevestorf", Nazione: "Germania", Lat: geoPtr(53.0500), Lng: geoPtr(11.4333)},
+		{Nome: "Parma (PR)", Citta: "Parma", Provincia: "PR", Nazione: "Italia", Lat: geoPtr(44.8015), Lng: geoPtr(10.3279)},
+		{Nome: "Bologna (BO)", Citta: "Bologna", Provincia: "BO", Nazione: "Italia", Lat: geoPtr(44.4949), Lng: geoPtr(11.3426)},
+		{Nome: "Roma (RM)", Citta: "Roma", Provincia: "RM", Nazione: "Italia", Lat: geoPtr(41.9028), Lng: geoPtr(12.4964)},
+		{Nome: "Torino (TO)", Citta: "Torino", Provincia: "TO", Nazione: "Italia", Lat: geoPtr(45.0703), Lng: geoPtr(7.6869)},
+		{Nome: "Verona (VR)", Citta: "Verona", Provincia: "VR", Nazione: "Italia", Lat: geoPtr(45.4384), Lng: geoPtr(10.9916)},
+		{Nome: "Amburgo (DE)", Citta: "Amburgo", Nazione: "Germania", Lat: geoPtr(53.5511), Lng: geoPtr(9.9937)},
+		{Nome: "Monaco di Baviera (DE)", Citta: "Monaco di Baviera", Nazione: "Germania", Lat: geoPtr(48.1351), Lng: geoPtr(11.5820)},
+		{Nome: "Lione (FR)", Citta: "Lione", Nazione: "Francia", Lat: geoPtr(45.7640), Lng: geoPtr(4.8357)},
+		{Nome: "Barcellona (ES)", Citta: "Barcellona", Nazione: "Spagna", Lat: geoPtr(41.3874), Lng: geoPtr(2.1686)},
+		{Nome: "Rotterdam (NL)", Citta: "Rotterdam", Nazione: "Paesi Bassi", Lat: geoPtr(51.9244), Lng: geoPtr(4.4777)},
+		{Nome: "Vienna (AT)", Citta: "Vienna", Nazione: "Austria", Lat: geoPtr(48.2082), Lng: geoPtr(16.3738)},
+		{Nome: "Innsbruck (AT)", Citta: "Innsbruck", Nazione: "Austria", Lat: geoPtr(47.2692), Lng: geoPtr(11.4041)},
+		{Nome: "Marsiglia (FR)", Citta: "Marsiglia", Nazione: "Francia", Lat: geoPtr(43.2965), Lng: geoPtr(5.3698)},
 	}
 	for i := range destinations {
 		destinations[i].ID = uuid.New()
@@ -217,12 +217,23 @@ func Seed(db *gorm.DB) error {
 
 	// ─────────────────────────── GARAGE, CATEGORIE, COSTI ───────────────────────────
 	garages := []models.Garage{
-		{ID: uuid.New(), Nome: "Garage Feccia F.lli - Lodi", Indirizzo: "Via Industriale 15", Citta: "Lodi", Note: "Sede principale", Active: true},
-		{ID: uuid.New(), Nome: "Deposito Milano Rho", Indirizzo: "Via Sempione 220", Citta: "Milano", Note: "Deposito secondario", Active: true},
-		{ID: uuid.New(), Nome: "Hub Verona Interporto", Indirizzo: "Viale del Lavoro 4", Citta: "Verona", Note: "Hub intermodale", Active: true},
+		{ID: uuid.New(), Nome: "Garage Feccia F.lli - Lodi", Indirizzo: "Via Industriale 15", Citta: "Lodi", Lat: geoPtr(45.3138), Lng: geoPtr(9.5032), Note: "Sede principale", Active: true},
+		{ID: uuid.New(), Nome: "Deposito Milano Rho", Indirizzo: "Via Sempione 220", Citta: "Milano", Lat: geoPtr(45.5306), Lng: geoPtr(9.0393), Note: "Deposito secondario", Active: true},
+		{ID: uuid.New(), Nome: "Hub Verona Interporto", Indirizzo: "Viale del Lavoro 4", Citta: "Verona", Lat: geoPtr(45.3852), Lng: geoPtr(10.9296), Note: "Hub intermodale", Active: true},
 	}
 	if err := db.Create(&garages).Error; err != nil {
 		return fmt.Errorf("garage: %w", err)
+	}
+
+	washStations := []models.WashStation{
+		{ID: uuid.New(), Nome: "Autolavaggio Cisterne Lodi Sud", Indirizzo: "Via dell'Artigianato 8", Citta: "Lodi", Lat: geoPtr(45.2989), Lng: geoPtr(9.4897), Note: "Vicino alla sede", Active: true},
+		{ID: uuid.New(), Nome: "Lavaggio Cisterne Verona", Indirizzo: "Via del Commercio 12", Citta: "Verona", Lat: geoPtr(45.4000), Lng: geoPtr(10.9500), Note: "Vicino all'hub interporto", Active: true},
+		{ID: uuid.New(), Nome: "Waschanlage München", Indirizzo: "Industriestrasse 5", Citta: "Monaco di Baviera", Lat: geoPtr(48.1500), Lng: geoPtr(11.5500), Note: "Per rotte DE/AT", Active: true},
+		{ID: uuid.New(), Nome: "Station de Lavage Lyon", Indirizzo: "Rue de l'Industrie 20", Citta: "Lione", Lat: geoPtr(45.7500), Lng: geoPtr(4.8500), Note: "Per rotte FR", Active: true},
+		{ID: uuid.New(), Nome: "Waschstation Zürich", Indirizzo: "Industriestrasse 33", Citta: "Zurigo", Lat: geoPtr(47.3800), Lng: geoPtr(8.5400), Note: "Per rotte CH", Active: true},
+	}
+	if err := db.Create(&washStations).Error; err != nil {
+		return fmt.Errorf("stazioni lavaggio: %w", err)
 	}
 
 	categories := []models.TransportCategory{
@@ -247,7 +258,7 @@ func Seed(db *gorm.DB) error {
 	if err := db.Create(&accCosts).Error; err != nil {
 		return fmt.Errorf("costi accessori: %w", err)
 	}
-	fmt.Printf("✓ %d garage, %d categorie, %d costi accessori\n", len(garages), len(categories), len(accCosts))
+	fmt.Printf("✓ %d garage, %d stazioni lavaggio, %d categorie, %d costi accessori\n", len(garages), len(washStations), len(categories), len(accCosts))
 
 	// Counters are NOT pre-seeded: database.NextSequence upserts a counter
 	// at 1 on first use, and the demo orders/invoices below use their own
@@ -554,6 +565,10 @@ func randBelow(n int) int {
 // randRange mirrors Python's `a + secrets.randbelow(b - a + 1)`: inclusive [a, b].
 func randRange(a, b int) int {
 	return a + rand.IntN(b-a+1)
+}
+
+func geoPtr(v float64) *float64 {
+	return &v
 }
 
 func pick[T any](s []T) T {

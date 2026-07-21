@@ -1,6 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getCustomerDashboard } from '@/lib/api';
+import { useGetCustomerDashboardQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,11 +34,10 @@ const KPICard = ({ title, value, icon: Icon, description }) => (
 
 export default function CustomerDashboardPage() {
   const { id } = useParams();
-  const query = useQuery({
-    queryKey: ['dashboard', 'customer', id],
-    queryFn: async () => (await getCustomerDashboard(id)).data,
-    enabled: !!id,
-  });
+  const query = useGetCustomerDashboardQuery(id, { skip: !id });
+  
+
+  
 
   if (query.isLoading) {
     return (

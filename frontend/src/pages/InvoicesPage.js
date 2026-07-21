@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getInvoices, createInvoice, finalizeInvoice, deleteInvoice, downloadInvoicePdf, getInvoicePdfUrl, getOrders, getCustomers } from '@/lib/api';
+import { getInvoices, createInvoice, finalizeInvoice, deleteInvoice, downloadInvoicePdf, getInvoicePdfUrl, getOrders } from '@/lib/api';
+import { useGetCustomersQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -27,7 +26,7 @@ export default function InvoicesPage() {
   const [saving, setSaving] = useState(false);
 
   const [closedOrders, setClosedOrders] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const { data: customers = [] } = useGetCustomersQuery(undefined, { skip: !newDialogOpen });
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
   const [selectedClienteId, setSelectedClienteId] = useState('');
 
@@ -37,10 +36,7 @@ export default function InvoicesPage() {
   const openNew = () => {
     setSelectedOrderIds([]);
     setSelectedClienteId('');
-    Promise.all([getOrders({ stato: 'CHIUSO' }), getCustomers()]).then(([o, c]) => {
-      setClosedOrders(o.data);
-      setCustomers(c.data);
-    });
+    getOrders({ stato: 'CHIUSO' }).then(r => setClosedOrders(r.data));
     setNewDialogOpen(true);
   };
 

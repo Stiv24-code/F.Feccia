@@ -179,7 +179,8 @@ func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
 	svc := NewMapService(db)
 	svc.geo.OsrmBaseURL = osrm.URL
 
-	dest := models.Destination{ID: uuid.New(), Nome: "Milano (MI)", Active: true}
+	milanoLat, milanoLng := 45.4642, 9.1900
+	dest := models.Destination{ID: uuid.New(), Nome: "Milano (MI)", Active: true, Lat: &milanoLat, Lng: &milanoLng}
 	if err := db.Create(&dest).Error; err != nil {
 		t.Fatalf("failed to seed destination: %v", err)
 	}

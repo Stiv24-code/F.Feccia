@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getDrivers, createDriver, updateDriver, deleteDriver } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetDriversQuery,
+  useCreateDriverMutation,
+  useUpdateDriverMutation,
+  useDeleteDriverMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -12,32 +17,30 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { nome: '', cognome: '', codice_fiscale: '', patente: '', scadenza_patente: '', telefono: '', email: '', note: '' };
 
 export default function DriversPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  // API imports e state setters sono riferimenti stabili in React
-  const fetchData = useCallback(() => { setLoading(true); getDrivers(search).then(r => setData(r.data)).finally(() => setLoading(false)); }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetDriversQuery(search);
+  const [createDriver, { isLoading: creating }] = useCreateDriverMutation();
+  const [updateDriver, { isLoading: updating }] = useUpdateDriverMutation();
+  const [deleteDriver] = useDeleteDriverMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => { setForm({ nome: item.nome, cognome: item.cognome, codice_fiscale: item.codice_fiscale || '', patente: item.patente || '', scadenza_patente: item.scadenza_patente || '', telefono: item.telefono || '', email: item.email || '', note: item.note || '' }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateDriver(editId, form); toast.success('Autista aggiornato'); } else { await createDriver(form); toast.success('Autista creato'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error('Errore'); } finally { setSaving(false); }
+      if (editId) { await updateDriver({ id: editId, body: form }).unwrap(); toast.success('Autista aggiornato'); } else { await createDriver(form).unwrap(); toast.success('Autista creato'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error('Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questo autista?')) return;
-    try { await deleteDriver(id); toast.success('Eliminato'); fetchData(); } catch(e) { toast.error('Errore'); }
+    try { await deleteDriver(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const columns = [{ key: 'cognome', label: 'Cognome' }, { key: 'nome', label: 'Nome' }, { key: 'patente', label: 'Patente' }, { key: 'telefono', label: 'Telefono' }, { key: 'actions', label: '', className: 'w-20' }];

@@ -25,6 +25,7 @@ import (
 	"fratelli-feccia/internal/services/products"
 	"fratelli-feccia/internal/services/trips"
 	"fratelli-feccia/internal/services/vehicles"
+	"fratelli-feccia/internal/services/washstations"
 	"fratelli-feccia/pkg/s3invoices"
 	"fratelli-feccia/pkg/utils"
 
@@ -77,6 +78,13 @@ type Garage interface {
 	List(ctx context.Context) ([]dto.GarageResponse, error)
 	Create(ctx context.Context, req dto.GarageRequest) (*dto.GarageResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.GarageRequest) (*dto.GarageResponse, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type WashStation interface {
+	List(ctx context.Context) ([]dto.WashStationResponse, error)
+	Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error)
+	Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -226,6 +234,10 @@ type Garages struct {
 	Garage Garage
 }
 
+type WashStations struct {
+	WashStation WashStation
+}
+
 type Drivers struct {
 	Driver Driver
 }
@@ -289,6 +301,7 @@ type Service struct {
 	Destinations
 	Carriers
 	Garages
+	WashStations
 	Drivers
 	Products
 	MasterdataGroup
@@ -324,6 +337,9 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 		},
 		Garages: Garages{
 			Garage: garages.NewGarageService(db),
+		},
+		WashStations: WashStations{
+			WashStation: washstations.NewWashStationService(db),
 		},
 		Drivers: Drivers{
 			Driver: drivers.NewDriverService(db),

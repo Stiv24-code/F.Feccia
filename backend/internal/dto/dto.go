@@ -105,14 +105,16 @@ type CustomerRequest struct {
 }
 
 type DestinationRequest struct {
-	Nome           string `json:"nome" validate:"required"`
-	Indirizzo      string `json:"indirizzo"`
-	Citta          string `json:"citta"`
-	Cap            string `json:"cap"`
-	Provincia      string `json:"provincia"`
-	Nazione        string `json:"nazione"`
-	VincoliScarico string `json:"vincoli_scarico"`
-	Note           string `json:"note"`
+	Nome           string   `json:"nome" validate:"required"`
+	Indirizzo      string   `json:"indirizzo"`
+	Citta          string   `json:"citta"`
+	Cap            string   `json:"cap"`
+	Provincia      string   `json:"provincia"`
+	Nazione        string   `json:"nazione"`
+	Lat            *float64 `json:"lat" validate:"required"`
+	Lng            *float64 `json:"lng" validate:"required"`
+	VincoliScarico string   `json:"vincoli_scarico"`
+	Note           string   `json:"note"`
 }
 
 type DestinationResponse struct {
@@ -123,6 +125,8 @@ type DestinationResponse struct {
 	Cap            string    `json:"cap"`
 	Provincia      string    `json:"provincia"`
 	Nazione        string    `json:"nazione"`
+	Lat            *float64  `json:"lat"`
+	Lng            *float64  `json:"lng"`
 	VincoliScarico string    `json:"vincoli_scarico"`
 	Note           string    `json:"note"`
 	Active         bool      `json:"active"`
@@ -155,10 +159,12 @@ type CarrierResponse struct {
 }
 
 type GarageRequest struct {
-	Nome      string `json:"nome" validate:"required"`
-	Indirizzo string `json:"indirizzo"`
-	Citta     string `json:"citta"`
-	Note      string `json:"note"`
+	Nome      string   `json:"nome" validate:"required"`
+	Indirizzo string   `json:"indirizzo"`
+	Citta     string   `json:"citta"`
+	Lat       *float64 `json:"lat" validate:"required"`
+	Lng       *float64 `json:"lng" validate:"required"`
+	Note      string   `json:"note"`
 }
 
 type GarageResponse struct {
@@ -166,6 +172,30 @@ type GarageResponse struct {
 	Nome      string    `json:"nome"`
 	Indirizzo string    `json:"indirizzo"`
 	Citta     string    `json:"citta"`
+	Lat       *float64  `json:"lat"`
+	Lng       *float64  `json:"lng"`
+	Note      string    `json:"note"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type WashStationRequest struct {
+	Nome      string   `json:"nome" validate:"required"`
+	Indirizzo string   `json:"indirizzo"`
+	Citta     string   `json:"citta"`
+	Lat       *float64 `json:"lat" validate:"required"`
+	Lng       *float64 `json:"lng" validate:"required"`
+	Note      string   `json:"note"`
+}
+
+type WashStationResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Nome      string    `json:"nome"`
+	Indirizzo string    `json:"indirizzo"`
+	Citta     string    `json:"citta"`
+	Lat       *float64  `json:"lat"`
+	Lng       *float64  `json:"lng"`
 	Note      string    `json:"note"`
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at"`

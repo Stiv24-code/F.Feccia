@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Truck, Warehouse, MapPin, RefreshCw, Eye, EyeOff, Maximize2 } from 'lucide-react';
+import { Truck, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 // Fix icone Leaflet

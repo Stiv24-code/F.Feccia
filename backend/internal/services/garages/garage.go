@@ -41,6 +41,8 @@ func (s *GarageService) Create(ctx context.Context, req dto.GarageRequest) (*dto
 		Nome:      req.Nome,
 		Indirizzo: req.Indirizzo,
 		Citta:     req.Citta,
+		Lat:       req.Lat,
+		Lng:       req.Lng,
 		Note:      req.Note,
 		Active:    true,
 	}
@@ -62,6 +64,8 @@ func (s *GarageService) Update(ctx context.Context, id uuid.UUID, req dto.Garage
 	g.Nome = req.Nome
 	g.Indirizzo = req.Indirizzo
 	g.Citta = req.Citta
+	g.Lat = req.Lat
+	g.Lng = req.Lng
 	g.Note = req.Note
 
 	if err := s.db.WithContext(ctx).Save(&g).Error; err != nil {
@@ -82,6 +86,8 @@ func toResponse(g models.Garage) dto.GarageResponse {
 		Nome:      g.Nome,
 		Indirizzo: g.Indirizzo,
 		Citta:     g.Citta,
+		Lat:       g.Lat,
+		Lng:       g.Lng,
 		Note:      g.Note,
 		Active:    g.Active,
 		CreatedAt: g.CreatedAt,

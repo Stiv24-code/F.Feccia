@@ -3,14 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
   Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
-  ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, X, Map,
-  Globe, Landmark, BookOpen, Shield, UserCog
+  ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
+  Globe, Landmark, BookOpen, Shield, UserCog, Droplets
 } from 'lucide-react';
 
 // Se `roles` è presente, la voce è visibile solo agli utenti con quel ruolo.
@@ -27,6 +26,7 @@ const navItems = [
       { label: 'Vettori', path: '/anagrafiche/vettori', icon: Building2 },
       { label: 'Prodotti', path: '/anagrafiche/prodotti', icon: Package },
       { label: 'Garage', path: '/anagrafiche/garage', icon: Warehouse },
+      { label: 'Punti di Lavaggio', path: '/anagrafiche/lavaggi', icon: Droplets },
       { label: 'Nazioni', path: '/anagrafiche/nazioni', icon: Globe },
       { label: 'Banche', path: '/anagrafiche/banche', icon: Landmark, roles: ['admin', 'amministrazione'] },
       { label: 'Voci Contabili', path: '/anagrafiche/voci-contabili', icon: BookOpen, roles: ['admin', 'amministrazione'] },
@@ -190,6 +190,7 @@ const AppShell = ({ children }) => {
     if (path.includes('autisti')) return 'Autisti';
     if (path.includes('vettori')) return 'Vettori';
     if (path.includes('prodotti')) return 'Prodotti';
+    if (path.includes('lavaggi')) return 'Punti di Lavaggio';
     if (path.includes('garage')) return 'Garage / Parcheggio';
     if (path.includes('listini')) return 'Listini';
     if (path.includes('ordini')) return 'Raccolta Ordini';

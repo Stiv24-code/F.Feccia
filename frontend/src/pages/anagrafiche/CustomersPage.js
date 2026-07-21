@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/lib/api';
+import {
+  useGetCustomersQuery,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -15,33 +20,31 @@ import { Pencil, Trash2, BarChart3 } from 'lucide-react';
 const emptyForm = { ragione_sociale: '', indirizzo: '', citta: '', cap: '', provincia: '', nazione: 'Italia', partita_iva: '', codice_fiscale: '', telefono: '', email: '', pec: '', condizioni_pagamento: '', note: '', richiede_rif_ordine: false };
 
 export default function CustomersPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  // API imports e state setters sono riferimenti stabili in React
-  const fetchData = useCallback(() => { setLoading(true); getCustomers(search).then(r => setData(r.data)).finally(() => setLoading(false)); }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetCustomersQuery(search);
+  const [createCustomer, { isLoading: creating }] = useCreateCustomerMutation();
+  const [updateCustomer, { isLoading: updating }] = useUpdateCustomerMutation();
+  const [deleteCustomer] = useDeleteCustomerMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => { setForm({ ragione_sociale: item.ragione_sociale, indirizzo: item.indirizzo || '', citta: item.citta || '', cap: item.cap || '', provincia: item.provincia || '', nazione: item.nazione || 'Italia', partita_iva: item.partita_iva || '', codice_fiscale: item.codice_fiscale || '', telefono: item.telefono || '', email: item.email || '', pec: item.pec || '', condizioni_pagamento: item.condizioni_pagamento || '', note: item.note || '', richiede_rif_ordine: item.richiede_rif_ordine || false }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateCustomer(editId, form); toast.success('Cliente aggiornato'); }
-      else { await createCustomer(form); toast.success('Cliente creato'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); } finally { setSaving(false); }
+      if (editId) { await updateCustomer({ id: editId, body: form }).unwrap(); toast.success('Cliente aggiornato'); }
+      else { await createCustomer(form).unwrap(); toast.success('Cliente creato'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error(e?.data?.detail || 'Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questo cliente?')) return;
-    try { await deleteCustomer(id); toast.success('Cliente eliminato'); fetchData(); } catch(e) { toast.error('Errore'); }
+    try { await deleteCustomer(id).unwrap(); toast.success('Cliente eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const columns = [

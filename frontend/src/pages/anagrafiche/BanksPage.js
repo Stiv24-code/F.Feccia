@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getBanks, createBank, updateBank, deleteBank } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetBanksQuery,
+  useCreateBankMutation,
+  useUpdateBankMutation,
+  useDeleteBankMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -13,19 +18,16 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { nome: '', bic_swift: '', iban_prefix: '', indirizzo: '', citta: '', note: '' };
 
 export default function BanksPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    getBanks(search).then(r => setData(r.data)).finally(() => setLoading(false));
-  }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetBanksQuery(search);
+  const [createBank, { isLoading: creating }] = useCreateBankMutation();
+  const [updateBank, { isLoading: updating }] = useUpdateBankMutation();
+  const [deleteBank] = useDeleteBankMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => {
@@ -38,17 +40,16 @@ export default function BanksPage() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateBank(editId, form); toast.success('Banca aggiornata'); }
-      else { await createBank(form); toast.success('Banca creata'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); } finally { setSaving(false); }
+      if (editId) { await updateBank({ id: editId, body: form }).unwrap(); toast.success('Banca aggiornata'); }
+      else { await createBank(form).unwrap(); toast.success('Banca creata'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error(e?.data?.detail || 'Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questa banca?')) return;
-    try { await deleteBank(id); toast.success('Eliminata'); fetchData(); }
+    try { await deleteBank(id).unwrap(); toast.success('Eliminata'); }
     catch (e) { toast.error('Errore'); }
   };
 

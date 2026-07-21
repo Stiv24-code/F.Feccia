@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetProductsQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -12,32 +17,30 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { codice: '', descrizione: '', unita_misura: 'Kg', note: '' };
 
 export default function ProductsPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  // API imports e state setters sono riferimenti stabili in React
-  const fetchData = useCallback(() => { setLoading(true); getProducts(search).then(r => setData(r.data)).finally(() => setLoading(false)); }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetProductsQuery(search);
+  const [createProduct, { isLoading: creating }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: updating }] = useUpdateProductMutation();
+  const [deleteProduct] = useDeleteProductMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => { setForm({ codice: item.codice, descrizione: item.descrizione, unita_misura: item.unita_misura || 'Kg', note: item.note || '' }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateProduct(editId, form); toast.success('Prodotto aggiornato'); } else { await createProduct(form); toast.success('Prodotto creato'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error('Errore'); } finally { setSaving(false); }
+      if (editId) { await updateProduct({ id: editId, body: form }).unwrap(); toast.success('Prodotto aggiornato'); } else { await createProduct(form).unwrap(); toast.success('Prodotto creato'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error('Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questo prodotto?')) return;
-    try { await deleteProduct(id); toast.success('Eliminato'); fetchData(); } catch(e) { toast.error('Errore'); }
+    try { await deleteProduct(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
   const columns = [{ key: 'codice', label: 'Codice', className: 'font-mono' }, { key: 'descrizione', label: 'Descrizione' }, { key: 'um', label: 'U.M.' }, { key: 'actions', label: '', className: 'w-20' }];

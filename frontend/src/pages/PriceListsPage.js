@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getPriceLists, getPriceList, createPriceList, deletePriceList, addPriceListItem, updatePriceListItem, deletePriceListItem, getCustomers, getDestinations, getProducts } from '@/lib/api';
+import { getPriceLists, getPriceList, createPriceList, deletePriceList, addPriceListItem, updatePriceListItem, deletePriceListItem, getDestinations, getProducts } from '@/lib/api';
+import { useGetCustomersQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export default function PriceListsPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [customers, setCustomers] = useState([]);
+  const { data: customers = [] } = useGetCustomersQuery();
   const [destinations, setDestinations] = useState([]);
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
@@ -48,8 +49,8 @@ export default function PriceListsPage() {
   const fetchData = useCallback(() => { setLoading(true); getPriceLists().then(r => setLists(r.data)).catch(err => logger.error('Errore caricamento listini:', err)).finally(() => setLoading(false)); }, []);
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
-    Promise.all([getCustomers(), getDestinations(), getProducts()]).then(([c, d, p]) => {
-      setCustomers(c.data); setDestinations(d.data); setProducts(p.data);
+    Promise.all([getDestinations(), getProducts()]).then(([d, p]) => {
+      setDestinations(d.data); setProducts(p.data);
     }).catch(err => logger.error('Errore caricamento lookup listini:', err));
   }, []);
 
@@ -399,9 +400,9 @@ export default function PriceListsPage() {
                   <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{l.items?.length || 0} regole</Badge></TableCell>
                   <TableCell className="py-2">{l.in_uso ? <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">In uso</Badge> : <Badge variant="outline" className="text-[10px]">No</Badge>}</TableCell>
                   <TableCell className="py-2">
-                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(l)} data-testid="pricelist-detail-button"><Eye className="h-3 w-3" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(l.id)}><Trash2 className="h-3 w-3" /></Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); openDetail(l); }} data-testid="pricelist-detail-button"><Eye className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={e => { e.stopPropagation(); handleDelete(l.id); }}><Trash2 className="h-3 w-3" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>

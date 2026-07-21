@@ -21,6 +21,7 @@ import (
 	trips_handlers "fratelli-feccia/internal/handlers/trips"
 	users_handlers "fratelli-feccia/internal/handlers/users"
 	vehicles_handlers "fratelli-feccia/internal/handlers/vehicles"
+	washstations_handlers "fratelli-feccia/internal/handlers/washstations"
 	"fratelli-feccia/internal/services"
 	"fratelli-feccia/pkg/audit"
 	"fratelli-feccia/pkg/utils"
@@ -34,6 +35,7 @@ type Handler struct {
 	Destinations         *destinations_handlers.DestinationHandler
 	Carriers             *carriers_handlers.CarrierHandler
 	Garages              *garages_handlers.GarageHandler
+	WashStations         *washstations_handlers.WashStationHandler
 	Drivers              *drivers_handlers.DriverHandler
 	Products             *products_handlers.ProductHandler
 	Masterdata           *masterdata_handlers.MasterdataHandler
@@ -58,6 +60,7 @@ func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg ut
 		Destinations:         destinations_handlers.NewDestinationHandler(services.Destinations.Destination),
 		Carriers:             carriers_handlers.NewCarrierHandler(services.Carriers.Carrier),
 		Garages:              garages_handlers.NewGarageHandler(services.Garages.Garage),
+		WashStations:         washstations_handlers.NewWashStationHandler(services.WashStations.WashStation),
 		Drivers:              drivers_handlers.NewDriverHandler(services.Drivers.Driver),
 		Products:             products_handlers.NewProductHandler(services.Products.Product),
 		Masterdata:           masterdata_handlers.NewMasterdataHandler(services.MasterdataGroup.Masterdata),

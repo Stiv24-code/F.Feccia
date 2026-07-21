@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getCountries, createCountry, updateCountry, deleteCountry } from '@/lib/api';
+import { useState } from 'react';
+import {
+  useGetCountriesQuery,
+  useCreateCountryMutation,
+  useUpdateCountryMutation,
+  useDeleteCountryMutation,
+} from '@/store/api/appApi';
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -14,19 +19,16 @@ import { Pencil, Trash2 } from 'lucide-react';
 const emptyForm = { iso2: '', iso3: '', nome: '', eu: false, valuta: 'EUR' };
 
 export default function CountriesPage() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    getCountries(search).then(r => setData(r.data)).finally(() => setLoading(false));
-  }, [search]);
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isLoading: loading } = useGetCountriesQuery(search);
+  const [createCountry, { isLoading: creating }] = useCreateCountryMutation();
+  const [updateCountry, { isLoading: updating }] = useUpdateCountryMutation();
+  const [deleteCountry] = useDeleteCountryMutation();
+  const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
   const openEdit = (item) => {
@@ -38,17 +40,16 @@ export default function CountriesPage() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      if (editId) { await updateCountry(editId, form); toast.success('Nazione aggiornata'); }
-      else { await createCountry(form); toast.success('Nazione creata'); }
-      setDialogOpen(false); fetchData();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); } finally { setSaving(false); }
+      if (editId) { await updateCountry({ id: editId, body: form }).unwrap(); toast.success('Nazione aggiornata'); }
+      else { await createCountry(form).unwrap(); toast.success('Nazione creata'); }
+      setDialogOpen(false);
+    } catch (e) { toast.error(e?.data?.detail || 'Errore'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Eliminare questa nazione?')) return;
-    try { await deleteCountry(id); toast.success('Eliminata'); fetchData(); }
+    try { await deleteCountry(id).unwrap(); toast.success('Eliminata'); }
     catch (e) { toast.error('Errore'); }
   };
 

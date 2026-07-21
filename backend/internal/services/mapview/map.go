@@ -102,11 +102,9 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 	return &dto.MapTripsResponse{Routes: routes, POI: poi, Garages: garages, Stats: stats}, nil
 }
 
-// buildDestinationMap mirrors build_destination_map, minus the "persist
-// lat/lng back to the destination doc" cache optimization — this port's
-// Destination model has no lat/lng columns (see internal/models/destination.go),
-// matching the fact that the CRUD API never exposes them either way; skipping
-// it has no observable effect, just no cross-request memoization here.
+// buildDestinationMap mirrors build_destination_map: resolves each active
+// destination's coordinates, preferring its own Lat/Lng column over the
+// hardcoded DestinationCoords fallback table.
 func (s *MapService) buildDestinationMap(ctx context.Context) (map[string]geo.NamedPoint, error) {
 	var destinations []models.Destination
 	if err := s.db.WithContext(ctx).Where("active = ?", true).Limit(200).Find(&destinations).Error; err != nil {
@@ -114,7 +112,7 @@ func (s *MapService) buildDestinationMap(ctx context.Context) (map[string]geo.Na
 	}
 	destMap := make(map[string]geo.NamedPoint, len(destinations))
 	for _, d := range destinations {
-		if p, ok := geo.ResolveDestination(d.Nome); ok {
+		if p, ok := geo.ResolveDestination(d.Nome, d.Lat, d.Lng); ok {
 			destMap[d.ID.String()] = p
 		}
 	}
@@ -126,14 +124,14 @@ func (s *MapService) buildDestinationMap(ctx context.Context) (map[string]geo.Na
 func resolveOrderEndpoints(o models.Order, destMap map[string]geo.NamedPoint) (carico, scarico geo.NamedPoint, ok bool) {
 	carico, found := destMap[o.DestinazioneCaricoID]
 	if !found {
-		carico, found = geo.ResolveDestination(o.DestinazioneCaricoNome)
+		carico, found = geo.ResolveDestination(o.DestinazioneCaricoNome, nil, nil)
 	}
 	if !found {
 		return geo.NamedPoint{}, geo.NamedPoint{}, false
 	}
 	scarico, found = destMap[o.DestinazioneScaricoID]
 	if !found {
-		scarico, found = geo.ResolveDestination(o.DestinazioneScaricoNome)
+		scarico, found = geo.ResolveDestination(o.DestinazioneScaricoNome, nil, nil)
 	}
 	if !found {
 		return geo.NamedPoint{}, geo.NamedPoint{}, false

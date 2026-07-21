@@ -65,8 +65,11 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // backend-go in docker-compose.yml è mappato su GO_BACKEND_PORT (8081
+      // di default) — nessun path rewrite: il frontend chiama già /api/v1/...
+      // per intero (client generato da swagger + lib/api.js).
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8081',
         changeOrigin: true,
       },
     },

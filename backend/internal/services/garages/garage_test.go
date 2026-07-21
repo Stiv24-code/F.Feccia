@@ -11,6 +11,8 @@ import (
 	"fratelli-feccia/internal/models"
 )
 
+func ptr(v float64) *float64 { return &v }
+
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -27,7 +29,7 @@ func TestGarageService_CRUD(t *testing.T) {
 	ctx := context.Background()
 	svc := NewGarageService(newTestDB(t))
 
-	created, err := svc.Create(ctx, dto.GarageRequest{Nome: "Deposito Centrale"})
+	created, err := svc.Create(ctx, dto.GarageRequest{Nome: "Deposito Centrale", Lat: ptr(45.4642), Lng: ptr(9.1900)})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -37,7 +39,7 @@ func TestGarageService_CRUD(t *testing.T) {
 		t.Fatalf("expected 1 garage, got %v (err=%v)", list, err)
 	}
 
-	updated, err := svc.Update(ctx, created.ID, dto.GarageRequest{Nome: "Deposito Rinominato"})
+	updated, err := svc.Update(ctx, created.ID, dto.GarageRequest{Nome: "Deposito Rinominato", Lat: ptr(45.4642), Lng: ptr(9.1900)})
 	if err != nil {
 		t.Fatalf("Update returned error: %v", err)
 	}

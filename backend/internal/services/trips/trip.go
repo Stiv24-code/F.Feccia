@@ -314,12 +314,16 @@ func (s *TripService) buildSegments(ctx context.Context, garageID, garageNome st
 		return ordersList[i].CreatedAt.Before(ordersList[j].CreatedAt)
 	})
 
+	destByID := s.destinationCoordsByID(ctx, ordersList)
+
 	counter := 0
 	var prevScarico *geo.NamedPoint
 
 	for _, o := range ordersList {
-		carico, ok1 := geo.ResolveDestination(o.DestinazioneCaricoNome)
-		scarico, ok2 := geo.ResolveDestination(o.DestinazioneScaricoNome)
+		caricoDest := destByID[o.DestinazioneCaricoID]
+		scaricoDest := destByID[o.DestinazioneScaricoID]
+		carico, ok1 := geo.ResolveDestination(o.DestinazioneCaricoNome, caricoDest.Lat, caricoDest.Lng)
+		scarico, ok2 := geo.ResolveDestination(o.DestinazioneScaricoNome, scaricoDest.Lat, scaricoDest.Lng)
 		if !ok1 || !ok2 {
 			slog.Warn("trip_segments_skip_order", "id", o.ID.String(), "reason", "missing_coords")
 			continue
@@ -341,6 +345,23 @@ func (s *TripService) buildSegments(ctx context.Context, garageID, garageNome st
 	}
 
 	return segments
+}
+
+// destinationCoordsByID batch-loads the Destination rows referenced by
+// ordersList's carico/scarico ids, keyed by id, so buildSegments can prefer
+// their stored Lat/Lng over the hardcoded name-based fallback table.
+func (s *TripService) destinationCoordsByID(ctx context.Context, ordersList []models.Order) map[string]models.Destination {
+	ids := make([]string, 0, len(ordersList)*2)
+	for _, o := range ordersList {
+		ids = append(ids, o.DestinazioneCaricoID, o.DestinazioneScaricoID)
+	}
+	var rows []models.Destination
+	s.db.WithContext(ctx).Where("id IN ?", ids).Find(&rows)
+	byID := make(map[string]models.Destination, len(rows))
+	for _, d := range rows {
+		byID[d.ID.String()] = d
+	}
+	return byID
 }
 
 func (s *TripService) segment(ctx context.Context, ordine int, tipo string, origine, destinazione geo.NamedPoint, ordineID *string) models.TripSegment {

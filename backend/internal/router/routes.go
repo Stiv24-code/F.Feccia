@@ -42,6 +42,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerDestinationRoutes(authAll, handlers)
 	registerCarrierRoutes(authAll, handlers)
 	registerGarageRoutes(authAll, handlers)
+	registerWashStationRoutes(authAll, handlers)
 	registerDriverRoutes(authAll, handlers)
 	registerProductRoutes(authAll, handlers)
 	registerMasterdataRoutes(authAll, handlers)

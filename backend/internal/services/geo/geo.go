@@ -67,9 +67,15 @@ func GetCoordsForDestination(nome string) ([2]float64, bool) {
 	return [2]float64{}, false
 }
 
-func ResolveDestination(name string) (NamedPoint, bool) {
+// ResolveDestination resolves a destination's coordinates, preferring the
+// lat/lng stored on its own record (when the caller has one — e.g. from
+// Destination.Lat/Lng) over the hardcoded DestinationCoords fallback table.
+func ResolveDestination(name string, lat, lng *float64) (NamedPoint, bool) {
 	if name == "" {
 		return NamedPoint{}, false
+	}
+	if lat != nil && lng != nil {
+		return NamedPoint{Name: name, Lat: *lat, Lng: *lng}, true
 	}
 	coords, ok := GetCoordsForDestination(name)
 	if !ok {
@@ -107,16 +113,34 @@ func NewGeoService(db *gorm.DB) *GeoService {
 	}
 }
 
-// ResolveGarage mirrors _resolve_garage: garage_id lookup (by name, since
-// garages have no lat/lng columns either) then garage_nome, then the
-// hardcoded default.
+// ResolveGarage resolves a trip's starting point ("partenza"). Despite the
+// name (kept for wire compatibility with Trip.GarageID/GarageNome), garageID
+// is looked up against Garage, then Destination, then WashStation — a trip
+// can start from any registered point, not only a garage. Each lookup
+// prefers the row's own Lat/Lng, falling back to the hardcoded GarageCoords
+// table for garages created before that column existed. garageNome and the
+// hardcoded default are the last resorts, mirroring the original
+// name-only _resolve_garage behaviour.
 func (s *GeoService) ResolveGarage(ctx context.Context, garageID, garageNome string) NamedPoint {
 	if garageID != "" {
 		var g models.Garage
 		if err := s.db.WithContext(ctx).First(&g, "id = ?", garageID).Error; err == nil {
+			if g.Lat != nil && g.Lng != nil {
+				return NamedPoint{Name: g.Nome, Lat: *g.Lat, Lng: *g.Lng}
+			}
 			if coords, ok := GarageCoords[g.Nome]; ok {
 				return NamedPoint{Name: g.Nome, Lat: coords[0], Lng: coords[1]}
 			}
+		}
+		var d models.Destination
+		if err := s.db.WithContext(ctx).First(&d, "id = ?", garageID).Error; err == nil {
+			if p, ok := ResolveDestination(d.Nome, d.Lat, d.Lng); ok {
+				return p
+			}
+		}
+		var w models.WashStation
+		if err := s.db.WithContext(ctx).First(&w, "id = ?", garageID).Error; err == nil && w.Lat != nil && w.Lng != nil {
+			return NamedPoint{Name: w.Nome, Lat: *w.Lat, Lng: *w.Lng}
 		}
 	}
 	if garageNome != "" {

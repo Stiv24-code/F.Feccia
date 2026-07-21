@@ -69,6 +69,8 @@ func (s *DestinationService) Create(ctx context.Context, req dto.DestinationRequ
 		Cap:            req.Cap,
 		Provincia:      req.Provincia,
 		Nazione:        defaultString(req.Nazione, "Italia"),
+		Lat:            req.Lat,
+		Lng:            req.Lng,
 		VincoliScarico: req.VincoliScarico,
 		Note:           req.Note,
 		Active:         true,
@@ -94,6 +96,8 @@ func (s *DestinationService) Update(ctx context.Context, id uuid.UUID, req dto.D
 	d.Cap = req.Cap
 	d.Provincia = req.Provincia
 	d.Nazione = defaultString(req.Nazione, "Italia")
+	d.Lat = req.Lat
+	d.Lng = req.Lng
 	d.VincoliScarico = req.VincoliScarico
 	d.Note = req.Note
 
@@ -125,6 +129,8 @@ func toResponse(d models.Destination) dto.DestinationResponse {
 		Cap:            d.Cap,
 		Provincia:      d.Provincia,
 		Nazione:        d.Nazione,
+		Lat:            d.Lat,
+		Lng:            d.Lng,
 		VincoliScarico: d.VincoliScarico,
 		Note:           d.Note,
 		Active:         d.Active,

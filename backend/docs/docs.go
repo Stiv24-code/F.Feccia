@@ -4830,6 +4830,175 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/wash-stations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WashStations"
+                ],
+                "summary": "List wash stations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.WashStationResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WashStations"
+                ],
+                "summary": "Create wash station",
+                "parameters": [
+                    {
+                        "description": "Wash station data",
+                        "name": "washStation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WashStationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WashStationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/wash-stations/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WashStations"
+                ],
+                "summary": "Update wash station (full replace)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wash station ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Wash station data",
+                        "name": "washStation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WashStationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WashStationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "WashStations"
+                ],
+                "summary": "Delete wash station (logical, sets active=false)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wash station ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/webhooks/gps/{vendor}": {
             "post": {
                 "consumes": [
@@ -5552,6 +5721,8 @@ const docTemplate = `{
         "dto.DestinationRequest": {
             "type": "object",
             "required": [
+                "lat",
+                "lng",
                 "nome"
             ],
             "properties": {
@@ -5563,6 +5734,12 @@ const docTemplate = `{
                 },
                 "indirizzo": {
                     "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 },
                 "nazione": {
                     "type": "string"
@@ -5601,6 +5778,12 @@ const docTemplate = `{
                 },
                 "indirizzo": {
                     "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 },
                 "nazione": {
                     "type": "string"
@@ -5930,6 +6113,8 @@ const docTemplate = `{
         "dto.GarageRequest": {
             "type": "object",
             "required": [
+                "lat",
+                "lng",
                 "nome"
             ],
             "properties": {
@@ -5938,6 +6123,12 @@ const docTemplate = `{
                 },
                 "indirizzo": {
                     "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 },
                 "nome": {
                     "type": "string"
@@ -5964,6 +6155,12 @@ const docTemplate = `{
                 },
                 "indirizzo": {
                     "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 },
                 "nome": {
                     "type": "string"
@@ -7626,6 +7823,69 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WashStationRequest": {
+            "type": "object",
+            "required": [
+                "lat",
+                "lng",
+                "nome"
+            ],
+            "properties": {
+                "citta": {
+                    "type": "string"
+                },
+                "indirizzo": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.WashStationResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "citta": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "indirizzo": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

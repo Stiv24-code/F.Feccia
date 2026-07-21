@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Provider } from 'react-redux';
+import { store } from '@/store/store';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/sonner';
 import LoginPage from '@/pages/LoginPage';
@@ -20,6 +20,7 @@ const DriversPage = lazy(() => import('@/pages/anagrafiche/DriversPage'));
 const CarriersPage = lazy(() => import('@/pages/anagrafiche/CarriersPage'));
 const ProductsPage = lazy(() => import('@/pages/anagrafiche/ProductsPage'));
 const GaragesPage = lazy(() => import('@/pages/anagrafiche/GaragesPage'));
+const WashStationsPage = lazy(() => import('@/pages/anagrafiche/WashStationsPage'));
 const CountriesPage = lazy(() => import('@/pages/anagrafiche/CountriesPage'));
 const BanksPage = lazy(() => import('@/pages/anagrafiche/BanksPage'));
 const AccountingEntriesPage = lazy(() => import('@/pages/anagrafiche/AccountingEntriesPage'));
@@ -33,21 +34,6 @@ const CustomerDashboardPage = lazy(() => import('@/pages/CustomerDashboardPage')
 const ProfilesPage = lazy(() => import('@/pages/admin/ProfilesPage'));
 const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const PlannerDnDPage = lazy(() => import('@/pages/PlannerDnDPage'));
-
-// staleTime 60s = liste UI che cambiano di rado; le mutazioni invalidate-ano
-// esplicitamente le query interessate. retry 1 evita di amplificare un 5xx
-// transitorio in cinque chiamate.
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-    mutations: { retry: 0 },
-  },
-});
 
 const PageFallback = () => (
   <div className="flex h-64 items-center justify-center">
@@ -82,6 +68,7 @@ function AppRoutes() {
                 <Route path="anagrafiche/vettori" element={<CarriersPage />} />
                 <Route path="anagrafiche/prodotti" element={<ProductsPage />} />
                 <Route path="anagrafiche/garage" element={<GaragesPage />} />
+                <Route path="anagrafiche/lavaggi" element={<WashStationsPage />} />
                 <Route path="anagrafiche/nazioni" element={<CountriesPage />} />
                 <Route path="anagrafiche/banche" element={<BanksPage />} />
                 <Route path="anagrafiche/voci-contabili" element={<AccountingEntriesPage />} />
@@ -105,15 +92,14 @@ function AppRoutes() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <Provider store={store}>
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
           <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </BrowserRouter>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    </Provider>
   );
 }
 
