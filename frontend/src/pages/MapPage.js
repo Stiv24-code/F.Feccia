@@ -40,6 +40,16 @@ const garageIcon = L.divIcon({
   popupAnchor: [0, -16],
 });
 
+const washIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:28px;height:28px;border-radius:8px;background:#0B1220;border:3px solid #38BDF8;box-shadow:0 2px 12px rgba(56,189,248,0.4);display:flex;align-items:center;justify-content:center;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4-4 5.5C6 9.1 5 11 5 15a7 7 0 0 0 7 7z"/></svg>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  popupAnchor: [0, -14],
+});
+
 const destIcon = L.divIcon({
   className: '',
   html: `<div style="width:10px;height:10px;border-radius:50%;background:hsl(195,92%,28%);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
@@ -74,20 +84,21 @@ const POPUP_STYLES = {
 };
 
 // Componente per auto-fit bounds
-const FitBounds = ({ routes, garages }) => {
+const FitBounds = ({ routes, garages, washStations }) => {
   const map = useMap();
   useEffect(() => {
-    if (routes.length === 0 && garages.length === 0) return;
+    if (routes.length === 0 && garages.length === 0 && washStations.length === 0) return;
     const allPoints = [];
     routes.forEach(r => {
       if (r.carico) allPoints.push([r.carico.lat, r.carico.lng]);
       if (r.scarico) allPoints.push([r.scarico.lat, r.scarico.lng]);
     });
     garages.forEach(g => allPoints.push([g.lat, g.lng]));
+    washStations.forEach(w => allPoints.push([w.lat, w.lng]));
     if (allPoints.length > 0) {
       map.fitBounds(allPoints, { padding: [40, 40], maxZoom: 7 });
     }
-  }, [routes, garages, map]);
+  }, [routes, garages, washStations, map]);
   return null;
 };
 
@@ -183,16 +194,24 @@ export default function MapPage() {
             zoomControl={true}
           >
             {/*
-              Basemap da ArcGIS Online (Esri). L'utente sceglie tra 4 stili
-              via il selector in alto a destra. Default: National Geographic
-              (stilizzata e colorata, ottima per un TMS che mostra rotte su
-              scala continentale).
+              Basemap: OpenStreetMap standard come default (stessa mappa
+              stradale reale usata dal prototipo shortestPath), non lo stile
+              "atlante politico" di Esri National Geographic. Le altre 3
+              basemap Esri restano disponibili come alternative via il
+              selector in alto a destra.
 
               Attribution conforme ai ToS di Esri (richiamo del servizio
-              specifico).
+              specifico) e di OpenStreetMap.
             */}
             <LayersControl position="topright">
-              <LayersControl.BaseLayer checked name="Esri — National Geographic">
+              <LayersControl.BaseLayer checked name="OpenStreetMap">
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  maxZoom={19}
+                />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name="Esri — National Geographic">
                 <TileLayer
                   attribution='Tiles &copy; Esri &mdash; National Geographic, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
                   url="https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}"
@@ -221,13 +240,21 @@ export default function MapPage() {
                 />
               </LayersControl.BaseLayer>
             </LayersControl>
-            <FitBounds routes={filteredRoutes} garages={data.garages} />
+            <FitBounds routes={filteredRoutes} garages={data.garages} washStations={data.wash_stations || []} />
 
             {/* Garage */}
             {data.garages.map((g, i) => (
               <Marker key={`g-${i}`} position={[g.lat, g.lng]} icon={garageIcon}>
                 <Popup><strong>{g.nome}</strong><br />Base operativa</Popup>
                 <Tooltip direction="top" offset={[0, -20]} permanent={false}>{g.nome}</Tooltip>
+              </Marker>
+            ))}
+
+            {/* Punti di lavaggio */}
+            {(data.wash_stations || []).map((w, i) => (
+              <Marker key={`wash-${i}`} position={[w.lat, w.lng]} icon={washIcon}>
+                <Popup><strong>{w.nome}</strong><br />Punto di lavaggio</Popup>
+                <Tooltip direction="top" offset={[0, -16]} permanent={false}>{w.nome}</Tooltip>
               </Marker>
             ))}
 

@@ -231,6 +231,7 @@ export interface DtoDashboardStatsResponse {
 }
 
 export interface DtoDestinationRequest {
+  active?: boolean;
   cap?: string;
   citta?: string;
   indirizzo?: string;
@@ -373,6 +374,7 @@ export interface DtoGPSWebhookPayload {
 }
 
 export interface DtoGarageRequest {
+  active?: boolean;
   citta?: string;
   indirizzo?: string;
   lat: number;
@@ -464,7 +466,7 @@ export interface DtoLoginResult {
   user?: DtoAuthUserResponse;
 }
 
-export interface DtoMapGarage {
+export interface DtoMapNamedPoint {
   lat?: number;
   lng?: number;
   nome?: string;
@@ -521,10 +523,11 @@ export interface DtoMapStats {
 }
 
 export interface DtoMapTripsResponse {
-  garages?: DtoMapGarage[];
+  garages?: DtoMapNamedPoint[];
   poi?: DtoMapPOI[];
   routes?: DtoMapRoute[];
   stats?: DtoMapStats;
+  wash_stations?: DtoMapNamedPoint[];
 }
 
 export interface DtoMonthlyOrderTrend {
@@ -978,6 +981,7 @@ export interface DtoVehicleTypeResponse {
 }
 
 export interface DtoWashStationRequest {
+  active?: boolean;
   citta?: string;
   indirizzo?: string;
   lat: number;

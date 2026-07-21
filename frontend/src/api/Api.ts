@@ -926,6 +926,8 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by nome (substring, case-insensitive) */
       search?: string;
+      /** Include logically deleted (active=false) destinations */
+      include_inactive?: boolean;
     },
     params: RequestParams = {},
   ) =>
@@ -1202,10 +1204,17 @@ export class Api<SecurityDataType = unknown> {
    * @request GET:/api/v1/garages
    * @secure
    */
-  v1GaragesList = (params: RequestParams = {}) =>
+  v1GaragesList = (
+    query?: {
+      /** Include logically deleted (active=false) garages */
+      include_inactive?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
     this.http.request<DtoGarageResponse[], any>({
       path: `/api/v1/garages`,
       method: "GET",
+      query: query,
       secure: true,
       format: "json",
       ...params,
@@ -2338,10 +2347,17 @@ export class Api<SecurityDataType = unknown> {
    * @request GET:/api/v1/wash-stations
    * @secure
    */
-  v1WashStationsList = (params: RequestParams = {}) =>
+  v1WashStationsList = (
+    query?: {
+      /** Include logically deleted (active=false) wash stations */
+      include_inactive?: boolean;
+    },
+    params: RequestParams = {},
+  ) =>
     this.http.request<DtoWashStationResponse[], any>({
       path: `/api/v1/wash-stations`,
       method: "GET",
+      query: query,
       secure: true,
       format: "json",
       ...params,

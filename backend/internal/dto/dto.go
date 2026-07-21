@@ -115,6 +115,7 @@ type DestinationRequest struct {
 	Lng            *float64 `json:"lng" validate:"required"`
 	VincoliScarico string   `json:"vincoli_scarico"`
 	Note           string   `json:"note"`
+	Active         bool     `json:"active"`
 }
 
 type DestinationResponse struct {
@@ -165,6 +166,7 @@ type GarageRequest struct {
 	Lat       *float64 `json:"lat" validate:"required"`
 	Lng       *float64 `json:"lng" validate:"required"`
 	Note      string   `json:"note"`
+	Active    bool     `json:"active"`
 }
 
 type GarageResponse struct {
@@ -187,6 +189,7 @@ type WashStationRequest struct {
 	Lat       *float64 `json:"lat" validate:"required"`
 	Lng       *float64 `json:"lng" validate:"required"`
 	Note      string   `json:"note"`
+	Active    bool     `json:"active"`
 }
 
 type WashStationResponse struct {
@@ -916,7 +919,9 @@ type MapPOI struct {
 	Lng  float64 `json:"lng"`
 }
 
-type MapGarage struct {
+// MapNamedPoint is a named location on the map with no other data attached —
+// used for both garages and wash stations (see MapTripsResponse).
+type MapNamedPoint struct {
 	Nome string  `json:"nome"`
 	Lat  float64 `json:"lat"`
 	Lng  float64 `json:"lng"`
@@ -961,10 +966,11 @@ type MapStats struct {
 }
 
 type MapTripsResponse struct {
-	Routes  []MapRoute  `json:"routes"`
-	POI     []MapPOI    `json:"poi"`
-	Garages []MapGarage `json:"garages"`
-	Stats   MapStats    `json:"stats"`
+	Routes       []MapRoute      `json:"routes"`
+	POI          []MapPOI        `json:"poi"`
+	Garages      []MapNamedPoint `json:"garages"`
+	WashStations []MapNamedPoint `json:"wash_stations"`
+	Stats        MapStats        `json:"stats"`
 }
 
 type CustomerResponse struct {

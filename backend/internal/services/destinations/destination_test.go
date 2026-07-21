@@ -58,7 +58,7 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("Delete returned error: %v", err)
 	}
 
-	all, err := svc.List(ctx, "")
+	all, err := svc.List(ctx, "", false)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -66,12 +66,49 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("expected only the active Sud destination, got %+v", all)
 	}
 
-	filtered, err := svc.List(ctx, "sud")
+	filtered, err := svc.List(ctx, "sud", false)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
 	if len(filtered) != 1 {
 		t.Fatalf("expected search to match Sud, got %+v", filtered)
+	}
+
+	withInactive, err := svc.List(ctx, "", true)
+	if err != nil {
+		t.Fatalf("List returned error: %v", err)
+	}
+	if len(withInactive) != 2 {
+		t.Fatalf("expected include_inactive=true to also return the deactivated Nord, got %+v", withInactive)
+	}
+}
+
+func TestDestinationService_Update_CanReactivate(t *testing.T) {
+	ctx := context.Background()
+	svc := NewDestinationService(newTestDB(t))
+
+	created, err := svc.Create(ctx, dto.DestinationRequest{Nome: "Deposito Ovest", Lat: ptr(45.0), Lng: ptr(9.0)})
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if err := svc.Delete(ctx, created.ID); err != nil {
+		t.Fatalf("Delete returned error: %v", err)
+	}
+
+	updated, err := svc.Update(ctx, created.ID, dto.DestinationRequest{Nome: "Deposito Ovest", Lat: ptr(45.0), Lng: ptr(9.0), Active: true})
+	if err != nil {
+		t.Fatalf("Update returned error: %v", err)
+	}
+	if !updated.Active {
+		t.Fatalf("expected Update with Active:true to reactivate the destination, got %+v", updated)
+	}
+
+	all, err := svc.List(ctx, "", false)
+	if err != nil {
+		t.Fatalf("List returned error: %v", err)
+	}
+	if len(all) != 1 || all[0].ID != created.ID {
+		t.Fatalf("expected the reactivated destination to show up in the default (active-only) list, got %+v", all)
 	}
 }
 

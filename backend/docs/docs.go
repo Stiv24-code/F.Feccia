@@ -1790,6 +1790,12 @@ const docTemplate = `{
                         "description": "Filter by nome (substring, case-insensitive)",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) destinations",
+                        "name": "include_inactive",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2383,6 +2389,14 @@ const docTemplate = `{
                     "Garages"
                 ],
                 "summary": "List garages",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) garages",
+                        "name": "include_inactive",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4844,6 +4858,14 @@ const docTemplate = `{
                     "WashStations"
                 ],
                 "summary": "List wash stations",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) wash stations",
+                        "name": "include_inactive",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5726,6 +5748,9 @@ const docTemplate = `{
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "cap": {
                     "type": "string"
                 },
@@ -6118,6 +6143,9 @@ const docTemplate = `{
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "citta": {
                     "type": "string"
                 },
@@ -6376,7 +6404,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.MapGarage": {
+        "dto.MapNamedPoint": {
             "type": "object",
             "properties": {
                 "lat": {
@@ -6533,7 +6561,7 @@ const docTemplate = `{
                 "garages": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.MapGarage"
+                        "$ref": "#/definitions/dto.MapNamedPoint"
                     }
                 },
                 "poi": {
@@ -6550,6 +6578,12 @@ const docTemplate = `{
                 },
                 "stats": {
                     "$ref": "#/definitions/dto.MapStats"
+                },
+                "wash_stations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.MapNamedPoint"
+                    }
                 }
             }
         },
@@ -7835,6 +7869,9 @@ const docTemplate = `{
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "citta": {
                     "type": "string"
                 },

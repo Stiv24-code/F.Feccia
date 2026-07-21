@@ -406,18 +406,18 @@ func (mr *MockDestinationMockRecorder) GetByID(ctx, id interface{}) *gomock.Call
 }
 
 // List mocks base method.
-func (m *MockDestination) List(ctx context.Context, search string) ([]dto.DestinationResponse, error) {
+func (m *MockDestination) List(ctx context.Context, search string, includeInactive bool) ([]dto.DestinationResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, search)
+	ret := m.ctrl.Call(m, "List", ctx, search, includeInactive)
 	ret0, _ := ret[0].([]dto.DestinationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockDestinationMockRecorder) List(ctx, search interface{}) *gomock.Call {
+func (mr *MockDestinationMockRecorder) List(ctx, search, includeInactive interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockDestination)(nil).List), ctx, search)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockDestination)(nil).List), ctx, search, includeInactive)
 }
 
 // Update mocks base method.
@@ -570,18 +570,18 @@ func (mr *MockGarageMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockGarage) List(ctx context.Context) ([]dto.GarageResponse, error) {
+func (m *MockGarage) List(ctx context.Context, includeInactive bool) ([]dto.GarageResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "List", ctx, includeInactive)
 	ret0, _ := ret[0].([]dto.GarageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockGarageMockRecorder) List(ctx interface{}) *gomock.Call {
+func (mr *MockGarageMockRecorder) List(ctx, includeInactive interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockGarage)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockGarage)(nil).List), ctx, includeInactive)
 }
 
 // Update mocks base method.
@@ -652,18 +652,18 @@ func (mr *MockWashStationMockRecorder) Delete(ctx, id interface{}) *gomock.Call 
 }
 
 // List mocks base method.
-func (m *MockWashStation) List(ctx context.Context) ([]dto.WashStationResponse, error) {
+func (m *MockWashStation) List(ctx context.Context, includeInactive bool) ([]dto.WashStationResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "List", ctx, includeInactive)
 	ret0, _ := ret[0].([]dto.WashStationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockWashStationMockRecorder) List(ctx interface{}) *gomock.Call {
+func (mr *MockWashStationMockRecorder) List(ctx, includeInactive interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockWashStation)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockWashStation)(nil).List), ctx, includeInactive)
 }
 
 // Update mocks base method.

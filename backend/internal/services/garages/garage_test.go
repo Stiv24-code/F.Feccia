@@ -34,12 +34,12 @@ func TestGarageService_CRUD(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	list, err := svc.List(ctx)
+	list, err := svc.List(ctx, false)
 	if err != nil || len(list) != 1 {
 		t.Fatalf("expected 1 garage, got %v (err=%v)", list, err)
 	}
 
-	updated, err := svc.Update(ctx, created.ID, dto.GarageRequest{Nome: "Deposito Rinominato", Lat: ptr(45.4642), Lng: ptr(9.1900)})
+	updated, err := svc.Update(ctx, created.ID, dto.GarageRequest{Nome: "Deposito Rinominato", Lat: ptr(45.4642), Lng: ptr(9.1900), Active: true})
 	if err != nil {
 		t.Fatalf("Update returned error: %v", err)
 	}
@@ -50,8 +50,25 @@ func TestGarageService_CRUD(t *testing.T) {
 	if err := svc.Delete(ctx, created.ID); err != nil {
 		t.Fatalf("Delete returned error: %v", err)
 	}
-	list, err = svc.List(ctx)
+	list, err = svc.List(ctx, false)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("expected 0 garages after delete, got %v (err=%v)", list, err)
+	}
+
+	withInactive, err := svc.List(ctx, true)
+	if err != nil || len(withInactive) != 1 {
+		t.Fatalf("expected include_inactive=true to still show the deleted garage, got %v (err=%v)", withInactive, err)
+	}
+
+	reactivated, err := svc.Update(ctx, created.ID, dto.GarageRequest{Nome: "Deposito Rinominato", Lat: ptr(45.4642), Lng: ptr(9.1900), Active: true})
+	if err != nil {
+		t.Fatalf("Update (reactivate) returned error: %v", err)
+	}
+	if !reactivated.Active {
+		t.Fatalf("expected Update with Active:true to reactivate the garage, got %+v", reactivated)
+	}
+	list, err = svc.List(ctx, false)
+	if err != nil || len(list) != 1 {
+		t.Fatalf("expected the reactivated garage back in the default list, got %v (err=%v)", list, err)
 	}
 }

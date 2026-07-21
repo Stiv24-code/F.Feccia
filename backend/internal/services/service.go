@@ -60,7 +60,7 @@ type Customer interface {
 }
 
 type Destination interface {
-	List(ctx context.Context, search string) ([]dto.DestinationResponse, error)
+	List(ctx context.Context, search string, includeInactive bool) ([]dto.DestinationResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.DestinationResponse, error)
 	Create(ctx context.Context, req dto.DestinationRequest) (*dto.DestinationResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.DestinationRequest) (*dto.DestinationResponse, error)
@@ -75,14 +75,14 @@ type Carrier interface {
 }
 
 type Garage interface {
-	List(ctx context.Context) ([]dto.GarageResponse, error)
+	List(ctx context.Context, includeInactive bool) ([]dto.GarageResponse, error)
 	Create(ctx context.Context, req dto.GarageRequest) (*dto.GarageResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.GarageRequest) (*dto.GarageResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type WashStation interface {
-	List(ctx context.Context) ([]dto.WashStationResponse, error)
+	List(ctx context.Context, includeInactive bool) ([]dto.WashStationResponse, error)
 	Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error

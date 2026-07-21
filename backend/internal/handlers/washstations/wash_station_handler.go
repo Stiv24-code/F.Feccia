@@ -22,11 +22,12 @@ func NewWashStationHandler(service services.WashStation) *WashStationHandler {
 // @Tags WashStations
 // @Security BearerAuth
 // @Produce json
+// @Param include_inactive query bool false "Include logically deleted (active=false) wash stations"
 // @Success 200 {array} dto.WashStationResponse
 // @Router /api/v1/wash-stations [get]
 func (h *WashStationHandler) ListWashStations(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx)
+	items, err := h.Service.List(ctx, c.QueryBool("include_inactive", false))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

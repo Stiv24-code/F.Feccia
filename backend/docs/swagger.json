@@ -1788,6 +1788,12 @@
                         "description": "Filter by nome (substring, case-insensitive)",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) destinations",
+                        "name": "include_inactive",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2381,6 +2387,14 @@
                     "Garages"
                 ],
                 "summary": "List garages",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) garages",
+                        "name": "include_inactive",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4842,6 +4856,14 @@
                     "WashStations"
                 ],
                 "summary": "List wash stations",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Include logically deleted (active=false) wash stations",
+                        "name": "include_inactive",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5724,6 +5746,9 @@
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "cap": {
                     "type": "string"
                 },
@@ -6116,6 +6141,9 @@
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "citta": {
                     "type": "string"
                 },
@@ -6374,7 +6402,7 @@
                 }
             }
         },
-        "dto.MapGarage": {
+        "dto.MapNamedPoint": {
             "type": "object",
             "properties": {
                 "lat": {
@@ -6531,7 +6559,7 @@
                 "garages": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.MapGarage"
+                        "$ref": "#/definitions/dto.MapNamedPoint"
                     }
                 },
                 "poi": {
@@ -6548,6 +6576,12 @@
                 },
                 "stats": {
                     "$ref": "#/definitions/dto.MapStats"
+                },
+                "wash_stations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.MapNamedPoint"
+                    }
                 }
             }
         },
@@ -7833,6 +7867,9 @@
                 "nome"
             ],
             "properties": {
+                "active": {
+                    "type": "boolean"
+                },
                 "citta": {
                     "type": "string"
                 },

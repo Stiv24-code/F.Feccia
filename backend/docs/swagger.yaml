@@ -405,6 +405,8 @@ definitions:
     type: object
   dto.DestinationRequest:
     properties:
+      active:
+        type: boolean
       cap:
         type: string
       citta:
@@ -664,6 +666,8 @@ definitions:
     type: object
   dto.GarageRequest:
     properties:
+      active:
+        type: boolean
       citta:
         type: string
       indirizzo:
@@ -838,7 +842,7 @@ definitions:
       user:
         $ref: '#/definitions/dto.AuthUserResponse'
     type: object
-  dto.MapGarage:
+  dto.MapNamedPoint:
     properties:
       lat:
         type: number
@@ -941,7 +945,7 @@ definitions:
     properties:
       garages:
         items:
-          $ref: '#/definitions/dto.MapGarage'
+          $ref: '#/definitions/dto.MapNamedPoint'
         type: array
       poi:
         items:
@@ -953,6 +957,10 @@ definitions:
         type: array
       stats:
         $ref: '#/definitions/dto.MapStats'
+      wash_stations:
+        items:
+          $ref: '#/definitions/dto.MapNamedPoint'
+        type: array
     type: object
   dto.MonthlyOrderTrend:
     properties:
@@ -1798,6 +1806,8 @@ definitions:
     type: object
   dto.WashStationRequest:
     properties:
+      active:
+        type: boolean
       citta:
         type: string
       indirizzo:
@@ -2988,6 +2998,10 @@ paths:
         in: query
         name: search
         type: string
+      - description: Include logically deleted (active=false) destinations
+        in: query
+        name: include_inactive
+        type: boolean
       produces:
       - application/json
       responses:
@@ -3356,6 +3370,11 @@ paths:
       - Export
   /api/v1/garages:
     get:
+      parameters:
+      - description: Include logically deleted (active=false) garages
+        in: query
+        name: include_inactive
+        type: boolean
       produces:
       - application/json
       responses:
@@ -4890,6 +4909,11 @@ paths:
       - Vehicles
   /api/v1/wash-stations:
     get:
+      parameters:
+      - description: Include logically deleted (active=false) wash stations
+        in: query
+        name: include_inactive
+        type: boolean
       produces:
       - application/json
       responses:

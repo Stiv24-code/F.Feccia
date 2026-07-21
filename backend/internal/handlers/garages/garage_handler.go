@@ -22,11 +22,12 @@ func NewGarageHandler(service services.Garage) *GarageHandler {
 // @Tags Garages
 // @Security BearerAuth
 // @Produce json
+// @Param include_inactive query bool false "Include logically deleted (active=false) garages"
 // @Success 200 {array} dto.GarageResponse
 // @Router /api/v1/garages [get]
 func (h *GarageHandler) ListGarages(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx)
+	items, err := h.Service.List(ctx, c.QueryBool("include_inactive", false))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

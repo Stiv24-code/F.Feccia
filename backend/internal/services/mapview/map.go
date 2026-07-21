@@ -78,11 +78,25 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 	}
 	sort.Slice(poi, func(i, j int) bool { return poi[i].ID < poi[j].ID })
 
-	garages := make([]dto.MapGarage, 0, len(geo.GarageCoords))
-	for name, coords := range geo.GarageCoords {
-		garages = append(garages, dto.MapGarage{Nome: name, Lat: coords[0], Lng: coords[1]})
+	var garageRows []models.Garage
+	if err := s.db.WithContext(ctx).Where("active = ?", true).Find(&garageRows).Error; err != nil {
+		return nil, err
+	}
+	garages := make([]dto.MapNamedPoint, len(garageRows))
+	for i, g := range garageRows {
+		garages[i] = dto.MapNamedPoint{Nome: g.Nome, Lat: *g.Lat, Lng: *g.Lng}
 	}
 	sort.Slice(garages, func(i, j int) bool { return garages[i].Nome < garages[j].Nome })
+
+	var washStationRows []models.WashStation
+	if err := s.db.WithContext(ctx).Where("active = ?", true).Find(&washStationRows).Error; err != nil {
+		return nil, err
+	}
+	washStations := make([]dto.MapNamedPoint, len(washStationRows))
+	for i, w := range washStationRows {
+		washStations[i] = dto.MapNamedPoint{Nome: w.Nome, Lat: *w.Lat, Lng: *w.Lng}
+	}
+	sort.Slice(washStations, func(i, j int) bool { return washStations[i].Nome < washStations[j].Nome })
 
 	stats := dto.MapStats{}
 	for _, r := range routes {
@@ -99,7 +113,7 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 		}
 	}
 
-	return &dto.MapTripsResponse{Routes: routes, POI: poi, Garages: garages, Stats: stats}, nil
+	return &dto.MapTripsResponse{Routes: routes, POI: poi, Garages: garages, WashStations: washStations, Stats: stats}, nil
 }
 
 // buildDestinationMap mirrors build_destination_map: resolves each active

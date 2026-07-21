@@ -72,8 +72,8 @@ export const appApi = createApi({
       invalidatesTags: ['Customer'],
     }),
 
-    getDestinations: builder.query<DtoDestinationResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1DestinationsList({ search: search || undefined })),
+    getDestinations: builder.query<DtoDestinationResponse[], { search?: string; includeInactive?: boolean } | void>({
+      queryFn: (args) => toQueryResult(apiClient.v1DestinationsList({ search: args?.search || undefined, include_inactive: args?.includeInactive || undefined })),
       providesTags: ['Destination'],
     }),
     createDestination: builder.mutation<DtoDestinationResponse, DtoDestinationRequest>({
@@ -158,8 +158,8 @@ export const appApi = createApi({
     }),
 
     // Garages: nessun filtro `search` lato backend (a differenza degli altri).
-    getGarages: builder.query<DtoGarageResponse[], void>({
-      queryFn: () => toQueryResult(apiClient.v1GaragesList()),
+    getGarages: builder.query<DtoGarageResponse[], boolean | void>({
+      queryFn: (includeInactive) => toQueryResult(apiClient.v1GaragesList({ include_inactive: includeInactive || undefined })),
       providesTags: ['Garage'],
     }),
     createGarage: builder.mutation<DtoGarageResponse, DtoGarageRequest>({
@@ -175,8 +175,8 @@ export const appApi = createApi({
       invalidatesTags: ['Garage'],
     }),
 
-    getWashStations: builder.query<DtoWashStationResponse[], void>({
-      queryFn: () => toQueryResult(apiClient.v1WashStationsList()),
+    getWashStations: builder.query<DtoWashStationResponse[], boolean | void>({
+      queryFn: (includeInactive) => toQueryResult(apiClient.v1WashStationsList({ include_inactive: includeInactive || undefined })),
       providesTags: ['WashStation'],
     }),
     createWashStation: builder.mutation<DtoWashStationResponse, DtoWashStationRequest>({

@@ -20,9 +20,13 @@ func NewWashStationService(db *gorm.DB) *WashStationService {
 	return &WashStationService{db: db}
 }
 
-func (s *WashStationService) List(ctx context.Context) ([]dto.WashStationResponse, error) {
+func (s *WashStationService) List(ctx context.Context, includeInactive bool) ([]dto.WashStationResponse, error) {
+	query := s.db.WithContext(ctx)
+	if !includeInactive {
+		query = query.Where("active = ?", true)
+	}
 	var stations []models.WashStation
-	if err := s.db.WithContext(ctx).Where("active = ?", true).Limit(listLimit).Find(&stations).Error; err != nil {
+	if err := query.Limit(listLimit).Find(&stations).Error; err != nil {
 		return nil, err
 	}
 
@@ -69,6 +73,10 @@ func (s *WashStationService) Update(ctx context.Context, id uuid.UUID, req dto.W
 	if err := s.db.WithContext(ctx).Save(&w).Error; err != nil {
 		return nil, err
 	}
+	if err := s.db.WithContext(ctx).Model(&models.WashStation{}).Where("id = ?", id).Update("active", req.Active).Error; err != nil {
+		return nil, err
+	}
+	w.Active = req.Active
 
 	resp := toResponse(w)
 	return &resp, nil

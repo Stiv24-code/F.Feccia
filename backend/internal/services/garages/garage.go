@@ -22,9 +22,13 @@ func NewGarageService(db *gorm.DB) *GarageService {
 
 // List has no search parameter, mirroring backend/routers/garages.py (no
 // search support, no GET-by-id either).
-func (s *GarageService) List(ctx context.Context) ([]dto.GarageResponse, error) {
+func (s *GarageService) List(ctx context.Context, includeInactive bool) ([]dto.GarageResponse, error) {
+	query := s.db.WithContext(ctx)
+	if !includeInactive {
+		query = query.Where("active = ?", true)
+	}
 	var garages []models.Garage
-	if err := s.db.WithContext(ctx).Where("active = ?", true).Limit(listLimit).Find(&garages).Error; err != nil {
+	if err := query.Limit(listLimit).Find(&garages).Error; err != nil {
 		return nil, err
 	}
 
@@ -71,6 +75,10 @@ func (s *GarageService) Update(ctx context.Context, id uuid.UUID, req dto.Garage
 	if err := s.db.WithContext(ctx).Save(&g).Error; err != nil {
 		return nil, err
 	}
+	if err := s.db.WithContext(ctx).Model(&models.Garage{}).Where("id = ?", id).Update("active", req.Active).Error; err != nil {
+		return nil, err
+	}
+	g.Active = req.Active
 
 	resp := toResponse(g)
 	return &resp, nil

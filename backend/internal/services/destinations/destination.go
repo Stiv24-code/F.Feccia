@@ -30,8 +30,11 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
-func (s *DestinationService) List(ctx context.Context, search string) ([]dto.DestinationResponse, error) {
-	query := s.db.WithContext(ctx).Model(&models.Destination{}).Where("active = ?", true)
+func (s *DestinationService) List(ctx context.Context, search string, includeInactive bool) ([]dto.DestinationResponse, error) {
+	query := s.db.WithContext(ctx).Model(&models.Destination{})
+	if !includeInactive {
+		query = query.Where("active = ?", true)
+	}
 	if search != "" {
 		query = query.Where("LOWER(nome) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
@@ -104,6 +107,15 @@ func (s *DestinationService) Update(ctx context.Context, id uuid.UUID, req dto.D
 	if err := s.db.WithContext(ctx).Save(&d).Error; err != nil {
 		return nil, err
 	}
+	// Bool column with a `default:true` tag: GORM's create-time zero-skip
+	// logic doesn't apply here (Save/Update, not Create), but a plain field
+	// assignment on Save was already a source of surprises in this codebase
+	// (see the batch-create gotcha in map_test.go) — an explicit targeted
+	// update, same as Delete() below, removes any doubt.
+	if err := s.db.WithContext(ctx).Model(&models.Destination{}).Where("id = ?", id).Update("active", req.Active).Error; err != nil {
+		return nil, err
+	}
+	d.Active = req.Active
 
 	resp := toResponse(d)
 	return &resp, nil

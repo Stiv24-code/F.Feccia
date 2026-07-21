@@ -23,11 +23,12 @@ func NewDestinationHandler(service services.Destination) *DestinationHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by nome (substring, case-insensitive)"
+// @Param include_inactive query bool false "Include logically deleted (active=false) destinations"
 // @Success 200 {array} dto.DestinationResponse
 // @Router /api/v1/destinations [get]
 func (h *DestinationHandler) ListDestinations(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx, c.Query("search"))
+	items, err := h.Service.List(ctx, c.Query("search"), c.QueryBool("include_inactive", false))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

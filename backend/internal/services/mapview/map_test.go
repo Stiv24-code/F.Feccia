@@ -20,7 +20,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Destination{}, &models.Vehicle{}, &models.RouteCache{}, &models.Garage{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Destination{}, &models.Vehicle{}, &models.RouteCache{}, &models.Garage{}, &models.WashStation{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -186,6 +186,36 @@ func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
 	}
 	createOrder(t, db, "VIAGGIO", "Milano (MI)", "Lodi (LO)", "")
 
+	lodiLat, lodiLng := 45.3138, 9.5032
+	rhoLat, rhoLng := 45.5306, 9.0393
+	inactiveID := uuid.New()
+	garages := []models.Garage{
+		{ID: uuid.New(), Nome: "Garage Feccia F.lli - Lodi", Lat: &lodiLat, Lng: &lodiLng, Active: true},
+		{ID: inactiveID, Nome: "Deposito Milano Rho", Lat: &rhoLat, Lng: &rhoLng, Active: true},
+	}
+	if err := db.Create(&garages).Error; err != nil {
+		t.Fatalf("failed to seed garages: %v", err)
+	}
+	// Active:false at struct-literal time is silently overwritten by GORM's
+	// `default:true` on create (can't tell "false" from "unset" for a plain
+	// bool) — flip it with a targeted update instead, same as Delete() does.
+	if err := db.Model(&models.Garage{}).Where("id = ?", inactiveID).Update("active", false).Error; err != nil {
+		t.Fatalf("failed to deactivate garage: %v", err)
+	}
+
+	washLat, washLng := 45.3852, 10.9296
+	inactiveWashID := uuid.New()
+	washStations := []models.WashStation{
+		{ID: uuid.New(), Nome: "Lavaggio Cisterne Verona", Lat: &washLat, Lng: &washLng, Active: true},
+		{ID: inactiveWashID, Nome: "Lavaggio Dismesso", Lat: &washLat, Lng: &washLng, Active: true},
+	}
+	if err := db.Create(&washStations).Error; err != nil {
+		t.Fatalf("failed to seed wash stations: %v", err)
+	}
+	if err := db.Model(&models.WashStation{}).Where("id = ?", inactiveWashID).Update("active", false).Error; err != nil {
+		t.Fatalf("failed to deactivate wash station: %v", err)
+	}
+
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
 		t.Fatalf("Trips returned error: %v", err)
@@ -193,7 +223,10 @@ func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
 	if len(resp.POI) != 1 || resp.POI[0].Nome != "Milano (MI)" {
 		t.Fatalf("expected 1 POI resolved from active destination, got %+v", resp.POI)
 	}
-	if len(resp.Garages) != 2 {
-		t.Fatalf("expected 2 hardcoded garages, got %d", len(resp.Garages))
+	if len(resp.Garages) != 1 || resp.Garages[0].Nome != "Garage Feccia F.lli - Lodi" {
+		t.Fatalf("expected only the active garage from the DB, got %+v", resp.Garages)
+	}
+	if len(resp.WashStations) != 1 || resp.WashStations[0].Nome != "Lavaggio Cisterne Verona" {
+		t.Fatalf("expected only the active wash station from the DB, got %+v", resp.WashStations)
 	}
 }

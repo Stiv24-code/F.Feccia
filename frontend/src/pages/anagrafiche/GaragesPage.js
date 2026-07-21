@@ -11,25 +11,30 @@ import { MapPicker } from '@/components/shared/MapPicker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
-const emptyForm = { nome: '', indirizzo: '', citta: '', lat: null, lng: null, note: '' };
+const emptyForm = { nome: '', indirizzo: '', citta: '', lat: null, lng: null, note: '', active: true };
 
 export default function GaragesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
 
-  const { data = [], isLoading: loading } = useGetGaragesQuery();
+  // include_inactive: la pagina anagrafica deve poter riattivare un garage
+  // disattivato, quindi mostra anche gli inattivi (a differenza di dove
+  // Garage viene usato solo per scegliere un punto di partenza).
+  const { data = [], isLoading: loading } = useGetGaragesQuery(true);
   const [createGarage, { isLoading: creating }] = useCreateGarageMutation();
   const [updateGarage, { isLoading: updating }] = useUpdateGarageMutation();
   const [deleteGarage] = useDeleteGarageMutation();
   const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
-  const openEdit = (item) => { setForm({ nome: item.nome, indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '' }); setEditId(item.id); setDialogOpen(true); };
+  const openEdit = (item) => { setForm({ nome: item.nome, indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
     if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
@@ -44,15 +49,16 @@ export default function GaragesPage() {
     try { await deleteGarage(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
-  const columns = [{ key: 'nome', label: 'Nome' }, { key: 'citta', label: 'Città' }, { key: 'actions', label: '', className: 'w-20' }];
+  const columns = [{ key: 'nome', label: 'Nome' }, { key: 'citta', label: 'Città' }, { key: 'stato', label: 'Stato' }, { key: 'actions', label: '', className: 'w-20' }];
 
   return (
     <div data-testid="garages-page">
       <DataTable columns={columns} data={data} loading={loading} searchValue="" onSearchChange={() => {}} onAdd={openNew} addLabel="Nuovo Garage" testId="masterdata-table"
         renderRow={(item) => (
-          <TableRow key={item.id} className="hover:bg-muted/60">
+          <TableRow key={item.id} className={`hover:bg-muted/60 ${!item.active ? 'opacity-60' : ''}`}>
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>
             <TableCell className="py-2">{item.citta}</TableCell>
+            <TableCell className="py-2">{item.active ? <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">Attivo</Badge> : <Badge variant="outline" className="text-[10px]">Inattivo</Badge>}</TableCell>
             <TableCell className="py-2"><div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-3 w-3" /></Button></div></TableCell>
           </TableRow>
         )}
@@ -66,6 +72,12 @@ export default function GaragesPage() {
             <Label>Posizione *</Label>
             <MapPicker lat={form.lat} lng={form.lng} onChange={(lat, lng) => setForm({...form, lat, lng})} />
           </div>
+          {editId && (
+            <div className="md:col-span-2 flex items-center gap-2">
+              <Switch checked={form.active} onCheckedChange={active => setForm({...form, active})} id="garage-active" />
+              <Label htmlFor="garage-active">Attivo</Label>
+            </div>
+          )}
         </div>
       </FormDialog>
     </div>

@@ -12,11 +12,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
-const emptyForm = { nome: '', indirizzo: '', citta: '', cap: '', provincia: '', nazione: 'Italia', lat: null, lng: null, vincoli_scarico: '', note: '' };
+const emptyForm = { nome: '', indirizzo: '', citta: '', cap: '', provincia: '', nazione: 'Italia', lat: null, lng: null, vincoli_scarico: '', note: '', active: true };
 
 export default function DestinationsPage() {
   const [search, setSearch] = useState('');
@@ -24,14 +26,14 @@ export default function DestinationsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
 
-  const { data = [], isLoading: loading } = useGetDestinationsQuery(search);
+  const { data = [], isLoading: loading } = useGetDestinationsQuery({ search, includeInactive: true });
   const [createDestination, { isLoading: creating }] = useCreateDestinationMutation();
   const [updateDestination, { isLoading: updating }] = useUpdateDestinationMutation();
   const [deleteDestination] = useDeleteDestinationMutation();
   const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
-  const openEdit = (item) => { setForm({ nome: item.nome, indirizzo: item.indirizzo || '', citta: item.citta || '', cap: item.cap || '', provincia: item.provincia || '', nazione: item.nazione || 'Italia', lat: item.lat ?? null, lng: item.lng ?? null, vincoli_scarico: item.vincoli_scarico || '', note: item.note || '' }); setEditId(item.id); setDialogOpen(true); };
+  const openEdit = (item) => { setForm({ nome: item.nome, indirizzo: item.indirizzo || '', citta: item.citta || '', cap: item.cap || '', provincia: item.provincia || '', nazione: item.nazione || 'Italia', lat: item.lat ?? null, lng: item.lng ?? null, vincoli_scarico: item.vincoli_scarico || '', note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
     if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
@@ -52,6 +54,7 @@ export default function DestinationsPage() {
     { key: 'citta', label: 'Città' },
     { key: 'nazione', label: 'Nazione' },
     { key: 'vincoli', label: 'Vincoli Scarico' },
+    { key: 'stato', label: 'Stato' },
     { key: 'actions', label: '', className: 'w-20' },
   ];
 
@@ -61,11 +64,12 @@ export default function DestinationsPage() {
         columns={columns} data={data} loading={loading} searchValue={search}
         onSearchChange={setSearch} onAdd={openNew} addLabel="Nuova Destinazione" testId="masterdata-table"
         renderRow={(item) => (
-          <TableRow key={item.id} className="hover:bg-muted/60">
+          <TableRow key={item.id} className={`hover:bg-muted/60 ${!item.active ? 'opacity-60' : ''}`}>
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>
             <TableCell className="py-2">{item.citta}</TableCell>
             <TableCell className="py-2">{item.nazione}</TableCell>
             <TableCell className="py-2 text-xs">{item.vincoli_scarico}</TableCell>
+            <TableCell className="py-2">{item.active ? <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">Attivo</Badge> : <Badge variant="outline" className="text-[10px]">Inattivo</Badge>}</TableCell>
             <TableCell className="py-2">
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button>
@@ -89,6 +93,12 @@ export default function DestinationsPage() {
           </div>
           <div className="md:col-span-2 space-y-1.5"><Label>Vincoli Scarico</Label><Textarea value={form.vincoli_scarico} onChange={e => setForm({...form, vincoli_scarico: e.target.value})} rows={2} /></div>
           <div className="md:col-span-2 space-y-1.5"><Label>Note</Label><Textarea value={form.note} onChange={e => setForm({...form, note: e.target.value})} rows={2} /></div>
+          {editId && (
+            <div className="md:col-span-2 flex items-center gap-2">
+              <Switch checked={form.active} onCheckedChange={active => setForm({...form, active})} id="destination-active" />
+              <Label htmlFor="destination-active">Attivo</Label>
+            </div>
+          )}
         </div>
       </FormDialog>
     </div>
