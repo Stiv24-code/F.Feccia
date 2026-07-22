@@ -112,7 +112,7 @@ export interface OrderItem {
   peso?: number;
 }
 
-export type OrderStato = 'PIANIFICABILE' | 'VIAGGIO' | 'CHIUSO' | 'FATTURATO';
+export type OrderStato = 'PIANIFICABILE' | 'PIANIFICATO' | 'VIAGGIO' | 'CHIUSO' | 'SCARTATO';
 
 export interface Order {
   id: string;

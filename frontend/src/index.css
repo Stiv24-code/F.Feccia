@@ -127,6 +127,35 @@
   border-color: #BFECD2;
 }
 
+/* Stati ordine/viaggio (Da pianificare/Pianificato/In viaggio/Consegnato/
+   Scartato) — classi dedicate, indipendenti dalle .status-* condivise sopra
+   (usate da Proforma/Definitiva) per non alterarne i colori. */
+.status-order-red {
+  background-color: #FDECEC;
+  color: #7A1F1F;
+  border-color: #F0C5C0;
+}
+.status-order-yellow {
+  background-color: #FDF1C7;
+  color: #6A4B00;
+  border-color: #EEDDA0;
+}
+.status-order-blue {
+  background-color: #E4EEFC;
+  color: #1D3E7A;
+  border-color: #BFD3F2;
+}
+.status-order-green {
+  background-color: #E9F5EE;
+  color: #0F5132;
+  border-color: #BFE0CD;
+}
+.status-order-gray {
+  background-color: #F1F3F6;
+  color: #4B5563;
+  border-color: #DDE1E7;
+}
+
 /* Selection */
 ::selection {
   background-color: hsl(195 92% 28% / 0.2);

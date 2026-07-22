@@ -34,7 +34,7 @@ func (h *TripHandler) ListTrips(c *fiber.Ctx) error {
 }
 
 // @Summary Create trip
-// @Description Syncs any PIANIFICABILE orders in ordini_ids to VIAGGIO and computes route segments via OSRM
+// @Description Syncs any PIANIFICABILE orders in ordini_ids to PIANIFICATO and computes route segments via OSRM
 // @Tags Trips
 // @Security BearerAuth
 // @Accept json
@@ -97,12 +97,34 @@ func (h *TripHandler) RecomputeSegments(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, result)
 }
 
+// @Summary Start a trip (PIANIFICATO -> IN_CORSO, starts its PIANIFICATO orders to VIAGGIO)
+// @Tags Trips
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Trip ID (UUID)"
+// @Success 200 {object} dto.OKResult
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/trips/{id}/start [patch]
+func (h *TripHandler) StartTrip(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	result, err := h.Service.Start(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, result)
+}
+
 // @Summary Complete a trip (closes its VIAGGIO orders)
 // @Tags Trips
 // @Security BearerAuth
 // @Produce json
 // @Param id path string true "Trip ID (UUID)"
 // @Success 200 {object} dto.OKResult
+// @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/trips/{id}/complete [patch]
 func (h *TripHandler) CompleteTrip(c *fiber.Ctx) error {

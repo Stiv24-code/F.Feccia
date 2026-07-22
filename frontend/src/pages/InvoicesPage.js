@@ -87,7 +87,7 @@ export default function InvoicesPage() {
   };
 
   const handleFinalize = async (id) => {
-    if (!window.confirm('Finalizzare questa fattura? Gli ordini passeranno a FATTURATO.')) return;
+    if (!window.confirm('Finalizzare questa fattura? Gli ordini collegati verranno contrassegnati come fatturati.')) return;
     try {
       await finalizeInvoice(id);
       toast.success('Fattura finalizzata');

@@ -101,10 +101,12 @@ func (s *InvoiceService) GetByID(ctx context.Context, id uuid.UUID) (*dto.Invoic
 }
 
 // Finalize mirrors PATCH /invoices/{id}/finalize: PROFORMA -> DEFINITIVA,
-// cascades CHIUSO orders referenced by righe[].ordine_id to FATTURATO. The
-// state change and order cascade ALWAYS happen, even if the subsequent S3
-// upload fails — the fiscal flow must not block on a transient S3 issue
-// (matching Python's own comment/behavior in finalize_invoice exactly).
+// stamps fattura_id on CHIUSO orders referenced by righe[].ordine_id ("has
+// this order been billed" is tracked purely via fattura_id, not a separate
+// order stato — CHIUSO stays CHIUSO). The state change and order cascade
+// ALWAYS happen, even if the subsequent S3 upload fails — the fiscal flow
+// must not block on a transient S3 issue (matching Python's own
+// comment/behavior in finalize_invoice exactly).
 func (s *InvoiceService) Finalize(ctx context.Context, id uuid.UUID) (*dto.InvoiceFinalizeResult, error) {
 	var inv models.Invoice
 	if err := s.db.WithContext(ctx).Preload("Righe").First(&inv, "id = ?", id).Error; err != nil {
@@ -129,7 +131,7 @@ func (s *InvoiceService) Finalize(ctx context.Context, id uuid.UUID) (*dto.Invoi
 		s.db.WithContext(ctx).Model(&models.Order{}).
 			Where("id = ? AND stato = ?", riga.OrdineID, "CHIUSO").
 			Updates(map[string]interface{}{
-				"stato": "FATTURATO", "fattura_id": id.String(), "updated_at": time.Now().UTC(),
+				"fattura_id": id.String(), "updated_at": time.Now().UTC(),
 			})
 	}
 

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -304,7 +305,10 @@ func Seed(db *gorm.DB) error {
 	fmt.Printf("✓ %d listini con regole\n", len(pricelists))
 
 	// ─────────────────────────── ORDINI ───────────────────────────
-	statiDist := weighted(map[string]int{"PIANIFICABILE": 12, "VIAGGIO": 18, "CHIUSO": 15, "FATTURATO": 15})
+	// Solo questi 5 stati esistono per un ordine: "fatturato" non è uno stato
+	// a sé (vedi sezione FATTURE più sotto: è fattura_id != "" su un ordine
+	// CHIUSO, non un valore di Stato separato).
+	statiDist := weighted(map[string]int{"PIANIFICABILE": 10, "PIANIFICATO": 8, "VIAGGIO": 15, "CHIUSO": 23, "SCARTATO": 4})
 	tipologie := weighted(map[string]int{"export": 6, "import": 5, "nazionale": 6, "solo_estero": 3})
 	tariffe := []float64{950, 1200, 1500, 1800, 2000, 2100, 2150, 2200, 2350, 2500, 2600, 2800, 3000, 3200, 3500}
 	tipoTariffe := weighted(map[string]int{"forfait": 4, "euro_kg": 1})
@@ -313,6 +317,11 @@ func Seed(db *gorm.DB) error {
 	oraRitiroA := []string{"08:00", "10:00", "12:00"}
 	oraConsegnaDa := []string{"06:00", "08:00", "14:00"}
 	oraConsegnaA := []string{"12:00", "16:00", "18:00", "20:00"}
+
+	// Ancorato a "oggi" (non a un anno fisso) così gli ordini seminati
+	// ricadono subito nella settimana corrente del calendario Planner,
+	// invece di finire in un anno passato non più visibile di default.
+	today := time.Now()
 
 	var motrici []models.Vehicle
 	for _, v := range vehicles {
@@ -338,12 +347,11 @@ func Seed(db *gorm.DB) error {
 		}
 		prod := pick(products)
 		stato := pick(statiDist)
-		month := randRange(7, 12)
-		day := randRange(1, 28)
-		consegnaDay := day + randRange(1, 3)
-		if consegnaDay > 28 {
-			consegnaDay = 28
-		}
+		// Spread: da ~3 settimane fa a ~7 settimane nel futuro, centrato su
+		// oggi, così la settimana corrente del calendario Planner è sempre
+		// popolata fin dal primo avvio.
+		ritiro := today.AddDate(0, 0, randRange(-20, 45))
+		consegna := ritiro.AddDate(0, 0, randRange(1, 3))
 
 		rifOrdineCliente := ""
 		if randBelow(3) == 0 {
@@ -351,12 +359,12 @@ func Seed(db *gorm.DB) error {
 		}
 
 		order := models.Order{
-			ID: uuid.New(), Progressivo: fmt.Sprintf("25/%04d", seq),
+			ID: uuid.New(), Progressivo: fmt.Sprintf("%s/%04d", today.Format("06"), seq),
 			ClienteID: cust.ID.String(), ClienteNome: cust.RagioneSociale,
 			DestinazioneCaricoID: carico.ID.String(), DestinazioneCaricoNome: carico.Nome,
 			DestinazioneScaricoID: scarico.ID.String(), DestinazioneScaricoNome: scarico.Nome,
-			DataRitiro: fmt.Sprintf("2025-%02d-%02d", month, day), OraRitiroDa: pick(oraRitiroDa), OraRitiroA: pick(oraRitiroA),
-			DataConsegna: fmt.Sprintf("2025-%02d-%02d", month, consegnaDay), OraConsegnaDa: pick(oraConsegnaDa), OraConsegnaA: pick(oraConsegnaA),
+			DataRitiro: ritiro.Format("2006-01-02"), OraRitiroDa: pick(oraRitiroDa), OraRitiroA: pick(oraRitiroA),
+			DataConsegna: consegna.Format("2006-01-02"), OraConsegnaDa: pick(oraConsegnaDa), OraConsegnaA: pick(oraConsegnaA),
 			Tariffa: pick(tariffe), TipoTariffa: pick(tipoTariffe), Tipologia: pick(tipologie),
 			CategoriaTrasporto: pick(categorieTrasporto), RifOrdineCliente: rifOrdineCliente,
 			AndataRitorno: randBelow(5) == 0,
@@ -366,7 +374,7 @@ func Seed(db *gorm.DB) error {
 			ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"), Stato: stato,
 		}
 
-		if stato == "VIAGGIO" || stato == "CHIUSO" || stato == "FATTURATO" {
+		if stato == "PIANIFICATO" || stato == "VIAGGIO" || stato == "CHIUSO" {
 			m := pick(motrici)
 			d := pick(drivers)
 			order.TargaMotrice = m.Targa
@@ -438,34 +446,46 @@ func Seed(db *gorm.DB) error {
 	fmt.Printf("✓ %d viaggi\n", len(trips))
 
 	// ─────────────────────────── FATTURE ───────────────────────────
-	var fatturatoOrders, chiusoOrders []models.Order
+	// "Fatturato" non è un valore di Stato dell'ordine: un ordine CHIUSO che
+	// è stato fatturato resta CHIUSO, e porta semplicemente un fattura_id
+	// valorizzato (esattamente come fa InvoiceService.Finalize in
+	// produzione). Dividiamo gli ordini CHIUSO in due gruppi: la prima metà
+	// simula fatture già finalizzate (DEFINITIVA + fattura_id stampato sugli
+	// ordini), la seconda genera fatture ancora in bozza (PROFORMA, nessun
+	// fattura_id sugli ordini).
+	var chiusoOrders []models.Order
 	for _, o := range orders {
-		switch o.Stato {
-		case "FATTURATO":
-			fatturatoOrders = append(fatturatoOrders, o)
-		case "CHIUSO":
+		if o.Stato == "CHIUSO" {
 			chiusoOrders = append(chiusoOrders, o)
 		}
 	}
+	mid := len(chiusoOrders) / 2
+	definitivaPool, proformaPool := chiusoOrders[:mid], chiusoOrders[mid:]
 
 	var invoices []models.Invoice
-	for k := 0; k < min(4, len(fatturatoOrders)); k++ {
-		invOrders := sliceClamp(fatturatoOrders, k*3, k*3+randRange(2, 4))
+	for k := 0; k < min(4, len(definitivaPool)); k++ {
+		invOrders := sliceClamp(definitivaPool, k*3, k*3+randRange(2, 4))
 		if len(invOrders) == 0 {
 			continue
 		}
 		righe, totale := buildInvoiceLines(invOrders)
-		invoices = append(invoices, models.Invoice{
+		inv := models.Invoice{
 			ID: uuid.New(), Numero: fmt.Sprintf("O/F-25/%04d", k+1),
 			ClienteID: invOrders[0].ClienteID, ClienteNome: invOrders[0].ClienteNome,
 			DataFattura:         fmt.Sprintf("2025-%02d-%02d", randRange(7, 11), randRange(1, 28)),
 			DataScadenza:        fmt.Sprintf("2025-%02d-%02d", randRange(9, 12), randRange(1, 28)),
 			CondizioniPagamento: "BB 30gg DF FM", Righe: righe, CostiAccessori: []byte("[]"),
 			TotaleImponibile: totale, Totale: totale, Stato: "DEFINITIVA", Tipo: "ordine",
-		})
+		}
+		invoices = append(invoices, inv)
+		ordIDs := make([]string, len(invOrders))
+		for i, o := range invOrders {
+			ordIDs[i] = o.ID.String()
+		}
+		db.Model(&models.Order{}).Where("id IN ?", ordIDs).Update("fattura_id", inv.ID.String())
 	}
-	for k := 0; k < min(4, len(chiusoOrders)); k++ {
-		invOrders := sliceClamp(chiusoOrders, k*2, k*2+randRange(1, 3))
+	for k := 0; k < min(4, len(proformaPool)); k++ {
+		invOrders := sliceClamp(proformaPool, k*2, k*2+randRange(1, 3))
 		if len(invOrders) == 0 {
 			continue
 		}
@@ -486,10 +506,11 @@ func Seed(db *gorm.DB) error {
 	fmt.Printf("✓ %d fatture\n", len(invoices))
 
 	// ─────────────────────────── INDISPONIBILITÀ AUTISTI ───────────────────────────
+	iso := func(d time.Time) string { return d.Format("2006-01-02") }
 	unavails := []models.DriverUnavailability{
-		{ID: uuid.New(), AutistaID: drivers[2].ID, AutistaNome: drivers[2].Nome + " " + drivers[2].Cognome, DataDa: "2025-08-10", DataA: "2025-08-24", Motivo: "ferie", Note: "Ferie estive"},
-		{ID: uuid.New(), AutistaID: drivers[5].ID, AutistaNome: drivers[5].Nome + " " + drivers[5].Cognome, DataDa: "2025-09-01", DataA: "2025-09-05", Motivo: "malattia"},
-		{ID: uuid.New(), AutistaID: drivers[7].ID, AutistaNome: drivers[7].Nome + " " + drivers[7].Cognome, DataDa: "2025-10-15", DataA: "2025-10-17", Motivo: "permesso", Note: "Permesso familiare"},
+		{ID: uuid.New(), AutistaID: drivers[2].ID, AutistaNome: drivers[2].Nome + " " + drivers[2].Cognome, DataDa: iso(today.AddDate(0, 0, 14)), DataA: iso(today.AddDate(0, 0, 28)), Motivo: "ferie", Note: "Ferie estive"},
+		{ID: uuid.New(), AutistaID: drivers[5].ID, AutistaNome: drivers[5].Nome + " " + drivers[5].Cognome, DataDa: iso(today.AddDate(0, 0, -5)), DataA: iso(today.AddDate(0, 0, -1)), Motivo: "malattia"},
+		{ID: uuid.New(), AutistaID: drivers[7].ID, AutistaNome: drivers[7].Nome + " " + drivers[7].Cognome, DataDa: iso(today.AddDate(0, 0, 3)), DataA: iso(today.AddDate(0, 0, 5)), Motivo: "permesso", Note: "Permesso familiare"},
 	}
 	if err := db.Create(&unavails).Error; err != nil {
 		return fmt.Errorf("indisponibilita' autisti: %w", err)

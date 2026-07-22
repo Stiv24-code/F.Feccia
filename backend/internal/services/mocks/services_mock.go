@@ -1307,6 +1307,21 @@ func (mr *MockOrderMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOrder)(nil).Delete), ctx, id)
 }
 
+// Discard mocks base method.
+func (m *MockOrder) Discard(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Discard", ctx, id)
+	ret0, _ := ret[0].(*dto.OrderResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Discard indicates an expected call of Discard.
+func (mr *MockOrderMockRecorder) Discard(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Discard", reflect.TypeOf((*MockOrder)(nil).Discard), ctx, id)
+}
+
 // GetByID mocks base method.
 func (m *MockOrder) GetByID(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
 	m.ctrl.T.Helper()
@@ -1366,6 +1381,21 @@ func (m *MockOrder) ReturnSuggestions(ctx context.Context, id uuid.UUID, maxDays
 func (mr *MockOrderMockRecorder) ReturnSuggestions(ctx, id, maxDaysGap, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnSuggestions", reflect.TypeOf((*MockOrder)(nil).ReturnSuggestions), ctx, id, maxDaysGap, limit)
+}
+
+// Start mocks base method.
+func (m *MockOrder) Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Start", ctx, id)
+	ret0, _ := ret[0].(*dto.OrderResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Start indicates an expected call of Start.
+func (mr *MockOrderMockRecorder) Start(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockOrder)(nil).Start), ctx, id)
 }
 
 // Update mocks base method.
@@ -1712,6 +1742,21 @@ func (m *MockTrip) RecomputeSegments(ctx context.Context, id uuid.UUID) (*dto.Re
 func (mr *MockTripMockRecorder) RecomputeSegments(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecomputeSegments", reflect.TypeOf((*MockTrip)(nil).RecomputeSegments), ctx, id)
+}
+
+// Start mocks base method.
+func (m *MockTrip) Start(ctx context.Context, id uuid.UUID) (*dto.OKResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Start", ctx, id)
+	ret0, _ := ret[0].(*dto.OKResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Start indicates an expected call of Start.
+func (mr *MockTripMockRecorder) Start(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockTrip)(nil).Start), ctx, id)
 }
 
 // MockPriceList is a mock of PriceList interface.

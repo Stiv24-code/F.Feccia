@@ -138,7 +138,9 @@ type Order interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.OrderRequest) (*dto.OrderResponse, error)
 	Assign(ctx context.Context, id uuid.UUID, req dto.OrderAssignRequest) (*dto.OrderResponse, error)
+	Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Close(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
+	Discard(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	ReturnSuggestions(ctx context.Context, id uuid.UUID, maxDaysGap, limit int) (*dto.OrderReturnSuggestionsResponse, error)
 	GetCMRPDF(ctx context.Context, id uuid.UUID) ([]byte, string, error)
@@ -164,6 +166,7 @@ type Trip interface {
 	Create(ctx context.Context, req dto.TripRequest) (*dto.TripResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.TripDetailResponse, error)
 	RecomputeSegments(ctx context.Context, id uuid.UUID) (*dto.RecomputeSegmentsResult, error)
+	Start(ctx context.Context, id uuid.UUID) (*dto.OKResult, error)
 	Complete(ctx context.Context, id uuid.UUID) (*dto.OKResult, error)
 	AddOrder(ctx context.Context, tripID, orderID uuid.UUID) (*dto.OKResult, error)
 	GetInstructionsPDF(ctx context.Context, id uuid.UUID) ([]byte, string, error)

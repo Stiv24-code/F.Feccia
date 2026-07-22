@@ -3872,7 +3872,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Assign order to a vehicle/driver/carrier (PIANIFICABILE -> VIAGGIO)
+      summary: Assign order to a vehicle/driver/carrier (PIANIFICABILE -> PIANIFICATO)
       tags:
       - Orders
   /api/v1/orders/{id}/close:
@@ -3933,6 +3933,38 @@ paths:
       summary: CMR waybill PDF for an order
       tags:
       - Orders
+  /api/v1/orders/{id}/discard:
+    patch:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Discard order (PIANIFICABILE|PIANIFICATO -> SCARTATO)
+      tags:
+      - Orders
   /api/v1/orders/{id}/return-suggestions:
     get:
       parameters:
@@ -3971,6 +4003,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Return-trip order suggestions
+      tags:
+      - Orders
+  /api/v1/orders/{id}/start:
+    patch:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start order (PIANIFICATO -> VIAGGIO)
       tags:
       - Orders
   /api/v1/pricelists:
@@ -4417,8 +4481,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Syncs any PIANIFICABILE orders in ordini_ids to VIAGGIO and computes
-        route segments via OSRM
+      description: Syncs any PIANIFICABILE orders in ordini_ids to PIANIFICATO and
+        computes route segments via OSRM
       parameters:
       - description: Trip data
         in: body
@@ -4516,6 +4580,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.OKResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not Found
           schema:
@@ -4577,6 +4647,39 @@ paths:
       security:
       - BearerAuth: []
       summary: Recompute a trip's route segments
+      tags:
+      - Trips
+  /api/v1/trips/{id}/start:
+    patch:
+      parameters:
+      - description: Trip ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OKResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start a trip (PIANIFICATO -> IN_CORSO, starts its PIANIFICATO orders
+        to VIAGGIO)
       tags:
       - Trips
   /api/v1/vehicle-types:

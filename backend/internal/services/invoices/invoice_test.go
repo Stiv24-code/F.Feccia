@@ -93,8 +93,8 @@ func TestInvoiceService_Finalize_CascadesToOrders(t *testing.T) {
 
 	var updatedOrder models.Order
 	db.First(&updatedOrder, "id = ?", order.ID)
-	if updatedOrder.Stato != "FATTURATO" || updatedOrder.FatturaID != inv.ID.String() {
-		t.Fatalf("expected order to cascade to FATTURATO with fattura_id set, got %+v", updatedOrder)
+	if updatedOrder.Stato != "CHIUSO" || updatedOrder.FatturaID != inv.ID.String() {
+		t.Fatalf("expected order to stay CHIUSO with fattura_id stamped, got %+v", updatedOrder)
 	}
 }
 

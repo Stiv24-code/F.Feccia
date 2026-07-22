@@ -176,7 +176,9 @@ export const createOrder = (data) => api.post('/orders', data);
 export const getOrder = (id) => api.get(`/orders/${id}`);
 export const updateOrder = (id, data) => api.put(`/orders/${id}`, data);
 export const assignOrder = (id, data) => api.patch(`/orders/${id}/assign`, data);
+export const startOrder = (id) => api.patch(`/orders/${id}/start`);
 export const closeOrder = (id) => api.patch(`/orders/${id}/close`);
+export const discardOrder = (id) => api.patch(`/orders/${id}/discard`);
 export const deleteOrder = (id) => api.delete(`/orders/${id}`);
 // Suggerimenti ordini di ritorno per riempire viaggi vuoti (issue #32)
 export const getReturnSuggestions = (id, params = {}) => {
@@ -189,6 +191,7 @@ export const getReturnSuggestions = (id, params = {}) => {
 export const getTrips = (stato = '') => api.get(`/trips?stato=${stato}`);
 export const createTrip = (data) => api.post('/trips', data);
 export const getTrip = (id) => api.get(`/trips/${id}`);
+export const startTrip = (id) => api.patch(`/trips/${id}/start`);
 export const completeTrip = (id) => api.patch(`/trips/${id}/complete`);
 export const addOrderToTrip = (tripId, orderId) => api.patch(`/trips/${tripId}/add-order?order_id=${orderId}`);
 export const recomputeTripSegments = (tripId) => api.post(`/trips/${tripId}/recompute-segments`);

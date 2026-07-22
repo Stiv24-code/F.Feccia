@@ -61,7 +61,6 @@ const statusColors = {
   VIAGGIO: '#E24A4A',
   PIANIFICABILE: '#F0B429',
   CHIUSO: '#F28B2C',
-  FATTURATO: '#2AA36B',
 };
 
 // Stili costanti per pathOptions (evitano re-render)

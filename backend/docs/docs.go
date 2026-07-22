@@ -3142,7 +3142,7 @@ const docTemplate = `{
                 "tags": [
                     "Orders"
                 ],
-                "summary": "Assign order to a vehicle/driver/carrier (PIANIFICABILE -\u003e VIAGGIO)",
+                "summary": "Assign order to a vehicle/driver/carrier (PIANIFICABILE -\u003e PIANIFICATO)",
                 "parameters": [
                     {
                         "type": "string",
@@ -3282,6 +3282,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/orders/{id}/discard": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Discard order (PIANIFICABILE|PIANIFICATO -\u003e SCARTATO)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/orders/{id}/return-suggestions": {
             "get": {
                 "security": [
@@ -3322,6 +3373,57 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.OrderReturnSuggestionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{id}/start": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Start order (PIANIFICATO -\u003e VIAGGIO)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderResponse"
                         }
                     },
                     "400": {
@@ -4058,7 +4160,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Syncs any PIANIFICABILE orders in ordini_ids to VIAGGIO and computes route segments via OSRM",
+                "description": "Syncs any PIANIFICABILE orders in ordini_ids to PIANIFICATO and computes route segments via OSRM",
                 "consumes": [
                     "application/json"
                 ],
@@ -4220,6 +4322,15 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.OKResult"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -4302,6 +4413,57 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.RecomputeSegmentsResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/trips/{id}/start": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trips"
+                ],
+                "summary": "Start a trip (PIANIFICATO -\u003e IN_CORSO, starts its PIANIFICATO orders to VIAGGIO)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trip ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OKResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "404": {

@@ -193,7 +193,10 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	return &resp, nil
 }
 
-// Assign mirrors PATCH /orders/{id}/assign: only valid from PIANIFICABILE, moves to VIAGGIO.
+// Assign mirrors PATCH /orders/{id}/assign: only valid from PIANIFICABILE,
+// moves to PIANIFICATO (driver/vehicle attached, but not yet departed —
+// the same target state used when orders are grouped into a Trip, see
+// trips.TripService.Create/AddOrder).
 func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAssignRequest) (*dto.OrderResponse, error) {
 	var order models.Order
 	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
@@ -209,8 +212,32 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	order.AutistaNome = req.AutistaNome
 	order.VettoreID = req.VettoreID
 	order.VettoreNome = req.VettoreNome
-	order.Stato = "VIAGGIO"
+	order.Stato = "PIANIFICATO"
 
+	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
+		return nil, err
+	}
+	resp := ToResponse(order)
+	return &resp, nil
+}
+
+// Start mirrors PATCH /orders/{id}/start: only valid from PIANIFICATO, moves
+// to VIAGGIO. Only for orders NOT attached to a Trip — an order with
+// ViaggioID set must depart together with its trip (trips.TripService.Start),
+// otherwise the order and its trip would go out of sync.
+func (s *OrderService) Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	var order models.Order
+	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	if order.ViaggioID != "" {
+		return nil, utils.NewAPIError(400, "L'ordine fa parte di un viaggio: avvialo dal modulo Viaggi")
+	}
+	if order.Stato != "PIANIFICATO" {
+		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere avviato. Deve essere in stato PIANIFICATO.", order.Stato))
+	}
+
+	order.Stato = "VIAGGIO"
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
@@ -229,6 +256,30 @@ func (s *OrderService) Close(ctx context.Context, id uuid.UUID) (*dto.OrderRespo
 	}
 
 	order.Stato = "CHIUSO"
+	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
+		return nil, err
+	}
+	resp := ToResponse(order)
+	return &resp, nil
+}
+
+// Discard mirrors PATCH /orders/{id}/discard: valid from PIANIFICABILE or
+// PIANIFICATO, moves to SCARTATO (terminal, cancelled). Only for orders NOT
+// attached to a Trip — cancelling an order already grouped into a viaggio
+// must happen from the Trip itself (out of scope here).
+func (s *OrderService) Discard(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	var order models.Order
+	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	if order.ViaggioID != "" {
+		return nil, utils.NewAPIError(400, "L'ordine fa parte di un viaggio: non può essere scartato da qui")
+	}
+	if order.Stato != "PIANIFICABILE" && order.Stato != "PIANIFICATO" {
+		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere scartato", order.Stato))
+	}
+
+	order.Stato = "SCARTATO"
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}

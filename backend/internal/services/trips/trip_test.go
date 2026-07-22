@@ -87,8 +87,8 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if trip.Stato != "IN_CORSO" {
-		t.Fatalf("expected initial stato IN_CORSO, got %q", trip.Stato)
+	if trip.Stato != "PIANIFICATO" {
+		t.Fatalf("expected initial stato PIANIFICATO, got %q", trip.Stato)
 	}
 	// base_carico + carico_scarico + scarico_base = 3 segments for 1 order.
 	if len(trip.Segmenti) != 3 {
@@ -100,8 +100,8 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 
 	var updatedOrder models.Order
 	db.First(&updatedOrder, "id = ?", order.ID)
-	if updatedOrder.Stato != "VIAGGIO" || updatedOrder.ViaggioID != trip.ID.String() {
-		t.Fatalf("expected order synced to VIAGGIO with viaggio_id set, got %+v", updatedOrder)
+	if updatedOrder.Stato != "PIANIFICATO" || updatedOrder.ViaggioID != trip.ID.String() {
+		t.Fatalf("expected order synced to PIANIFICATO with viaggio_id set, got %+v", updatedOrder)
 	}
 }
 
@@ -160,7 +160,7 @@ func TestTripService_GetByID_NotFoundReturnsNilNil(t *testing.T) {
 	}
 }
 
-func TestTripService_Complete_ClosesViaggioOrdersOnly(t *testing.T) {
+func TestTripService_Complete_RequiresInCorso(t *testing.T) {
 	osrm := fakeOSRM(t)
 	defer osrm.Close()
 	db := newTestDB(t)
@@ -171,6 +171,42 @@ func TestTripService_Complete_ClosesViaggioOrdersOnly(t *testing.T) {
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{order.ID.String()}})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
+	}
+
+	// Complete before Start must fail (trip still PIANIFICATO).
+	if _, err := svc.Complete(context.Background(), trip.ID); err == nil {
+		t.Fatal("expected error completing a PIANIFICATO trip")
+	}
+}
+
+func TestTripService_StartThenComplete_FullLifecycle(t *testing.T) {
+	osrm := fakeOSRM(t)
+	defer osrm.Close()
+	db := newTestDB(t)
+	svc := NewTripService(db)
+	svc.geo.OsrmBaseURL = osrm.URL
+
+	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
+	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{order.ID.String()}})
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+
+	// Start before... nothing to guard against here except wrong stato, tested below.
+	startResult, err := svc.Start(context.Background(), trip.ID)
+	if err != nil || !startResult.OK {
+		t.Fatalf("Start returned error: %v (result=%+v)", err, startResult)
+	}
+
+	var startedOrder models.Order
+	db.First(&startedOrder, "id = ?", order.ID)
+	if startedOrder.Stato != "VIAGGIO" {
+		t.Fatalf("expected order stato VIAGGIO after trip Start, got %q", startedOrder.Stato)
+	}
+
+	// Start again must fail (no longer PIANIFICATO).
+	if _, err := svc.Start(context.Background(), trip.ID); err == nil {
+		t.Fatal("expected error starting an already IN_CORSO trip")
 	}
 
 	result, err := svc.Complete(context.Background(), trip.ID)
@@ -188,6 +224,11 @@ func TestTripService_Complete_ClosesViaggioOrdersOnly(t *testing.T) {
 	db.First(&completedTrip, "id = ?", trip.ID)
 	if completedTrip.Stato != "COMPLETATO" {
 		t.Fatalf("expected trip stato COMPLETATO, got %q", completedTrip.Stato)
+	}
+
+	// Complete again must fail (no longer IN_CORSO).
+	if _, err := svc.Complete(context.Background(), trip.ID); err == nil {
+		t.Fatal("expected error completing an already COMPLETATO trip")
 	}
 }
 
@@ -210,6 +251,12 @@ func TestTripService_AddOrder_ValidatesStateAndRecomputes(t *testing.T) {
 		t.Fatalf("AddOrder returned error: %v (result=%+v)", err, result)
 	}
 
+	var addedOrder models.Order
+	db.First(&addedOrder, "id = ?", second.ID)
+	if addedOrder.Stato != "PIANIFICATO" {
+		t.Fatalf("expected order added to a PIANIFICATO trip to become PIANIFICATO, got %q", addedOrder.Stato)
+	}
+
 	detail, err := svc.GetByID(context.Background(), trip.ID)
 	if err != nil {
 		t.Fatalf("GetByID returned error: %v", err)
@@ -223,5 +270,33 @@ func TestTripService_AddOrder_ValidatesStateAndRecomputes(t *testing.T) {
 	_, err = svc.AddOrder(context.Background(), trip.ID, second.ID)
 	if err == nil {
 		t.Fatal("expected error when adding a non-PIANIFICABILE order")
+	}
+}
+
+func TestTripService_AddOrder_ToInCorsoTripGoesStraightToViaggio(t *testing.T) {
+	osrm := fakeOSRM(t)
+	defer osrm.Close()
+	db := newTestDB(t)
+	svc := NewTripService(db)
+	svc.geo.OsrmBaseURL = osrm.URL
+
+	first := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
+	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{first.ID.String()}})
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Start(context.Background(), trip.ID); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+
+	second := createOrder(t, db, "Cuneo (CN)", "Milano (MI)", "2026-01-11")
+	if _, err := svc.AddOrder(context.Background(), trip.ID, second.ID); err != nil {
+		t.Fatalf("AddOrder returned error: %v", err)
+	}
+
+	var addedOrder models.Order
+	db.First(&addedOrder, "id = ?", second.ID)
+	if addedOrder.Stato != "VIAGGIO" {
+		t.Fatalf("expected order added to an already-departed (IN_CORSO) trip to become VIAGGIO directly, got %q", addedOrder.Stato)
 	}
 }

@@ -20,6 +20,7 @@ func registerTripRoutes(authAll fiber.Router, handlers *app_handlers.Handler) {
 
 	authAll.Post("/trips", requirePlanner, handlers.Trips.CreateTrip)
 	authAll.Post("/trips/:id/recompute-segments", requirePlanner, handlers.Trips.RecomputeSegments)
+	authAll.Patch("/trips/:id/start", requirePlanner, handlers.Trips.StartTrip)
 	authAll.Patch("/trips/:id/complete", requirePlanner, handlers.Trips.CompleteTrip)
 	authAll.Patch("/trips/:id/add-order", requirePlanner, handlers.Trips.AddOrderToTrip)
 }

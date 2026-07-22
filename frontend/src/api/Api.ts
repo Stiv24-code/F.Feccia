@@ -1538,7 +1538,7 @@ export class Api<SecurityDataType = unknown> {
    *
    * @tags Orders
    * @name V1OrdersAssignPartialUpdate
-   * @summary Assign order to a vehicle/driver/carrier (PIANIFICABILE -> VIAGGIO)
+   * @summary Assign order to a vehicle/driver/carrier (PIANIFICABILE -> PIANIFICATO)
    * @request PATCH:/api/v1/orders/{id}/assign
    * @secure
    */
@@ -1593,6 +1593,23 @@ export class Api<SecurityDataType = unknown> {
    * No description
    *
    * @tags Orders
+   * @name V1OrdersDiscardPartialUpdate
+   * @summary Discard order (PIANIFICABILE|PIANIFICATO -> SCARTATO)
+   * @request PATCH:/api/v1/orders/{id}/discard
+   * @secure
+   */
+  v1OrdersDiscardPartialUpdate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/orders/${id}/discard`,
+      method: "PATCH",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Orders
    * @name V1OrdersReturnSuggestionsList
    * @summary Return-trip order suggestions
    * @request GET:/api/v1/orders/{id}/return-suggestions
@@ -1615,6 +1632,23 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/orders/${id}/return-suggestions`,
       method: "GET",
       query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Orders
+   * @name V1OrdersStartPartialUpdate
+   * @summary Start order (PIANIFICATO -> VIAGGIO)
+   * @request PATCH:/api/v1/orders/{id}/start
+   * @secure
+   */
+  v1OrdersStartPartialUpdate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/orders/${id}/start`,
+      method: "PATCH",
       secure: true,
       format: "json",
       ...params,
@@ -1969,7 +2003,7 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
-   * @description Syncs any PIANIFICABILE orders in ordini_ids to VIAGGIO and computes route segments via OSRM
+   * @description Syncs any PIANIFICABILE orders in ordini_ids to PIANIFICATO and computes route segments via OSRM
    *
    * @tags Trips
    * @name V1TripsCreate
@@ -2075,6 +2109,23 @@ export class Api<SecurityDataType = unknown> {
     this.http.request<DtoRecomputeSegmentsResult, Record<string, string>>({
       path: `/api/v1/trips/${id}/recompute-segments`,
       method: "POST",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Trips
+   * @name V1TripsStartPartialUpdate
+   * @summary Start a trip (PIANIFICATO -> IN_CORSO, starts its PIANIFICATO orders to VIAGGIO)
+   * @request PATCH:/api/v1/trips/{id}/start
+   * @secure
+   */
+  v1TripsStartPartialUpdate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoOKResult, Record<string, string>>({
+      path: `/api/v1/trips/${id}/start`,
+      method: "PATCH",
       secure: true,
       format: "json",
       ...params,

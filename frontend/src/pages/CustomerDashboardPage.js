@@ -108,7 +108,7 @@ export default function CustomerDashboardPage() {
           title="Fatturato Netto"
           value={`€ ${formatEuro(kpi.fatturato_netto)}`}
           icon={TrendingUp}
-          description="Solo ordini FATTURATO"
+          description="Ordini con fattura collegata"
         />
       </div>
 

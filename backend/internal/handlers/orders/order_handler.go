@@ -123,7 +123,7 @@ func (h *OrderHandler) UpdateOrder(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, item)
 }
 
-// @Summary Assign order to a vehicle/driver/carrier (PIANIFICABILE -> VIAGGIO)
+// @Summary Assign order to a vehicle/driver/carrier (PIANIFICABILE -> PIANIFICATO)
 // @Tags Orders
 // @Security BearerAuth
 // @Accept json
@@ -150,6 +150,27 @@ func (h *OrderHandler) AssignOrder(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, item)
 }
 
+// @Summary Start order (PIANIFICATO -> VIAGGIO)
+// @Tags Orders
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/orders/{id}/start [patch]
+func (h *OrderHandler) StartOrder(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	item, err := h.Service.Start(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, item)
+}
+
 // @Summary Close order (VIAGGIO -> CHIUSO)
 // @Tags Orders
 // @Security BearerAuth
@@ -165,6 +186,27 @@ func (h *OrderHandler) CloseOrder(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, 400, "Invalid ID")
 	}
 	item, err := h.Service.Close(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, item)
+}
+
+// @Summary Discard order (PIANIFICABILE|PIANIFICATO -> SCARTATO)
+// @Tags Orders
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/orders/{id}/discard [patch]
+func (h *OrderHandler) DiscardOrder(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	item, err := h.Service.Discard(utils.RequestContext(c), id)
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

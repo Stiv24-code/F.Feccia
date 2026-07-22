@@ -111,7 +111,7 @@ func TestOrderService_Update_ReplacesItemsAndDoesNotTouchState(t *testing.T) {
 	}
 }
 
-func TestOrderService_AssignCloseDelete_StateMachine(t *testing.T) {
+func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	ctx := context.Background()
 	svc := NewOrderService(newTestDB(t))
 
@@ -120,7 +120,9 @@ func TestOrderService_AssignCloseDelete_StateMachine(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	// Close before assign must fail (still PIANIFICABILE).
+	// Start/Close before assign must fail (still PIANIFICABILE).
+	_, err = svc.Start(ctx, order.ID)
+	assertAPIError(t, err, 400)
 	_, err = svc.Close(ctx, order.ID)
 	assertAPIError(t, err, 400)
 
@@ -128,12 +130,28 @@ func TestOrderService_AssignCloseDelete_StateMachine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
-	if assigned.Stato != "VIAGGIO" {
-		t.Fatalf("expected stato VIAGGIO after assign, got %q", assigned.Stato)
+	if assigned.Stato != "PIANIFICATO" {
+		t.Fatalf("expected stato PIANIFICATO after assign, got %q", assigned.Stato)
 	}
 
 	// Assign again must fail (no longer PIANIFICABILE).
 	_, err = svc.Assign(ctx, order.ID, dto.OrderAssignRequest{})
+	assertAPIError(t, err, 400)
+
+	// Close before start must fail (still PIANIFICATO, not VIAGGIO).
+	_, err = svc.Close(ctx, order.ID)
+	assertAPIError(t, err, 400)
+
+	started, err := svc.Start(ctx, order.ID)
+	if err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if started.Stato != "VIAGGIO" {
+		t.Fatalf("expected stato VIAGGIO after start, got %q", started.Stato)
+	}
+
+	// Start again must fail (no longer PIANIFICATO).
+	_, err = svc.Start(ctx, order.ID)
 	assertAPIError(t, err, 400)
 
 	// Delete while VIAGGIO must fail.
@@ -150,6 +168,78 @@ func TestOrderService_AssignCloseDelete_StateMachine(t *testing.T) {
 
 	// Close again must fail (no longer VIAGGIO).
 	_, err = svc.Close(ctx, order.ID)
+	assertAPIError(t, err, 400)
+}
+
+func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
+	ctx := context.Background()
+	svc := NewOrderService(newTestDB(t))
+
+	order, err := svc.Create(ctx, baseRequest())
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+	// Simulate the order having been grouped into a Trip meanwhile.
+	if err := svc.db.Model(&models.Order{}).Where("id = ?", order.ID).Update("viaggio_id", uuid.New().String()).Error; err != nil {
+		t.Fatalf("failed to set viaggio_id: %v", err)
+	}
+
+	_, err = svc.Start(ctx, order.ID)
+	assertAPIError(t, err, 400)
+}
+
+func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
+	ctx := context.Background()
+	svc := NewOrderService(newTestDB(t))
+
+	// From PIANIFICABILE.
+	a, err := svc.Create(ctx, baseRequest())
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	discardedA, err := svc.Discard(ctx, a.ID)
+	if err != nil {
+		t.Fatalf("Discard returned error: %v", err)
+	}
+	if discardedA.Stato != "SCARTATO" {
+		t.Fatalf("expected stato SCARTATO, got %q", discardedA.Stato)
+	}
+
+	// From PIANIFICATO.
+	b, err := svc.Create(ctx, baseRequest())
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Assign(ctx, b.ID, dto.OrderAssignRequest{}); err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+	discardedB, err := svc.Discard(ctx, b.ID)
+	if err != nil {
+		t.Fatalf("Discard returned error: %v", err)
+	}
+	if discardedB.Stato != "SCARTATO" {
+		t.Fatalf("expected stato SCARTATO, got %q", discardedB.Stato)
+	}
+
+	// Discard again must fail (no longer PIANIFICABILE/PIANIFICATO).
+	_, err = svc.Discard(ctx, a.ID)
+	assertAPIError(t, err, 400)
+
+	// From VIAGGIO must fail.
+	c, err := svc.Create(ctx, baseRequest())
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Assign(ctx, c.ID, dto.OrderAssignRequest{}); err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+	if _, err := svc.Start(ctx, c.ID); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	_, err = svc.Discard(ctx, c.ID)
 	assertAPIError(t, err, 400)
 }
 
@@ -193,9 +283,9 @@ func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 
-	byStato, err := svc.List(ctx, ListFilters{Stato: "VIAGGIO"})
+	byStato, err := svc.List(ctx, ListFilters{Stato: "PIANIFICATO"})
 	if err != nil || len(byStato) != 1 || byStato[0].ClienteNome != "Beta" {
-		t.Fatalf("expected 1 VIAGGIO order (Beta), got %+v (err=%v)", byStato, err)
+		t.Fatalf("expected 1 PIANIFICATO order (Beta), got %+v (err=%v)", byStato, err)
 	}
 
 	bySearch, err := svc.List(ctx, ListFilters{Search: "acme"})

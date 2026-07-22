@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getOrders, assignOrder, closeOrder, getVehicles, getDrivers, getCarriers, getVehicleAvailability, getDriverAvailability, getDriverUnavailability, createDriverUnavailability, deleteDriverUnavailability } from '@/lib/api';
+import { getOrders, assignOrder, startOrder, closeOrder, discardOrder, getVehicles, getDrivers, getCarriers, getVehicleAvailability, getDriverAvailability, getDriverUnavailability, createDriverUnavailability, deleteDriverUnavailability } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,14 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import PlannerCalendar from '@/components/planner/PlannerCalendar';
 import { toast } from 'sonner';
-import { CalendarRange, Truck, CheckCircle, Loader2, Users, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { CalendarRange, Truck, CheckCircle, Loader2, Users, AlertTriangle, Plus, Trash2, PlayCircle, Ban, List as ListIcon, CalendarDays } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 // ============================
 // Componente griglia riutilizzabile
 // ============================
-const OrderGrid = ({ orders, loading, onAssign, onClose, title, emptyMsg }) => (
+const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, title, emptyMsg }) => (
   <Card className="rounded-xl border shadow-sm">
     {title && (
       <div className="px-4 py-2.5 border-b bg-muted/30">
@@ -60,11 +61,30 @@ const OrderGrid = ({ orders, loading, onAssign, onClose, title, emptyMsg }) => (
               <TableCell className="py-2">{o.autista_nome || '—'}</TableCell>
               <TableCell className="py-2"><StatusBadge stato={o.stato} /></TableCell>
               <TableCell className="py-2">
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1">
                   {o.stato === 'PIANIFICABILE' && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onAssign(o)} data-testid="planner-assign-button">
-                      <Truck className="h-3 w-3" /> Assegna
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onAssign(o)} data-testid="planner-assign-button">
+                        <Truck className="h-3 w-3" /> Assegna
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" data-testid="planner-discard-button">
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                  {o.stato === 'PIANIFICATO' && (
+                    o.viaggio_id ? (
+                      <span className="text-xs text-muted-foreground">Nel viaggio {o.viaggio_id.slice(0, 8)}</span>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onStart(o)} data-testid="planner-start-button">
+                          <PlayCircle className="h-3 w-3" /> Avvia viaggio
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" data-testid="planner-discard-button">
+                          <Ban className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )
                   )}
                   {o.stato === 'VIAGGIO' && (
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onClose(o)} data-testid="planner-close-button">
@@ -98,6 +118,7 @@ export default function PlannerPage() {
   const [dateTo, setDateTo] = useState('');
   const [tab, setTab] = useState('all');
   const [subTab, setSubTab] = useState('pianificabili');
+  const [view, setView] = useState('list');
   const [availVehicles, setAvailVehicles] = useState([]);
   const [availDrivers, setAvailDrivers] = useState([]);
   const [availOpen, setAvailOpen] = useState(false);
@@ -150,12 +171,24 @@ export default function PlannerPage() {
     try { await closeOrder(order.id); toast.success(`Ordine ${order.progressivo} chiuso`); fetchOrders(); }
     catch (e) { toast.error(e.response?.data?.detail || 'Errore'); }
   };
+  const handleStart = async (order) => {
+    if (!window.confirm(`Avviare il viaggio per l'ordine ${order.progressivo}?`)) return;
+    try { await startOrder(order.id); toast.success(`Ordine ${order.progressivo} avviato`); fetchOrders(); }
+    catch (e) { toast.error(e.response?.data?.detail || 'Errore'); }
+  };
+  const handleDiscard = async (order) => {
+    if (!window.confirm(`Scartare l'ordine ${order.progressivo}? L'operazione non è reversibile.`)) return;
+    try { await discardOrder(order.id); toast.success(`Ordine ${order.progressivo} scartato`); fetchOrders(); }
+    catch (e) { toast.error(e.response?.data?.detail || 'Errore'); }
+  };
 
   // --- Filtri per tab ---
   const filterByStatus = useCallback((list) => {
     if (subTab === 'pianificabili') return list.filter(o => o.stato === 'PIANIFICABILE');
+    if (subTab === 'pianificato') return list.filter(o => o.stato === 'PIANIFICATO');
     if (subTab === 'viaggio') return list.filter(o => o.stato === 'VIAGGIO');
     if (subTab === 'chiusi') return list.filter(o => o.stato === 'CHIUSO');
+    if (subTab === 'scartati') return list.filter(o => o.stato === 'SCARTATO');
     return list;
   }, [subTab]);
 
@@ -168,8 +201,10 @@ export default function PlannerPage() {
 
   // Contatori memoizzati per toolbar e tabs
   const pianificabiliCount = useMemo(() => orders.filter(o => o.stato === 'PIANIFICABILE').length, [orders]);
+  const pianificatoCount = useMemo(() => orders.filter(o => o.stato === 'PIANIFICATO').length, [orders]);
   const inViaggioCount = useMemo(() => orders.filter(o => o.stato === 'VIAGGIO').length, [orders]);
   const chiusiCount = useMemo(() => orders.filter(o => o.stato === 'CHIUSO').length, [orders]);
+  const scartatiCount = useMemo(() => orders.filter(o => o.stato === 'SCARTATO').length, [orders]);
   const partenzeCount = useMemo(() => orders.filter(o => o.tipologia === 'export' || o.tipologia === 'nazionale').length, [orders]);
   const rientriCount = useMemo(() => orders.filter(o => o.tipologia === 'import' || o.tipologia === 'solo_estero').length, [orders]);
 
@@ -243,9 +278,11 @@ export default function PlannerPage() {
           <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={openUnavail} data-testid="planner-unavail-button">
             <AlertTriangle className="h-3.5 w-3.5" /> Indisponibilità
           </Button>
-          <Badge className="status-pianificabile border text-xs">{pianificabiliCount} da pianificare</Badge>
-          <Badge className="status-viaggio border text-xs">{inViaggioCount} in viaggio</Badge>
-          <Badge className="status-chiuso border text-xs">{chiusiCount} chiusi</Badge>
+          <Badge className="status-order-red border text-xs">{pianificabiliCount} da pianificare</Badge>
+          <Badge className="status-order-yellow border text-xs">{pianificatoCount} pianificati</Badge>
+          <Badge className="status-order-blue border text-xs">{inViaggioCount} in viaggio</Badge>
+          <Badge className="status-order-green border text-xs">{chiusiCount} consegnati</Badge>
+          <Badge className="status-order-gray border text-xs">{scartatiCount} scartati</Badge>
         </div>
       </div>
 
@@ -259,46 +296,63 @@ export default function PlannerPage() {
           </TabsList>
           {/* Sub-filtro stato */}
           <div className="flex gap-1">
-            {['all', 'pianificabili', 'viaggio', 'chiusi'].map(s => (
+            {['all', 'pianificabili', 'pianificato', 'viaggio', 'chiusi', 'scartati'].map(s => (
               <Button key={s} variant={subTab === s ? 'default' : 'ghost'} size="sm" className="h-7 text-xs" onClick={() => setSubTab(s)}>
-                {s === 'all' ? 'Tutti' : s === 'pianificabili' ? 'Da pianificare' : s === 'viaggio' ? 'In viaggio' : 'Chiusi'}
+                {s === 'all' ? 'Tutti' : s === 'pianificabili' ? 'Da pianificare' : s === 'pianificato' ? 'Pianificati' : s === 'viaggio' ? 'In viaggio' : s === 'chiusi' ? 'Consegnati' : 'Scartati'}
               </Button>
             ))}
           </div>
+          {/* Vista Lista ⇄ Calendario */}
+          <div className="flex items-center gap-0.5 border rounded-md p-0.5">
+            <Button variant={view === 'list' ? 'default' : 'ghost'} size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setView('list')} data-testid="planner-view-list">
+              <ListIcon className="h-3.5 w-3.5" /> Lista
+            </Button>
+            <Button variant={view === 'calendar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setView('calendar')} data-testid="planner-view-calendar">
+              <CalendarDays className="h-3.5 w-3.5" /> Calendario
+            </Button>
+          </div>
         </div>
 
-        {/* === TAB TUTTI === */}
-        <TabsContent value="all" className="mt-3" data-testid="planner-grid">
-          <OrderGrid orders={allFiltered} loading={loading} onAssign={openAssign} onClose={handleClose} emptyMsg="Nessun ordine trovato" />
-        </TabsContent>
+        {view === 'calendar' ? (
+          <div className="mt-3">
+            <PlannerCalendar orders={allFiltered} onAssign={openAssign} onStart={handleStart} onClose={handleClose} />
+          </div>
+        ) : (
+          <>
+            {/* === TAB TUTTI === */}
+            <TabsContent value="all" className="mt-3" data-testid="planner-grid">
+              <OrderGrid orders={allFiltered} loading={loading} onAssign={openAssign} onStart={handleStart} onClose={handleClose} onDiscard={handleDiscard} emptyMsg="Nessun ordine trovato" />
+            </TabsContent>
 
-        {/* === TAB PARTENZE (export sopra, nazionale sotto) === */}
-        <TabsContent value="partenze" className="mt-3 space-y-4" data-testid="planner-partenze">
-          <OrderGrid
-            orders={exportOrders} loading={loading} onAssign={openAssign} onClose={handleClose}
-            title={`Italia → Estero — Export (${exportOrders.length})`}
-            emptyMsg="Nessun ordine export"
-          />
-          <OrderGrid
-            orders={nazionaleOrders} loading={loading} onAssign={openAssign} onClose={handleClose}
-            title={`Italia → Italia — Nazionale (${nazionaleOrders.length})`}
-            emptyMsg="Nessun ordine nazionale"
-          />
-        </TabsContent>
+            {/* === TAB PARTENZE (export sopra, nazionale sotto) === */}
+            <TabsContent value="partenze" className="mt-3 space-y-4" data-testid="planner-partenze">
+              <OrderGrid
+                orders={exportOrders} loading={loading} onAssign={openAssign} onStart={handleStart} onClose={handleClose} onDiscard={handleDiscard}
+                title={`Italia → Estero — Export (${exportOrders.length})`}
+                emptyMsg="Nessun ordine export"
+              />
+              <OrderGrid
+                orders={nazionaleOrders} loading={loading} onAssign={openAssign} onStart={handleStart} onClose={handleClose} onDiscard={handleDiscard}
+                title={`Italia → Italia — Nazionale (${nazionaleOrders.length})`}
+                emptyMsg="Nessun ordine nazionale"
+              />
+            </TabsContent>
 
-        {/* === TAB RIENTRI (import sopra, solo_estero sotto) === */}
-        <TabsContent value="rientri" className="mt-3 space-y-4" data-testid="planner-rientri">
-          <OrderGrid
-            orders={importOrders} loading={loading} onAssign={openAssign} onClose={handleClose}
-            title={`Estero → Italia — Import (${importOrders.length})`}
-            emptyMsg="Nessun ordine import"
-          />
-          <OrderGrid
-            orders={soloEsteroOrders} loading={loading} onAssign={openAssign} onClose={handleClose}
-            title={`Estero → Estero — Solo Estero (${soloEsteroOrders.length})`}
-            emptyMsg="Nessun ordine solo estero"
-          />
-        </TabsContent>
+            {/* === TAB RIENTRI (import sopra, solo_estero sotto) === */}
+            <TabsContent value="rientri" className="mt-3 space-y-4" data-testid="planner-rientri">
+              <OrderGrid
+                orders={importOrders} loading={loading} onAssign={openAssign} onStart={handleStart} onClose={handleClose} onDiscard={handleDiscard}
+                title={`Estero → Italia — Import (${importOrders.length})`}
+                emptyMsg="Nessun ordine import"
+              />
+              <OrderGrid
+                orders={soloEsteroOrders} loading={loading} onAssign={openAssign} onStart={handleStart} onClose={handleClose} onDiscard={handleDiscard}
+                title={`Estero → Estero — Solo Estero (${soloEsteroOrders.length})`}
+                emptyMsg="Nessun ordine solo estero"
+              />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
 
       {/* ===== DIALOG ASSEGNA ===== */}

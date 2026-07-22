@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"sort"
@@ -52,8 +53,10 @@ func (s *TripService) List(ctx context.Context, stato string, limit int) ([]dto.
 }
 
 // Create mirrors create_trip: syncs any PIANIFICABILE orders in
-// req.OrdiniIds to VIAGGIO (silently skipping ones not in that state,
+// req.OrdiniIds to PIANIFICATO (silently skipping ones not in that state,
 // matching Python's filtered update_one), then computes segments via OSRM.
+// The trip itself starts PIANIFICATO too — orders and trip only move to
+// VIAGGIO/IN_CORSO together, via Start.
 func (s *TripService) Create(ctx context.Context, req dto.TripRequest) (*dto.TripResponse, error) {
 	trip := models.Trip{
 		ID:             uuid.New(),
@@ -69,14 +72,14 @@ func (s *TripService) Create(ctx context.Context, req dto.TripRequest) (*dto.Tri
 		Note:           req.Note,
 		DataPartenza:   req.DataPartenza,
 		DataArrivo:     req.DataArrivo,
-		Stato:          "IN_CORSO",
+		Stato:          "PIANIFICATO",
 	}
 
 	for _, orderID := range req.OrdiniIds {
 		s.db.WithContext(ctx).Model(&models.Order{}).
 			Where("id = ? AND stato = ?", orderID, "PIANIFICABILE").
 			Updates(map[string]interface{}{
-				"stato":           "VIAGGIO",
+				"stato":           "PIANIFICATO",
 				"viaggio_id":      trip.ID.String(),
 				"targa_motrice":   req.TargaMotrice,
 				"targa_rimorchio": req.TargaRimorchio,
@@ -206,8 +209,36 @@ func (s *TripService) RecomputeSegments(ctx context.Context, id uuid.UUID) (*dto
 	return &dto.RecomputeSegmentsResult{OK: true, SegmentiCount: len(segments), KmTotali: km}, nil
 }
 
-// Complete mirrors PATCH /trips/{id}/complete: bulk-closes the trip's VIAGGIO
-// orders and marks the trip COMPLETATO.
+// Start mirrors PATCH /trips/{id}/start: only valid from PIANIFICATO, moves
+// the trip to IN_CORSO and bulk-starts its still-PIANIFICATO orders to
+// VIAGGIO (trip and its orders always depart together).
+func (s *TripService) Start(ctx context.Context, id uuid.UUID) (*dto.OKResult, error) {
+	var trip models.Trip
+	if err := s.db.WithContext(ctx).First(&trip, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewAPIError(404, "Viaggio non trovato")
+		}
+		return nil, err
+	}
+	if trip.Stato != "PIANIFICATO" {
+		return nil, utils.NewAPIError(400, fmt.Sprintf("Il viaggio in stato %s non può essere avviato. Deve essere in stato PIANIFICATO.", trip.Stato))
+	}
+
+	if err := s.db.WithContext(ctx).Model(&models.Order{}).
+		Where("viaggio_id = ? AND stato = ?", id.String(), "PIANIFICATO").
+		Updates(map[string]interface{}{"stato": "VIAGGIO", "updated_at": time.Now().UTC()}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := s.db.WithContext(ctx).Model(&models.Trip{}).Where("id = ?", id).Update("stato", "IN_CORSO").Error; err != nil {
+		return nil, err
+	}
+
+	return &dto.OKResult{OK: true}, nil
+}
+
+// Complete mirrors PATCH /trips/{id}/complete: only valid from IN_CORSO,
+// bulk-closes the trip's VIAGGIO orders and marks the trip COMPLETATO.
 func (s *TripService) Complete(ctx context.Context, id uuid.UUID) (*dto.OKResult, error) {
 	var trip models.Trip
 	if err := s.db.WithContext(ctx).First(&trip, "id = ?", id).Error; err != nil {
@@ -215,6 +246,9 @@ func (s *TripService) Complete(ctx context.Context, id uuid.UUID) (*dto.OKResult
 			return nil, utils.NewAPIError(404, "Viaggio non trovato")
 		}
 		return nil, err
+	}
+	if trip.Stato != "IN_CORSO" {
+		return nil, utils.NewAPIError(400, fmt.Sprintf("Il viaggio in stato %s non può essere completato. Deve essere in stato IN_CORSO.", trip.Stato))
 	}
 
 	if err := s.db.WithContext(ctx).Model(&models.Order{}).
@@ -231,9 +265,12 @@ func (s *TripService) Complete(ctx context.Context, id uuid.UUID) (*dto.OKResult
 }
 
 // AddOrder mirrors PATCH /trips/{id}/add-order: appends an order to the
-// trip's ordini_ids, moves the order to VIAGGIO with the trip's
-// vehicle/driver (not carrier — matching Python's dict, which omits
-// vettore_id/vettore_nome here unlike Create), then recomputes segments.
+// trip's ordini_ids, then moves the order to the trip's vehicle/driver (not
+// carrier — matching Python's dict, which omits vettore_id/vettore_nome here
+// unlike Create). Target stato mirrors the trip's own state: if the trip has
+// already departed (IN_CORSO) the added order joins directly as VIAGGIO
+// (the truck is already moving); otherwise it becomes PIANIFICATO like the
+// trip's other orders, and departs together with it via Start.
 func (s *TripService) AddOrder(ctx context.Context, tripID, orderID uuid.UUID) (*dto.OKResult, error) {
 	var trip models.Trip
 	if err := s.db.WithContext(ctx).First(&trip, "id = ?", tripID).Error; err != nil {
@@ -261,8 +298,12 @@ func (s *TripService) AddOrder(ctx context.Context, tripID, orderID uuid.UUID) (
 		return nil, err
 	}
 
+	targetStato := "PIANIFICATO"
+	if trip.Stato == "IN_CORSO" {
+		targetStato = "VIAGGIO"
+	}
 	if err := s.db.WithContext(ctx).Model(&models.Order{}).Where("id = ?", orderID).Updates(map[string]interface{}{
-		"stato":           "VIAGGIO",
+		"stato":           targetStato,
 		"viaggio_id":      tripID.String(),
 		"targa_motrice":   trip.TargaMotrice,
 		"targa_rimorchio": trip.TargaRimorchio,

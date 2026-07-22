@@ -156,9 +156,10 @@ export default function OrdersPage() {
             <SelectContent>
               <SelectItem value="all">Tutti gli stati</SelectItem>
               <SelectItem value="PIANIFICABILE">Da pianificare</SelectItem>
+              <SelectItem value="PIANIFICATO">Pianificato</SelectItem>
               <SelectItem value="VIAGGIO">In viaggio</SelectItem>
-              <SelectItem value="CHIUSO">Chiuso</SelectItem>
-              <SelectItem value="FATTURATO">Fatturato</SelectItem>
+              <SelectItem value="CHIUSO">Consegnato</SelectItem>
+              <SelectItem value="SCARTATO">Scartato</SelectItem>
             </SelectContent>
           </Select>
           <Select value={tipologiaFilter} onValueChange={setTipologiaFilter}>

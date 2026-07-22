@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getTrips, createTrip, getTrip, completeTrip, recomputeTripSegments, downloadTripInstructionsPdf, getOrders, getVehicles, getDrivers, getCarriers, getGarages } from '@/lib/api';
+import { getTrips, createTrip, getTrip, startTrip, completeTrip, recomputeTripSegments, downloadTripInstructionsPdf, getOrders, getVehicles, getDrivers, getCarriers, getGarages } from '@/lib/api';
 import { FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { Plus, Eye, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Eye, PlayCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function TripsPage() {
   const [trips, setTrips] = useState([]);
@@ -70,6 +70,16 @@ export default function TripsPage() {
     } catch (e) { toast.error('Errore caricamento dettaglio'); }
   };
 
+  const handleStart = async (id) => {
+    if (!window.confirm('Avviare questo viaggio? I suoi ordini pianificati passeranno a "in viaggio".')) return;
+    try {
+      await startTrip(id);
+      toast.success('Viaggio avviato');
+      fetchTrips();
+      if (selectedTrip?.id === id) openDetail({ id });
+    } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); }
+  };
+
   const handleComplete = async (id) => {
     if (!window.confirm('Completare questo viaggio? Gli ordini verranno chiusi.')) return;
     try {
@@ -97,6 +107,7 @@ export default function TripsPage() {
     setForm({ ...form, garage_id: id, garage_nome: g?.nome || '' });
   };
 
+  const pianificatoCount = useMemo(() => trips.filter(t => t.stato === 'PIANIFICATO').length, [trips]);
   const inCorsoCount = useMemo(() => trips.filter(t => t.stato === 'IN_CORSO').length, [trips]);
   const completatiCount = useMemo(() => trips.filter(t => t.stato === 'COMPLETATO').length, [trips]);
 
@@ -108,7 +119,8 @@ export default function TripsPage() {
     <div className="space-y-3" data-testid="trips-page">
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Badge className="status-viaggio border text-xs">{inCorsoCount} in corso</Badge>
+          <Badge className="status-order-yellow border text-xs">{pianificatoCount} pianificati</Badge>
+          <Badge className="status-order-blue border text-xs">{inCorsoCount} in corso</Badge>
           <Badge className="status-fatturato border text-xs">{completatiCount} completati</Badge>
         </div>
         <Button size="sm" onClick={openNew} className="text-xs gap-1.5" data-testid="trips-new-button">
@@ -150,6 +162,7 @@ export default function TripsPage() {
                   <TableCell className="py-2">
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openDetail(t)}><Eye className="h-3 w-3" /></Button>
+                      {t.stato === 'PIANIFICATO' && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleStart(t.id)} title="Avvia"><PlayCircle className="h-3 w-3" /></Button>}
                       {t.stato === 'IN_CORSO' && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleComplete(t.id)} title="Completa"><CheckCircle className="h-3 w-3" /></Button>}
                     </div>
                   </TableCell>
@@ -285,6 +298,11 @@ export default function TripsPage() {
                 >
                   <FileText className="h-4 w-4 mr-2" /> Istruzioni PDF
                 </Button>
+                {selectedTrip.stato === 'PIANIFICATO' && (
+                  <Button onClick={() => handleStart(selectedTrip.id)} data-testid="trip-start-button">
+                    <PlayCircle className="h-4 w-4 mr-2" /> Avvia Viaggio
+                  </Button>
+                )}
                 {selectedTrip.stato === 'IN_CORSO' && (
                   <Button onClick={() => handleComplete(selectedTrip.id)} data-testid="trip-complete-button">
                     <CheckCircle className="h-4 w-4 mr-2" /> Completa Viaggio

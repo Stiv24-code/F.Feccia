@@ -25,10 +25,17 @@ func newTestDB(t *testing.T) *gorm.DB {
 
 func seedOrder(t *testing.T, db *gorm.DB, clienteID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64) models.Order {
 	t.Helper()
+	return seedOrderWithFattura(t, db, clienteID, stato, dataRitiro, destScarico, tipologia, categoria, tariffa, "")
+}
+
+// seedOrderWithFattura is like seedOrder but also stamps fattura_id — "is
+// this order billed" is tracked via fattura_id, not a dedicated stato value.
+func seedOrderWithFattura(t *testing.T, db *gorm.DB, clienteID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64, fatturaID string) models.Order {
+	t.Helper()
 	o := models.Order{
 		ID: uuid.New(), ClienteID: clienteID, Stato: stato, DataRitiro: dataRitiro,
 		DestinazioneScaricoNome: destScarico, Tipologia: tipologia, CategoriaTrasporto: categoria,
-		Tariffa: tariffa, ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
+		Tariffa: tariffa, FatturaID: fatturaID, ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&o).Error; err != nil {
 		t.Fatalf("failed to seed order: %v", err)
@@ -44,7 +51,7 @@ func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	seedOrder(t, db, "c1", "PIANIFICABILE", "2026-01-10", "", "nazionale", "", 100)
 	seedOrder(t, db, "c1", "VIAGGIO", "2026-01-15", "", "nazionale", "", 200)
 	seedOrder(t, db, "c1", "CHIUSO", "2026-02-01", "", "nazionale", "", 300)
-	seedOrder(t, db, "c1", "FATTURATO", "2026-02-10", "", "nazionale", "", 400)
+	seedOrderWithFattura(t, db, "c1", "CHIUSO", "2026-02-10", "", "nazionale", "", 400, "inv-1")
 
 	db.Create(&models.Customer{ID: uuid.New(), RagioneSociale: "C1", Active: true})
 	db.Create(&models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Active: true})
@@ -58,7 +65,7 @@ func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stats returned error: %v", err)
 	}
-	if stats.TotalOrders != 4 || stats.Pianificabili != 1 || stats.InViaggio != 1 || stats.Chiusi != 1 || stats.Fatturati != 1 {
+	if stats.TotalOrders != 4 || stats.Pianificabili != 1 || stats.InViaggio != 1 || stats.Chiusi != 2 || stats.Fatturati != 1 {
 		t.Fatalf("unexpected order counts: %+v", stats)
 	}
 	if stats.TotalCustomers != 1 || stats.TotalVehicles != 1 || stats.TotalDrivers != 1 {
@@ -81,10 +88,10 @@ func TestDashboardService_CustomerDashboard_KPIsAndBreakdowns(t *testing.T) {
 	db.Create(&customer)
 	clienteID := customer.ID.String()
 
-	seedOrder(t, db, clienteID, "FATTURATO", "2026-01-10", "Roma", "nazionale", "frigo", 500)
+	seedOrderWithFattura(t, db, clienteID, "CHIUSO", "2026-01-10", "Roma", "nazionale", "frigo", 500, "inv-1")
 	seedOrder(t, db, clienteID, "CHIUSO", "2026-02-10", "Roma", "nazionale", "", 300)
 	seedOrder(t, db, clienteID, "PIANIFICABILE", "2026-02-20", "Napoli", "internazionale", "", 200)
-	seedOrder(t, db, "other-client", "FATTURATO", "2026-01-10", "Torino", "nazionale", "", 999)
+	seedOrderWithFattura(t, db, "other-client", "CHIUSO", "2026-01-10", "Torino", "nazionale", "", 999, "inv-2")
 
 	result, err := svc.CustomerDashboard(ctx, customer.ID)
 	if err != nil {
@@ -93,11 +100,11 @@ func TestDashboardService_CustomerDashboard_KPIsAndBreakdowns(t *testing.T) {
 	if result.Customer.RagioneSociale != "Acme" {
 		t.Fatalf("expected customer summary to be populated, got %+v", result.Customer)
 	}
-	if result.KPI.OrdiniTotali != 3 || result.KPI.OrdiniFatturati != 1 || result.KPI.OrdiniChiusi != 1 || result.KPI.OrdiniPianificabili != 1 {
+	if result.KPI.OrdiniTotali != 3 || result.KPI.OrdiniFatturati != 1 || result.KPI.OrdiniChiusi != 2 || result.KPI.OrdiniPianificabili != 1 {
 		t.Fatalf("unexpected KPI: %+v", result.KPI)
 	}
 	if result.KPI.FatturatoNetto != 500 {
-		t.Fatalf("expected fatturato_netto 500 (only FATTURATO orders), got %v", result.KPI.FatturatoNetto)
+		t.Fatalf("expected fatturato_netto 500 (only orders with fattura_id set), got %v", result.KPI.FatturatoNetto)
 	}
 	if len(result.TopDestinazioni) != 2 {
 		t.Fatalf("expected 2 distinct destinations (Roma, Napoli), got %+v", result.TopDestinazioni)
