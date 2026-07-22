@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { getInitialTheme, applyTheme } from '@/lib/theme';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -9,7 +10,7 @@ import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
   Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
-  Globe, Landmark, BookOpen, Shield, UserCog, Droplets
+  Globe, Landmark, BookOpen, Shield, UserCog, Droplets, Sun, Moon
 } from 'lucide-react';
 
 // Se `roles` è presente, la voce è visibile solo agli utenti con quel ruolo.
@@ -178,7 +179,12 @@ const SidebarContent = ({ collapsed, onNavigate }) => {
 
 const AppShell = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState(getInitialTheme);
   const location = useLocation();
+
+  useEffect(() => { applyTheme(theme); }, [theme]);
+
+  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
   // Get page title from path
   const getTitle = () => {
@@ -236,11 +242,24 @@ const AppShell = ({ children }) => {
           <h1 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }} data-testid="page-title">
             {getTitle()}
           </h1>
-          <div className="ml-auto hidden md:flex items-center text-xs text-muted-foreground gap-2">
-            <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">Ctrl</kbd>
-            <span>+</span>
-            <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">K</kbd>
-            <span>per cercare</span>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden md:flex items-center text-xs text-muted-foreground gap-2">
+              <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">Ctrl</kbd>
+              <span>+</span>
+              <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">K</kbd>
+              <span>per cercare</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleTheme}
+              data-testid="theme-toggle-button"
+              aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+              title={theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
           </div>
         </header>
 

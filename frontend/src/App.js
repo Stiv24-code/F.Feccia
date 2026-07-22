@@ -26,6 +26,7 @@ const BanksPage = lazy(() => import('@/pages/anagrafiche/BanksPage'));
 const AccountingEntriesPage = lazy(() => import('@/pages/anagrafiche/AccountingEntriesPage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
 const PlannerPage = lazy(() => import('@/pages/PlannerPage'));
+const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage'));
 const TripsPage = lazy(() => import('@/pages/TripsPage'));
 const InvoicesPage = lazy(() => import('@/pages/InvoicesPage'));
 const PriceListsPage = lazy(() => import('@/pages/PriceListsPage'));
@@ -75,6 +76,7 @@ function AppRoutes() {
                 <Route path="listini" element={<PriceListsPage />} />
                 <Route path="ordini" element={<OrdersPage />} />
                 <Route path="planner" element={<PlannerPage />} />
+                <Route path="planner/ordini/:id" element={<OrderDetailPage />} />
                 <Route path="planner/dnd" element={<PlannerDnDPage />} />
                 <Route path="viaggi" element={<TripsPage />} />
                 <Route path="mappa" element={<MapPage />} />

@@ -3,6 +3,7 @@ import { addDays, addWeeks, subWeeks, format, isSameDay, isToday, isValid, parse
 import { it } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Truck } from 'lucide-react';
 
 // Colore della card: diretto dallo stato reale dell'ordine (PIANIFICABILE/
@@ -17,10 +18,10 @@ const COLOR_BY_STATO = {
 };
 
 const COLOR_STYLES = {
-  red: { card: 'bg-red-50 border-red-300 text-red-900', dot: 'bg-red-500' },
-  yellow: { card: 'bg-amber-50 border-amber-300 text-amber-900', dot: 'bg-amber-500' },
-  blue: { card: 'bg-blue-50 border-blue-300 text-blue-900', dot: 'bg-blue-500' },
-  green: { card: 'bg-emerald-50 border-emerald-300 text-emerald-900', dot: 'bg-emerald-500' },
+  red: { card: 'bg-red-50 border-red-300 text-red-900 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200', dot: 'bg-red-500' },
+  yellow: { card: 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200', dot: 'bg-amber-500' },
+  blue: { card: 'bg-blue-50 border-blue-300 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-200', dot: 'bg-blue-500' },
+  green: { card: 'bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200', dot: 'bg-emerald-500' },
   gray: { card: 'bg-muted/40 border-muted-foreground/20 text-muted-foreground opacity-75', dot: 'bg-muted-foreground/50' },
 };
 
@@ -32,10 +33,15 @@ const LEGEND = [
   { color: 'gray', label: 'Scartato' },
 ];
 
-export default function PlannerCalendar({ orders, onAssign, onStart, onClose }) {
+export default function PlannerCalendar({ orders, onOpen }) {
+  const [mode, setMode] = useState('week'); // 'week' | 'day'
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [dayAnchor, setDayAnchor] = useState(() => new Date());
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const days = useMemo(
+    () => (mode === 'day' ? [dayAnchor] : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))),
+    [mode, weekStart, dayAnchor]
+  );
 
   const ordersByDay = useMemo(() => {
     const buckets = days.map(() => []);
@@ -51,30 +57,45 @@ export default function PlannerCalendar({ orders, onAssign, onStart, onClose }) 
   }, [orders, days]);
 
   const weekLabel = useMemo(() => {
+    if (mode === 'day') return format(dayAnchor, "EEEE d MMMM yyyy", { locale: it });
     const end = days[6];
     const sameMonth = weekStart.getMonth() === end.getMonth();
     const from = format(weekStart, sameMonth ? 'd' : 'd MMM', { locale: it });
     const to = format(end, 'd MMM yyyy', { locale: it });
     return `${from} – ${to}`;
-  }, [days, weekStart]);
+  }, [mode, days, weekStart, dayAnchor]);
 
-  const handleCardClick = (order) => {
-    if (order.stato === 'PIANIFICABILE') onAssign(order);
-    else if (order.stato === 'PIANIFICATO' && !order.viaggio_id) onStart(order);
-    else if (order.stato === 'VIAGGIO') onClose(order);
+  const goToday = () => {
+    if (mode === 'day') setDayAnchor(new Date());
+    else setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  };
+  const goPrev = () => {
+    if (mode === 'day') setDayAnchor(d => addDays(d, -1));
+    else setWeekStart(w => subWeeks(w, 1));
+  };
+  const goNext = () => {
+    if (mode === 'day') setDayAnchor(d => addDays(d, 1));
+    else setWeekStart(w => addWeeks(w, 1));
   };
 
   return (
     <Card className="rounded-xl border shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} data-testid="calendar-today-button">
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={goToday} data-testid="calendar-today-button">
             Oggi
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekStart(w => subWeeks(w, 1))} data-testid="calendar-prev-week">
+          <Select value={mode} onValueChange={setMode}>
+            <SelectTrigger className="h-7 w-28 text-xs" data-testid="calendar-mode-select"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Settimana</SelectItem>
+              <SelectItem value="day">Giorno</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev} data-testid="calendar-prev">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setWeekStart(w => addWeeks(w, 1))} data-testid="calendar-next-week">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext} data-testid="calendar-next">
             <ChevronRight className="h-4 w-4" />
           </Button>
           <span className="text-sm font-semibold capitalize">{weekLabel}</span>
@@ -89,7 +110,7 @@ export default function PlannerCalendar({ orders, onAssign, onStart, onClose }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-7 divide-x">
+      <div className={`grid divide-x ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
         {days.map(day => (
           <div key={day.toISOString()} className={`px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wide border-b ${isToday(day) ? 'bg-primary/5 text-primary' : 'text-muted-foreground'}`}>
             {format(day, 'EEE d MMM', { locale: it })}
@@ -97,7 +118,7 @@ export default function PlannerCalendar({ orders, onAssign, onStart, onClose }) 
         ))}
       </div>
 
-      <div className="grid grid-cols-7 divide-x min-h-[320px]">
+      <div className={`grid divide-x min-h-[320px] ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
         {ordersByDay.map((list, i) => (
           <div key={days[i].toISOString()} className={`flex flex-col gap-1.5 p-1.5 ${isToday(days[i]) ? 'bg-primary/5' : ''}`}>
             {list.length === 0 && (
@@ -110,7 +131,7 @@ export default function PlannerCalendar({ orders, onAssign, onStart, onClose }) 
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => handleCardClick(o)}
+                  onClick={() => onOpen(o)}
                   title={`${o.progressivo || ''} · ${o.cliente_nome || ''} · ${o.autista_nome || 'nessun autista'}`}
                   className={`text-left rounded-md border px-2 py-1.5 text-[11px] leading-tight shadow-sm hover:brightness-95 transition ${style.card}`}
                   data-testid="calendar-order-card"

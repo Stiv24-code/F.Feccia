@@ -42,23 +42,26 @@
     --sidebar-active-ring: rgba(34,211,238,0.35);
   }
 
+  /* Palette navy presa dal mockup designer (sidebar #0B1220/#0F1A2E, card
+     #1c2534) — cosi il tema scuro dei contenuti resta coerente con la
+     sidebar, che e gia sempre scura via --sidebar-*. */
   .dark {
-    --background: 222 22% 9%;
+    --background: 220 42% 7%;
     --foreground: 210 20% 98%;
-    --card: 222 22% 11%;
+    --card: 217 30% 14%;
     --card-foreground: 210 20% 98%;
-    --popover: 222 22% 11%;
+    --popover: 217 30% 14%;
     --popover-foreground: 210 20% 98%;
-    --muted: 222 18% 15%;
+    --muted: 217 22% 17%;
     --muted-foreground: 215 14% 72%;
-    --border: 222 16% 18%;
-    --input: 222 16% 18%;
+    --border: 217 20% 20%;
+    --input: 217 20% 20%;
     --ring: 195 92% 48%;
     --primary: 195 92% 48%;
     --primary-foreground: 222 22% 9%;
-    --secondary: 222 18% 15%;
+    --secondary: 217 22% 17%;
     --secondary-foreground: 210 20% 98%;
-    --accent: 195 35% 18%;
+    --accent: 217 30% 20%;
     --accent-foreground: 210 20% 98%;
     --destructive: 0 62% 42%;
     --destructive-foreground: 0 0% 100%;
@@ -154,6 +157,56 @@
   background-color: #F1F3F6;
   color: #4B5563;
   border-color: #DDE1E7;
+}
+
+/* Varianti tema scuro — stessa mappatura colore/stato, tonalita adattate
+   per restare leggibili su sfondo navy invece che sbiadire come i
+   pastelli chiari. Usate da StatusBadge e dalle card del calendario
+   Planner (PlannerCalendar.js). */
+.dark .status-order-red {
+  background-color: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.dark .status-order-yellow {
+  background-color: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.dark .status-order-blue {
+  background-color: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.dark .status-order-green {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.dark .status-order-gray {
+  background-color: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+.dark .status-pianificabile {
+  background-color: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.dark .status-viaggio {
+  background-color: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.dark .status-chiuso {
+  background-color: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.4);
+}
+.dark .status-fatturato {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 /* Selection */
