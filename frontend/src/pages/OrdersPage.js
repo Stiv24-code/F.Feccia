@@ -39,9 +39,9 @@ export default function OrdersPage() {
   const [categories, setCategories] = useState([]);
 
   const [form, setForm] = useState({
-    cliente_id: '', cliente_nome: '',
-    destinazione_carico_id: '', destinazione_carico_nome: '',
-    destinazione_scarico_id: '', destinazione_scarico_nome: '',
+    cliente_id: '',
+    destinazione_carico_id: '',
+    destinazione_scarico_id: '',
     data_ritiro: '', ora_ritiro_da: '06:00', ora_ritiro_a: '08:00',
     data_consegna: '', ora_consegna_da: '14:00', ora_consegna_a: '18:00',
     tariffa: 0, tipo_tariffa: 'forfait',
@@ -92,7 +92,7 @@ export default function OrdersPage() {
   };
 
   const openNew = () => {
-    setForm({ cliente_id: '', cliente_nome: '', destinazione_carico_id: '', destinazione_carico_nome: '', destinazione_scarico_id: '', destinazione_scarico_nome: '', data_ritiro: '', ora_ritiro_da: '06:00', ora_ritiro_a: '08:00', data_consegna: '', ora_consegna_da: '14:00', ora_consegna_a: '18:00', tariffa: 0, tipo_tariffa: 'forfait', tipologia: 'nazionale', categoria_trasporto: '', rif_ordine_cliente: '', andata_ritorno: false, note: '', items: [] });
+    setForm({ cliente_id: '', destinazione_carico_id: '', destinazione_scarico_id: '', data_ritiro: '', ora_ritiro_da: '06:00', ora_ritiro_a: '08:00', data_consegna: '', ora_consegna_da: '14:00', ora_consegna_a: '18:00', tariffa: 0, tipo_tariffa: 'forfait', tipologia: 'nazionale', categoria_trasporto: '', rif_ordine_cliente: '', andata_ritorno: false, note: '', items: [] });
     setDialogOpen(true);
   };
 
@@ -113,20 +113,17 @@ export default function OrdersPage() {
   };
 
   const setCustomer = (id) => {
-    const c = customers.find(x => x.id === id);
-    const newForm = { ...form, cliente_id: id, cliente_nome: c?.ragione_sociale || '' };
+    const newForm = { ...form, cliente_id: id };
     setForm(newForm);
     tryLookupTariff(id, newForm.destinazione_carico_id, newForm.destinazione_scarico_id);
   };
   const setCarico = (id) => {
-    const d = destinations.find(x => x.id === id);
-    const newForm = { ...form, destinazione_carico_id: id, destinazione_carico_nome: d?.nome || '' };
+    const newForm = { ...form, destinazione_carico_id: id };
     setForm(newForm);
     tryLookupTariff(newForm.cliente_id, id, newForm.destinazione_scarico_id);
   };
   const setScarico = (id) => {
-    const d = destinations.find(x => x.id === id);
-    const newForm = { ...form, destinazione_scarico_id: id, destinazione_scarico_nome: d?.nome || '' };
+    const newForm = { ...form, destinazione_scarico_id: id };
     setForm(newForm);
     tryLookupTariff(newForm.cliente_id, newForm.destinazione_carico_id, id);
   };
@@ -208,9 +205,9 @@ export default function OrdersPage() {
               ) : orders.map(o => (
                 <TableRow key={o.id} className="hover:bg-muted/60">
                   <TableCell className="py-2 font-mono font-medium">{o.progressivo}</TableCell>
-                  <TableCell className="py-2 max-w-[150px] truncate">{o.cliente_nome}</TableCell>
-                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_carico_nome}</TableCell>
-                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_scarico_nome}</TableCell>
+                  <TableCell className="py-2 max-w-[150px] truncate">{o.cliente?.ragione_sociale}</TableCell>
+                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_carico?.nome}</TableCell>
+                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_scarico?.nome}</TableCell>
                   <TableCell className="py-2 whitespace-nowrap">{o.data_ritiro}</TableCell>
                   <TableCell className="py-2 text-right tabular-nums">€ {formatEuro(o.tariffa)}</TableCell>
                   <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{o.tipologia}</Badge></TableCell>
@@ -218,7 +215,7 @@ export default function OrdersPage() {
                   <TableCell className="py-2">
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedOrder(o); setDetailOpen(true); }}><Eye className="h-3 w-3" /></Button>
-                      {o.data_consegna && o.destinazione_scarico_nome && (
+                      {o.data_consegna && o.destinazione_scarico?.nome && (
                         <Button
                           variant="ghost" size="icon" className="h-7 w-7"
                           title="Suggerimenti ritorni" aria-label="Suggerimenti ordini di ritorno"
@@ -333,16 +330,16 @@ export default function OrdersPage() {
           {selectedOrder && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Progressivo:</span><span className="font-mono font-medium">{selectedOrder.progressivo}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedOrder.cliente_nome}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Carico:</span><span>{selectedOrder.destinazione_carico_nome}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Scarico:</span><span>{selectedOrder.destinazione_scarico_nome}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedOrder.cliente?.ragione_sociale}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Carico:</span><span>{selectedOrder.destinazione_carico?.nome}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Scarico:</span><span>{selectedOrder.destinazione_scarico?.nome}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data Ritiro:</span><span>{selectedOrder.data_ritiro} {selectedOrder.ora_ritiro_da}-{selectedOrder.ora_ritiro_a}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data Consegna:</span><span>{selectedOrder.data_consegna} {selectedOrder.ora_consegna_da}-{selectedOrder.ora_consegna_a}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tariffa:</span><span className="font-medium">€ {formatEuro(selectedOrder.tariffa)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tipologia:</span><Badge variant="outline" className="text-[10px]">{selectedOrder.tipologia}</Badge></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedOrder.stato} /></div>
               {selectedOrder.targa_motrice && <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedOrder.targa_motrice}</span></div>}
-              {selectedOrder.autista_nome && <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedOrder.autista_nome}</span></div>}
+              {selectedOrder.autista && <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedOrder.autista.nome} {selectedOrder.autista.cognome}</span></div>}
               {selectedOrder.note && <div><span className="text-muted-foreground">Note:</span><p className="mt-1">{selectedOrder.note}</p></div>}
             </div>
           )}
@@ -361,15 +358,15 @@ export default function OrdersPage() {
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border bg-muted/40 p-3">
                 <p className="text-xs text-muted-foreground mb-1">Ordine di andata</p>
-                <p className="font-medium">{returnsData.source_order.cliente_nome} — {returnsData.source_order.progressivo}</p>
+                <p className="font-medium">{returnsData.source_order.cliente?.ragione_sociale} — {returnsData.source_order.progressivo}</p>
                 <p className="text-xs text-muted-foreground">
-                  Scarico a <span className="font-medium">{returnsData.source_order.destinazione_scarico_nome}</span> il {returnsData.source_order.data_consegna || '—'}
+                  Scarico a <span className="font-medium">{returnsData.source_order.destinazione_scarico?.nome}</span> il {returnsData.source_order.data_consegna || '—'}
                 </p>
               </div>
               {returnsData.count === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   Nessun ordine di ritorno disponibile in questo periodo.<br />
-                  <span className="text-xs">Cerco PIANIFICABILE che partono da {returnsData.source_order.destinazione_scarico_nome} entro 2 giorni dallo scarico.</span>
+                  <span className="text-xs">Cerco PIANIFICABILE che partono da {returnsData.source_order.destinazione_scarico?.nome} entro 2 giorni dallo scarico.</span>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[420px] overflow-y-auto">
@@ -380,11 +377,11 @@ export default function OrdersPage() {
                           <div className="flex items-center gap-2">
                             <Badge variant={c.score >= 60 ? 'default' : 'outline'} className="text-[10px] tabular-nums">{c.score}</Badge>
                             <span className="font-mono text-xs">{c.order.progressivo}</span>
-                            <span className="text-xs text-muted-foreground truncate">{c.order.cliente_nome}</span>
+                            <span className="text-xs text-muted-foreground truncate">{c.order.cliente?.ragione_sociale}</span>
                           </div>
                           <p className="text-xs mt-1 truncate">
-                            <span className="text-muted-foreground">Da</span> {c.order.destinazione_carico_nome}
-                            <span className="text-muted-foreground"> a </span> {c.order.destinazione_scarico_nome}
+                            <span className="text-muted-foreground">Da</span> {c.order.destinazione_carico?.nome}
+                            <span className="text-muted-foreground"> a </span> {c.order.destinazione_scarico?.nome}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Ritiro {c.order.data_ritiro} · € {formatEuro(c.order.tariffa)} · {c.order.tipologia}

@@ -149,7 +149,7 @@ func (h *PriceListHandler) DeletePriceList(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "Pricelist ID (UUID)"
-// @Param item body dto.PriceListItemDTO true "Item data"
+// @Param item body dto.PriceListItemRequestDTO true "Item data"
 // @Success 200 {object} dto.PriceListItemAddResult
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/pricelists/{id}/items [post]
@@ -158,7 +158,7 @@ func (h *PriceListHandler) AddItem(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid ID")
 	}
-	var item dto.PriceListItemDTO
+	var item dto.PriceListItemRequestDTO
 	if err := c.BodyParser(&item); err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid request body")
 	}
@@ -176,7 +176,7 @@ func (h *PriceListHandler) AddItem(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Pricelist ID (UUID)"
 // @Param item_id path string true "Item ID (UUID)"
-// @Param item body dto.PriceListItemDTO true "Item data"
+// @Param item body dto.PriceListItemRequestDTO true "Item data"
 // @Success 200 {object} dto.PriceListItemUpdateResult
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/pricelists/{id}/items/{item_id} [put]
@@ -189,7 +189,7 @@ func (h *PriceListHandler) UpdateItem(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid item_id")
 	}
-	var item dto.PriceListItemDTO
+	var item dto.PriceListItemRequestDTO
 	if err := c.BodyParser(&item); err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid request body")
 	}

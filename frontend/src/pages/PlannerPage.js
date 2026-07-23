@@ -18,6 +18,10 @@ import { toast } from 'sonner';
 import { Search, CalendarRange, Truck, CheckCircle, PlayCircle, Ban, List as ListIcon, CalendarDays } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
+// Nome completo autista, o stringa vuota se non ancora assegnato — fonte
+// unica per cella tabella, filtro dropdown e ricerca libera.
+const driverFullName = (o) => o.autista ? `${o.autista.nome} ${o.autista.cognome}` : '';
+
 // ============================
 // Componente griglia riutilizzabile
 // ============================
@@ -51,11 +55,11 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
               <TableCell className="py-2 whitespace-nowrap">{o.data_ritiro} {o.ora_ritiro_da}</TableCell>
               <TableCell className="py-2 whitespace-nowrap">{o.data_consegna} {o.ora_consegna_da}</TableCell>
               <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{o.tipologia}</Badge></TableCell>
-              <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_carico_nome}</TableCell>
-              <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_scarico_nome}</TableCell>
-              <TableCell className="py-2 max-w-[120px] truncate">{o.cliente_nome}</TableCell>
+              <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_carico?.nome}</TableCell>
+              <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_scarico?.nome}</TableCell>
+              <TableCell className="py-2 max-w-[120px] truncate">{o.cliente?.ragione_sociale}</TableCell>
               <TableCell className="py-2 font-mono">{o.targa_motrice || '—'}</TableCell>
-              <TableCell className="py-2">{o.autista_nome || '—'}</TableCell>
+              <TableCell className="py-2">{driverFullName(o) || '—'}</TableCell>
               <TableCell className="py-2"><StatusBadge stato={o.stato} /></TableCell>
               <TableCell className="py-2" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-1">
@@ -160,16 +164,17 @@ export default function PlannerPage() {
 
   // --- Filtri toolbar: ricerca + autista + stato (il periodo è già filtrato server-side) ---
   const driverOptions = useMemo(() => {
-    const names = new Set(orders.map(o => o.autista_nome).filter(Boolean));
+    const names = new Set(orders.map(driverFullName).filter(Boolean));
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [orders]);
 
   const searchAndDriverFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return orders.filter(o => {
-      if (driverFilter && o.autista_nome !== driverFilter) return false;
+      const autistaNome = driverFullName(o);
+      if (driverFilter && autistaNome !== driverFilter) return false;
       if (q) {
-        const hay = `${o.progressivo || ''} ${o.cliente_nome || ''} ${o.destinazione_carico_nome || ''} ${o.destinazione_scarico_nome || ''} ${o.autista_nome || ''} ${o.targa_motrice || ''}`.toLowerCase();
+        const hay = `${o.progressivo || ''} ${o.cliente?.ragione_sociale || ''} ${o.destinazione_carico?.nome || ''} ${o.destinazione_scarico?.nome || ''} ${autistaNome} ${o.targa_motrice || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

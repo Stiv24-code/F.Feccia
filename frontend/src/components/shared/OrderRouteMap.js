@@ -19,7 +19,7 @@ const pointIcon = (color) => L.divIcon({
   iconAnchor: [9, 9],
 });
 
-const FitTwoPoints = ({ points }) => {
+const FitPoints = ({ points }) => {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
@@ -29,15 +29,23 @@ const FitTwoPoints = ({ points }) => {
   return null;
 };
 
-// Mappa minimale con al più 2 punti (carico/scarico) e una linea diretta
-// tra i due — nessun percorso stradale reale: non abbiamo ancora un
-// routing/via point calcolato lato backend per il singolo ordine.
-export default function OrderRouteMap({ carico, scarico, height = 220 }) {
-  const points = [];
-  if (carico?.lat != null && carico?.lng != null) points.push([carico.lat, carico.lng]);
-  if (scarico?.lat != null && scarico?.lng != null) points.push([scarico.lat, scarico.lng]);
+const hasCoords = (p) => p?.lat != null && p?.lng != null;
 
-  if (points.length === 0) {
+// Mappa minimale: la linea tratteggiata collega solo carico → scarico (nessun
+// percorso stradale reale calcolato per il singolo ordine); garage e punto di
+// lavaggio, quando assegnati, compaiono come marker aggiuntivi (inclusi nel
+// fit dei bounds) ma non fanno parte della linea — non sappiamo in che ordine
+// il mezzo li tocchi realmente.
+export default function OrderRouteMap({ carico, scarico, garage, washStation, height = 220 }) {
+  const routePoints = [];
+  if (hasCoords(carico)) routePoints.push([carico.lat, carico.lng]);
+  if (hasCoords(scarico)) routePoints.push([scarico.lat, scarico.lng]);
+
+  const allPoints = [...routePoints];
+  if (hasCoords(garage)) allPoints.push([garage.lat, garage.lng]);
+  if (hasCoords(washStation)) allPoints.push([washStation.lat, washStation.lng]);
+
+  if (allPoints.length === 0) {
     return (
       <div className="flex items-center justify-center rounded-lg border bg-muted/30 text-xs text-muted-foreground" style={{ height }}>
         Coordinate non disponibili per la mappa
@@ -47,24 +55,34 @@ export default function OrderRouteMap({ carico, scarico, height = 220 }) {
 
   return (
     <div className="rounded-lg overflow-hidden border" style={{ height }} data-testid="order-route-map">
-      <MapContainer center={points[0]} zoom={6} style={{ height: '100%', width: '100%' }} zoomControl={false} scrollWheelZoom={false}>
+      <MapContainer center={allPoints[0]} zoom={6} style={{ height: '100%', width: '100%' }} zoomControl={false} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
-        <FitTwoPoints points={points} />
-        {points.length === 2 && (
-          <Polyline positions={points} pathOptions={{ color: '#2a6fdb', weight: 3, dashArray: '6 4', opacity: 0.85 }} />
+        <FitPoints points={allPoints} />
+        {routePoints.length === 2 && (
+          <Polyline positions={routePoints} pathOptions={{ color: '#2a6fdb', weight: 3, dashArray: '6 4', opacity: 0.85 }} />
         )}
-        {carico?.lat != null && carico?.lng != null && (
+        {hasCoords(carico) && (
           <Marker position={[carico.lat, carico.lng]} icon={pointIcon('#2a6fdb')}>
             <Tooltip direction="top" offset={[0, -10]} permanent>Carico · {carico.nome}</Tooltip>
           </Marker>
         )}
-        {scarico?.lat != null && scarico?.lng != null && (
+        {hasCoords(scarico) && (
           <Marker position={[scarico.lat, scarico.lng]} icon={pointIcon('#1f7a4d')}>
             <Tooltip direction="top" offset={[0, -10]} permanent>Scarico · {scarico.nome}</Tooltip>
+          </Marker>
+        )}
+        {hasCoords(garage) && (
+          <Marker position={[garage.lat, garage.lng]} icon={pointIcon('#0B1220')}>
+            <Tooltip direction="top" offset={[0, -10]} permanent>Partenza · {garage.nome}</Tooltip>
+          </Marker>
+        )}
+        {hasCoords(washStation) && (
+          <Marker position={[washStation.lat, washStation.lng]} icon={pointIcon('#38BDF8')}>
+            <Tooltip direction="top" offset={[0, -10]} permanent>Lavaggio · {washStation.nome}</Tooltip>
           </Marker>
         )}
       </MapContainer>

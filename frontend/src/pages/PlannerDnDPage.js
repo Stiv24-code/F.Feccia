@@ -44,9 +44,9 @@ const OrderCard = ({ order, isDragging }) => (
           <span className="font-mono text-[10px] font-semibold">{order.progressivo}</span>
           <Badge variant="outline" className="text-[9px] px-1 py-0">{order.tipologia}</Badge>
         </div>
-        <p className="font-medium truncate mt-0.5">{order.cliente_nome}</p>
+        <p className="font-medium truncate mt-0.5">{order.cliente?.ragione_sociale}</p>
         <p className="text-[11px] text-muted-foreground truncate">
-          {order.destinazione_carico_nome} → {order.destinazione_scarico_nome}
+          {order.destinazione_carico?.nome} → {order.destinazione_scarico?.nome}
         </p>
         <p className="text-[10px] text-muted-foreground tabular-nums">
           {order.data_ritiro || '—'}
@@ -99,7 +99,7 @@ const SlotContent = ({ trips, ordersByTrip }) => {
             <Badge variant="outline" className="text-[9px] px-1 py-0">{t.stato}</Badge>
           </div>
           {(ordersByTrip[t.id] || []).slice(0, 2).map(o => (
-            <p key={o.id} className="truncate text-muted-foreground">{o.cliente_nome}</p>
+            <p key={o.id} className="truncate text-muted-foreground">{o.cliente?.ragione_sociale}</p>
           ))}
         </div>
       ))}
@@ -199,14 +199,12 @@ export default function PlannerDnDPage() {
     if (!dropDialog) return;
     setCreating(true);
     try {
-      const driver = drivers.find(d => d.id === dropForm.autista_id);
       await createTrip({
         ordini_ids: [dropDialog.order.id],
         targa_motrice: dropDialog.vehicle.targa,
         targa_rimorchio: dropDialog.vehicle.targa_rimorchio || '',
         autista_id: dropForm.autista_id,
-        autista_nome: driver ? `${driver.cognome} ${driver.nome}` : '',
-        garage_id: '', garage_nome: '',
+        garage_id: '',
         data_partenza: dropDialog.day,
         data_arrivo: dropForm.data_arrivo,
         note: dropForm.note,
@@ -334,9 +332,9 @@ export default function PlannerDnDPage() {
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border bg-muted/40 p-3">
                 <p className="text-[11px] text-muted-foreground mb-1">Ordine</p>
-                <p className="font-medium">{dropDialog.order.cliente_nome}</p>
+                <p className="font-medium">{dropDialog.order.cliente?.ragione_sociale}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {dropDialog.order.destinazione_carico_nome} → {dropDialog.order.destinazione_scarico_nome}
+                  {dropDialog.order.destinazione_carico?.nome} → {dropDialog.order.destinazione_scarico?.nome}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">

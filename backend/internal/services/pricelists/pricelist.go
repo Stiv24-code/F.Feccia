@@ -23,8 +23,27 @@ func NewPriceListService(db *gorm.DB) *PriceListService {
 	return &PriceListService{db: db}
 }
 
+// preloadPriceListAssociations loads Cliente plus every item-level belongs-to
+// reference (Prodotto, le due Destinazioni) — the choke point toResponse
+// relies on to build the nested Response DTOs.
+func preloadPriceListAssociations(q *gorm.DB) *gorm.DB {
+	return q.
+		Preload("Cliente").
+		Preload("Items.Prodotto").
+		Preload("Items.DestinazioneCarico").
+		Preload("Items.DestinazioneScarico")
+}
+
+func (s *PriceListService) reload(ctx context.Context, id uuid.UUID) (*models.PriceList, error) {
+	var pl models.PriceList
+	if err := preloadPriceListAssociations(s.db.WithContext(ctx)).First(&pl, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &pl, nil
+}
+
 func (s *PriceListService) List(ctx context.Context, clienteID string) ([]dto.PriceListResponse, error) {
-	query := s.db.WithContext(ctx).Preload("Items").Where("active = ?", true)
+	query := preloadPriceListAssociations(s.db.WithContext(ctx)).Where("active = ?", true)
 	if clienteID != "" {
 		query = query.Where("cliente_id = ?", clienteID)
 	}
@@ -40,27 +59,40 @@ func (s *PriceListService) List(ctx context.Context, clienteID string) ([]dto.Pr
 }
 
 func (s *PriceListService) Create(ctx context.Context, req dto.PriceListRequest) (*dto.PriceListResponse, error) {
+	clienteID, err := utils.ParseUUID(req.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	items, err := toItems(req.Items)
+	if err != nil {
+		return nil, err
+	}
+
 	pl := models.PriceList{
-		ID: uuid.New(), ClienteID: req.ClienteID, ClienteNome: req.ClienteNome,
+		ID: uuid.New(), ClienteID: clienteID,
 		DataInizio: req.DataInizio, DataFine: req.DataFine, Note: req.Note,
-		Items: toItems(req.Items), Active: true,
+		Items: items, Active: true,
 	}
 	if err := s.db.WithContext(ctx).Create(&pl).Error; err != nil {
 		return nil, err
 	}
-	resp := toResponse(pl)
+	reloaded, err := s.reload(ctx, pl.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := toResponse(*reloaded)
 	return &resp, nil
 }
 
 func (s *PriceListService) GetByID(ctx context.Context, id uuid.UUID) (*dto.PriceListResponse, error) {
-	var pl models.PriceList
-	if err := s.db.WithContext(ctx).Preload("Items").First(&pl, "id = ?", id).Error; err != nil {
+	pl, err := s.reload(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	resp := toResponse(pl)
+	resp := toResponse(*pl)
 	return &resp, nil
 }
 
@@ -76,11 +108,20 @@ func (s *PriceListService) Update(ctx context.Context, id uuid.UUID, req dto.Pri
 		return nil, err
 	}
 
+	clienteID, err := utils.ParseUUID(req.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	items, err := toItems(req.Items)
+	if err != nil {
+		return nil, err
+	}
+
 	if existing.InUso {
 		newPL := models.PriceList{
-			ID: uuid.New(), ClienteID: req.ClienteID, ClienteNome: req.ClienteNome,
+			ID: uuid.New(), ClienteID: clienteID,
 			DataInizio: req.DataInizio, DataFine: req.DataFine, Note: req.Note,
-			Items: toItems(req.Items), Active: true, InUso: false,
+			Items: items, Active: true, InUso: false,
 		}
 		err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			if err := tx.Create(&newPL).Error; err != nil {
@@ -94,17 +135,16 @@ func (s *PriceListService) Update(ctx context.Context, id uuid.UUID, req dto.Pri
 		return &dto.PriceListUpdateResult{OK: true, NewID: &newPL.ID, Duplicated: true}, nil
 	}
 
-	existing.ClienteID = req.ClienteID
-	existing.ClienteNome = req.ClienteNome
+	existing.ClienteID = clienteID
 	existing.DataInizio = req.DataInizio
 	existing.DataFine = req.DataFine
 	existing.Note = req.Note
 
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("price_list_id = ?", id).Delete(&models.PriceListItem{}).Error; err != nil {
 			return err
 		}
-		existing.Items = toItems(req.Items)
+		existing.Items = items
 		return tx.Save(&existing).Error
 	})
 	if err != nil {
@@ -118,7 +158,7 @@ func (s *PriceListService) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // AddItem mirrors POST /pricelists/{id}/items.
-func (s *PriceListService) AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemAddResult, error) {
+func (s *PriceListService) AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemAddResult, error) {
 	var pl models.PriceList
 	if err := s.db.WithContext(ctx).Preload("Items").First(&pl, "id = ?", plID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -127,7 +167,10 @@ func (s *PriceListService) AddItem(ctx context.Context, plID uuid.UUID, item dto
 		return nil, err
 	}
 
-	newItem := toItem(item)
+	newItem, err := toItem(item)
+	if err != nil {
+		return nil, err
+	}
 	newItem.PriceListID = plID
 	if err := s.db.WithContext(ctx).Create(&newItem).Error; err != nil {
 		return nil, err
@@ -138,7 +181,7 @@ func (s *PriceListService) AddItem(ctx context.Context, plID uuid.UUID, item dto
 
 // UpdateItem mirrors PUT /pricelists/{id}/items/{item_id} — item_id is
 // preserved even if the request body includes a different one.
-func (s *PriceListService) UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemUpdateResult, error) {
+func (s *PriceListService) UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemUpdateResult, error) {
 	var count int64
 	if err := s.db.WithContext(ctx).Model(&models.PriceList{}).Where("id = ?", plID).Count(&count).Error; err != nil {
 		return nil, err
@@ -147,14 +190,17 @@ func (s *PriceListService) UpdateItem(ctx context.Context, plID, itemID uuid.UUI
 		return nil, utils.NewAPIError(404, "Listino non trovato")
 	}
 
-	updated := toItem(item)
+	updated, err := toItem(item)
+	if err != nil {
+		return nil, err
+	}
 	result := s.db.WithContext(ctx).Model(&models.PriceListItem{}).
 		Where("id = ? AND price_list_id = ?", itemID, plID).
 		Updates(map[string]interface{}{
-			"prodotto_id": updated.ProdottoID, "prodotto_nome": updated.ProdottoNome,
-			"destinazione_carico_id": updated.DestinazioneCaricoID, "destinazione_carico_nome": updated.DestinazioneCaricoNome,
-			"destinazione_scarico_id": updated.DestinazioneScaricoID, "destinazione_scarico_nome": updated.DestinazioneScaricoNome,
-			"tariffa": updated.Tariffa, "tipo_tariffa": updated.TipoTariffa,
+			"prodotto_id":             updated.ProdottoID,
+			"destinazione_carico_id":  updated.DestinazioneCaricoID,
+			"destinazione_scarico_id": updated.DestinazioneScaricoID,
+			"tariffa":                 updated.Tariffa, "tipo_tariffa": updated.TipoTariffa,
 			"range_peso_min": updated.RangePesoMin, "range_peso_max": updated.RangePesoMax,
 			"unita_peso": updated.UnitaPeso, "minimo_tassabile": updated.MinimoTassabile,
 			"tipo_trasporto": updated.TipoTrasporto, "perc_adeguamento_carburante": updated.PercAdeguamentoCarburante,
@@ -197,8 +243,21 @@ func (s *PriceListService) DeleteItem(ctx context.Context, plID, itemID uuid.UUI
 func (s *PriceListService) LookupTariff(ctx context.Context, clienteID, caricoID, scaricoID, prodottoID string, peso float64) (*dto.TariffLookupResult, error) {
 	today := time.Now().UTC().Format("2006-01-02")
 
+	caricoUUID, err := utils.ParseOptionalUUID(caricoID)
+	if err != nil {
+		return nil, err
+	}
+	scaricoUUID, err := utils.ParseOptionalUUID(scaricoID)
+	if err != nil {
+		return nil, err
+	}
+	prodottoUUID, err := utils.ParseOptionalUUID(prodottoID)
+	if err != nil {
+		return nil, err
+	}
+
 	var lists []models.PriceList
-	err := s.db.WithContext(ctx).Preload("Items").
+	err = s.db.WithContext(ctx).Preload("Items").
 		Where("active = ? AND cliente_id = ? AND data_inizio <= ? AND data_fine >= ?", true, clienteID, today, today).
 		Limit(100).Find(&lists).Error
 	if err != nil {
@@ -217,7 +276,7 @@ func (s *PriceListService) LookupTariff(ctx context.Context, clienteID, caricoID
 
 	for _, pl := range lists {
 		for _, item := range pl.Items {
-			score := scoreRuleMatch(item, caricoID, scaricoID, prodottoID, peso)
+			score := scoreRuleMatch(item, caricoUUID, scaricoUUID, prodottoUUID, peso)
 			if score < 0 {
 				continue
 			}
@@ -241,20 +300,27 @@ func (s *PriceListService) LookupTariff(ctx context.Context, clienteID, caricoID
 
 // ── Scoring engine (ports services.py's score_rule_match/compute_tariff) ──
 
-func scoreTratta(item models.PriceListItem, caricoID, scaricoID string) int {
+func uuidEq(a, b *uuid.UUID) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func scoreTratta(item models.PriceListItem, caricoID, scaricoID *uuid.UUID) int {
 	itemCarico := item.DestinazioneCaricoID
 	itemScarico := item.DestinazioneScaricoID
-	if itemCarico != "" && itemScarico != "" {
-		if itemCarico == caricoID && itemScarico == scaricoID {
+	if itemCarico != nil && itemScarico != nil {
+		if uuidEq(itemCarico, caricoID) && uuidEq(itemScarico, scaricoID) {
 			return 10
 		}
 		return -1
 	}
-	if itemCarico != "" || itemScarico != "" {
-		if itemCarico != "" && itemCarico != caricoID {
+	if itemCarico != nil || itemScarico != nil {
+		if itemCarico != nil && !uuidEq(itemCarico, caricoID) {
 			return -1
 		}
-		if itemScarico != "" && itemScarico != scaricoID {
+		if itemScarico != nil && !uuidEq(itemScarico, scaricoID) {
 			return -1
 		}
 		return 5
@@ -262,11 +328,11 @@ func scoreTratta(item models.PriceListItem, caricoID, scaricoID string) int {
 	return 0
 }
 
-func scoreProdotto(item models.PriceListItem, prodottoID string) int {
-	if item.ProdottoID == "" {
+func scoreProdotto(item models.PriceListItem, prodottoID *uuid.UUID) int {
+	if item.ProdottoID == nil {
 		return 0
 	}
-	if item.ProdottoID == prodottoID {
+	if uuidEq(item.ProdottoID, prodottoID) {
 		return 5
 	}
 	return -1
@@ -287,7 +353,7 @@ func scorePeso(item models.PriceListItem, peso float64) int {
 	return 0
 }
 
-func scoreRuleMatch(item models.PriceListItem, caricoID, scaricoID, prodottoID string, peso float64) int {
+func scoreRuleMatch(item models.PriceListItem, caricoID, scaricoID, prodottoID *uuid.UUID, peso float64) int {
 	tratta := scoreTratta(item, caricoID, scaricoID)
 	if tratta < 0 {
 		return -1
@@ -335,28 +401,43 @@ func roundTo2(v float64) float64 {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-func toItem(dtoItem dto.PriceListItemDTO) models.PriceListItem {
+func toItem(dtoItem dto.PriceListItemRequestDTO) (models.PriceListItem, error) {
 	id := uuid.New()
 	if dtoItem.ItemID != nil {
 		id = *dtoItem.ItemID
 	}
+	prodottoID, err := utils.ParseOptionalUUID(dtoItem.ProdottoID)
+	if err != nil {
+		return models.PriceListItem{}, err
+	}
+	caricoID, err := utils.ParseOptionalUUID(dtoItem.DestinazioneCaricoID)
+	if err != nil {
+		return models.PriceListItem{}, err
+	}
+	scaricoID, err := utils.ParseOptionalUUID(dtoItem.DestinazioneScaricoID)
+	if err != nil {
+		return models.PriceListItem{}, err
+	}
 	return models.PriceListItem{
-		ID: id, ProdottoID: dtoItem.ProdottoID, ProdottoNome: dtoItem.ProdottoNome,
-		DestinazioneCaricoID: dtoItem.DestinazioneCaricoID, DestinazioneCaricoNome: dtoItem.DestinazioneCaricoNome,
-		DestinazioneScaricoID: dtoItem.DestinazioneScaricoID, DestinazioneScaricoNome: dtoItem.DestinazioneScaricoNome,
+		ID: id, ProdottoID: prodottoID,
+		DestinazioneCaricoID: caricoID, DestinazioneScaricoID: scaricoID,
 		Tariffa: dtoItem.Tariffa, TipoTariffa: defaultString(dtoItem.TipoTariffa, "forfait"),
 		RangePesoMin: dtoItem.RangePesoMin, RangePesoMax: dtoItem.RangePesoMax,
 		UnitaPeso: defaultString(dtoItem.UnitaPeso, "Kg"), MinimoTassabile: dtoItem.MinimoTassabile,
 		TipoTrasporto: defaultString(dtoItem.TipoTrasporto, "stradale"), PercAdeguamentoCarburante: dtoItem.PercAdeguamentoCarburante,
-	}
+	}, nil
 }
 
-func toItems(items []dto.PriceListItemDTO) []models.PriceListItem {
+func toItems(items []dto.PriceListItemRequestDTO) ([]models.PriceListItem, error) {
 	result := make([]models.PriceListItem, len(items))
 	for i, it := range items {
-		result[i] = toItem(it)
+		item, err := toItem(it)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = item
 	}
-	return result
+	return result, nil
 }
 
 func defaultString(value, fallback string) string {
@@ -366,12 +447,45 @@ func defaultString(value, fallback string) string {
 	return value
 }
 
-func toItemDTO(it models.PriceListItem) dto.PriceListItemDTO {
-	id := it.ID
-	return dto.PriceListItemDTO{
-		ItemID: &id, ProdottoID: it.ProdottoID, ProdottoNome: it.ProdottoNome,
-		DestinazioneCaricoID: it.DestinazioneCaricoID, DestinazioneCaricoNome: it.DestinazioneCaricoNome,
-		DestinazioneScaricoID: it.DestinazioneScaricoID, DestinazioneScaricoNome: it.DestinazioneScaricoNome,
+func customerResponse(c models.Customer) *dto.CustomerResponse {
+	if c.ID == uuid.Nil {
+		return nil
+	}
+	return &dto.CustomerResponse{
+		ID: c.ID, RagioneSociale: c.RagioneSociale, Indirizzo: c.Indirizzo, Citta: c.Citta,
+		Cap: c.Cap, Provincia: c.Provincia, Nazione: c.Nazione, PartitaIva: c.PartitaIva,
+		CodiceFiscale: c.CodiceFiscale, Telefono: c.Telefono, Email: c.Email, Pec: c.Pec,
+		CondizioniPagamento: c.CondizioniPagamento, Note: c.Note, RichiedeRifOrdine: c.RichiedeRifOrdine,
+		Active: c.Active, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+	}
+}
+
+func productResponse(p *models.Product) *dto.ProductResponse {
+	if p == nil {
+		return nil
+	}
+	return &dto.ProductResponse{
+		ID: p.ID, Codice: p.Codice, Descrizione: p.Descrizione, UnitaMisura: p.UnitaMisura,
+		Note: p.Note, Active: p.Active, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+	}
+}
+
+func destinationResponse(d *models.Destination) *dto.DestinationResponse {
+	if d == nil {
+		return nil
+	}
+	return &dto.DestinationResponse{
+		ID: d.ID, Nome: d.Nome, Indirizzo: d.Indirizzo, Citta: d.Citta, Cap: d.Cap,
+		Provincia: d.Provincia, Nazione: d.Nazione, Lat: d.Lat, Lng: d.Lng,
+		VincoliScarico: d.VincoliScarico, Note: d.Note, Active: d.Active,
+		CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+	}
+}
+
+func toItemDTO(it models.PriceListItem) dto.PriceListItemResponseDTO {
+	return dto.PriceListItemResponseDTO{
+		ItemID: it.ID, Prodotto: productResponse(it.Prodotto),
+		DestinazioneCarico: destinationResponse(it.DestinazioneCarico), DestinazioneScarico: destinationResponse(it.DestinazioneScarico),
 		Tariffa: it.Tariffa, TipoTariffa: it.TipoTariffa,
 		RangePesoMin: it.RangePesoMin, RangePesoMax: it.RangePesoMax,
 		UnitaPeso: it.UnitaPeso, MinimoTassabile: it.MinimoTassabile,
@@ -380,12 +494,12 @@ func toItemDTO(it models.PriceListItem) dto.PriceListItemDTO {
 }
 
 func toResponse(pl models.PriceList) dto.PriceListResponse {
-	items := make([]dto.PriceListItemDTO, len(pl.Items))
+	items := make([]dto.PriceListItemResponseDTO, len(pl.Items))
 	for i, it := range pl.Items {
 		items[i] = toItemDTO(it)
 	}
 	return dto.PriceListResponse{
-		ID: pl.ID, ClienteID: pl.ClienteID, ClienteNome: pl.ClienteNome,
+		ID: pl.ID, ClienteID: pl.ClienteID.String(), Cliente: customerResponse(pl.Cliente),
 		DataInizio: pl.DataInizio, DataFine: pl.DataFine, Items: items,
 		Note: pl.Note, InUso: pl.InUso, Active: pl.Active, CreatedAt: pl.CreatedAt,
 	}

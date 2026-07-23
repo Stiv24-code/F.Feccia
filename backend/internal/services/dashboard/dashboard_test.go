@@ -17,25 +17,38 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Vehicle{}, &models.Driver{}, &models.Invoice{}, &models.InvoiceLine{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Vehicle{}, &models.Invoice{}, &models.InvoiceLine{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
 }
 
-func seedOrder(t *testing.T, db *gorm.DB, clienteID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64) models.Order {
+func seedOrder(t *testing.T, db *gorm.DB, clienteID uuid.UUID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64) models.Order {
 	t.Helper()
-	return seedOrderWithFattura(t, db, clienteID, stato, dataRitiro, destScarico, tipologia, categoria, tariffa, "")
+	return seedOrderWithFattura(t, db, clienteID, stato, dataRitiro, destScarico, tipologia, categoria, tariffa, uuid.Nil)
 }
 
 // seedOrderWithFattura is like seedOrder but also stamps fattura_id — "is
 // this order billed" is tracked via fattura_id, not a dedicated stato value.
-func seedOrderWithFattura(t *testing.T, db *gorm.DB, clienteID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64, fatturaID string) models.Order {
+func seedOrderWithFattura(t *testing.T, db *gorm.DB, clienteID uuid.UUID, stato, dataRitiro, destScarico, tipologia, categoria string, tariffa float64, fatturaID uuid.UUID) models.Order {
 	t.Helper()
+	var dest *models.Destination
+	if destScarico != "" {
+		dest = &models.Destination{ID: uuid.New(), Nome: destScarico, Lat: geoPtr(0), Lng: geoPtr(0), Active: true}
+		if err := db.Create(dest).Error; err != nil {
+			t.Fatalf("failed to seed destination: %v", err)
+		}
+	}
 	o := models.Order{
-		ID: uuid.New(), ClienteID: clienteID, Stato: stato, DataRitiro: dataRitiro,
-		DestinazioneScaricoNome: destScarico, Tipologia: tipologia, CategoriaTrasporto: categoria,
-		Tariffa: tariffa, FatturaID: fatturaID, ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
+		ID: uuid.New(), ClienteID: clienteID, Stato: models.OrderStato(stato), DataRitiro: dataRitiro,
+		Tipologia: tipologia, CategoriaTrasporto: categoria,
+		Tariffa: tariffa, ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
+	}
+	if dest != nil {
+		o.DestinazioneScaricoID = &dest.ID
+	}
+	if fatturaID != uuid.Nil {
+		o.FatturaID = &fatturaID
 	}
 	if err := db.Create(&o).Error; err != nil {
 		t.Fatalf("failed to seed order: %v", err)
@@ -43,23 +56,26 @@ func seedOrderWithFattura(t *testing.T, db *gorm.DB, clienteID, stato, dataRitir
 	return o
 }
 
+func geoPtr(v float64) *float64 { return &v }
+
 func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	svc := NewDashboardService(db)
 
-	seedOrder(t, db, "c1", "PIANIFICABILE", "2026-01-10", "", "nazionale", "", 100)
-	seedOrder(t, db, "c1", "VIAGGIO", "2026-01-15", "", "nazionale", "", 200)
-	seedOrder(t, db, "c1", "CHIUSO", "2026-02-01", "", "nazionale", "", 300)
-	seedOrderWithFattura(t, db, "c1", "CHIUSO", "2026-02-10", "", "nazionale", "", 400, "inv-1")
+	clienteID := uuid.New()
+	seedOrder(t, db, clienteID, "PIANIFICABILE", "2026-01-10", "", "nazionale", "", 100)
+	seedOrder(t, db, clienteID, "VIAGGIO", "2026-01-15", "", "nazionale", "", 200)
+	seedOrder(t, db, clienteID, "CHIUSO", "2026-02-01", "", "nazionale", "", 300)
+	seedOrderWithFattura(t, db, clienteID, "CHIUSO", "2026-02-10", "", "nazionale", "", 400, uuid.New())
 
-	db.Create(&models.Customer{ID: uuid.New(), RagioneSociale: "C1", Active: true})
+	db.Create(&models.Customer{ID: clienteID, RagioneSociale: "C1", Active: true})
 	db.Create(&models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Active: true})
 	db.Create(&models.Driver{ID: uuid.New(), Nome: "M", Cognome: "R", Active: true})
 
-	inv := models.Invoice{ID: uuid.New(), ClienteID: "c1", Stato: "DEFINITIVA", Totale: 750, CostiAccessori: []byte("[]")}
+	inv := models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "DEFINITIVA", Totale: 750, CostiAccessori: []byte("[]")}
 	db.Create(&inv)
-	db.Create(&models.Invoice{ID: uuid.New(), ClienteID: "c1", Stato: "PROFORMA", Totale: 999, CostiAccessori: []byte("[]")})
+	db.Create(&models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "PROFORMA", Totale: 999, CostiAccessori: []byte("[]")})
 
 	stats, err := svc.Stats(ctx)
 	if err != nil {
@@ -86,12 +102,12 @@ func TestDashboardService_CustomerDashboard_KPIsAndBreakdowns(t *testing.T) {
 
 	customer := models.Customer{ID: uuid.New(), RagioneSociale: "Acme", Citta: "Milano", PartitaIva: "123", Active: true}
 	db.Create(&customer)
-	clienteID := customer.ID.String()
+	clienteID := customer.ID
 
-	seedOrderWithFattura(t, db, clienteID, "CHIUSO", "2026-01-10", "Roma", "nazionale", "frigo", 500, "inv-1")
+	seedOrderWithFattura(t, db, clienteID, "CHIUSO", "2026-01-10", "Roma", "nazionale", "frigo", 500, uuid.New())
 	seedOrder(t, db, clienteID, "CHIUSO", "2026-02-10", "Roma", "nazionale", "", 300)
 	seedOrder(t, db, clienteID, "PIANIFICABILE", "2026-02-20", "Napoli", "internazionale", "", 200)
-	seedOrderWithFattura(t, db, "other-client", "CHIUSO", "2026-01-10", "Torino", "nazionale", "", 999, "inv-2")
+	seedOrderWithFattura(t, db, uuid.New(), "CHIUSO", "2026-01-10", "Torino", "nazionale", "", 999, uuid.New())
 
 	result, err := svc.CustomerDashboard(ctx, customer.ID)
 	if err != nil {
@@ -130,8 +146,9 @@ func TestDashboardService_RecentOrders_LimitsToTen(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewDashboardService(db)
 
+	clienteID := uuid.New()
 	for i := 0; i < 15; i++ {
-		seedOrder(t, db, "c1", "PIANIFICABILE", "2026-01-01", "", "nazionale", "", 0)
+		seedOrder(t, db, clienteID, "PIANIFICABILE", "2026-01-01", "", "nazionale", "", 0)
 	}
 
 	recent, err := svc.RecentOrders(ctx)

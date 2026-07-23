@@ -32,7 +32,8 @@ type OrdersFilter struct {
 // OrdersExcel mirrors export_orders_excel: same columns, same order,
 // sorted ascending by data_ritiro.
 func (s *ExportService) OrdersExcel(ctx context.Context, filter OrdersFilter) ([]byte, error) {
-	query := s.db.WithContext(ctx).Model(&models.Order{})
+	query := s.db.WithContext(ctx).Model(&models.Order{}).
+		Preload("Cliente").Preload("DestinazioneCarico").Preload("DestinazioneScarico")
 	if filter.Stato != "" {
 		query = query.Where("stato = ?", filter.Stato)
 	}
@@ -64,8 +65,15 @@ func (s *ExportService) OrdersExcel(ctx context.Context, filter OrdersFilter) ([
 
 	for i, o := range orders {
 		row := i + 2
+		caricoNome, scaricoNome := "", ""
+		if o.DestinazioneCarico != nil {
+			caricoNome = o.DestinazioneCarico.Nome
+		}
+		if o.DestinazioneScarico != nil {
+			scaricoNome = o.DestinazioneScarico.Nome
+		}
 		values := []interface{}{
-			o.Progressivo, o.ClienteNome, o.DestinazioneCaricoNome, o.DestinazioneScaricoNome,
+			o.Progressivo, o.Cliente.RagioneSociale, caricoNome, scaricoNome,
 			o.DataRitiro, o.DataConsegna, o.Tariffa, o.Tipologia, o.Stato,
 		}
 		for col, v := range values {

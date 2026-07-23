@@ -6,6 +6,14 @@
 // Le pagine consumano tipi parziali (es. Order, Customer) tramite
 // `import type { Order } from '@/types/domain'`. La conversione progressiva
 // delle pagine a TS sostituirà gli `any` impliciti con questi tipi.
+//
+// OrderStato fa già eccezione: il backend espone `stato` come vero enum
+// swagger (vedi dto.OrderResponse in backend/internal/dto/dto.go), quindi lo
+// deriviamo dal client generato invece di duplicare i 5 valori a mano — un
+// `swag init` + `yarn generate:api` che aggiunge/toglie uno stato aggiorna
+// anche questo tipo automaticamente.
+
+import type { DtoOrderResponse } from '@/api/data-contracts';
 
 export type UserRole = 'admin' | 'amministrazione' | 'planner' | 'operatore';
 
@@ -46,6 +54,30 @@ export interface Destination {
   provincia?: string;
   nazione?: string;
   vincoli_scarico?: string;
+  note?: string;
+  active: boolean;
+  created_at?: string;
+}
+
+export interface Garage {
+  id: string;
+  nome: string;
+  indirizzo?: string;
+  citta?: string;
+  lat?: number | null;
+  lng?: number | null;
+  note?: string;
+  active: boolean;
+  created_at?: string;
+}
+
+export interface WashStation {
+  id: string;
+  nome: string;
+  indirizzo?: string;
+  citta?: string;
+  lat?: number | null;
+  lng?: number | null;
   note?: string;
   active: boolean;
   created_at?: string;
@@ -105,24 +137,27 @@ export interface Product {
 }
 
 export interface OrderItem {
-  prodotto_id?: string;
-  prodotto_codice?: string;
-  prodotto_descrizione?: string;
+  prodotto?: Product;
   quantita?: number;
   peso?: number;
 }
 
-export type OrderStato = 'PIANIFICABILE' | 'PIANIFICATO' | 'VIAGGIO' | 'CHIUSO' | 'SCARTATO';
+export type OrderStato = NonNullable<DtoOrderResponse['stato']>;
 
+// Riferimenti anagrafica (cliente, destinazioni, garage, autista, vettore,
+// wash station) sono relazioni FK reali lato backend — Preloaded e annidate
+// per intero nella response, non più snapshot piatti "*_nome". Gli `*_id`
+// piatti restano (utili per URL/binding Select), l'oggetto annidato è nil
+// finché il riferimento non è impostato.
 export interface Order {
   id: string;
   progressivo?: string;
   cliente_id: string;
-  cliente_nome?: string;
+  cliente?: Customer;
   destinazione_carico_id?: string;
-  destinazione_carico_nome?: string;
+  destinazione_carico?: Destination;
   destinazione_scarico_id?: string;
-  destinazione_scarico_nome?: string;
+  destinazione_scarico?: Destination;
   data_ritiro?: string;
   data_consegna?: string;
   tariffa?: number;
@@ -135,13 +170,17 @@ export interface Order {
   items?: OrderItem[];
   servizi_accessori?: string[];
   costi_accessori?: Array<Record<string, unknown>>;
-  stato: OrderStato | string;
+  stato: OrderStato;
+  garage_id?: string;
+  garage?: Garage;
   targa_motrice?: string;
   targa_rimorchio?: string;
   autista_id?: string;
-  autista_nome?: string;
+  autista?: Driver;
   vettore_id?: string;
-  vettore_nome?: string;
+  vettore?: Carrier;
+  wash_station_id?: string;
+  wash_station?: WashStation;
   viaggio_id?: string;
   fattura_id?: string;
   created_at?: string;
@@ -156,9 +195,9 @@ export interface Trip {
   targa_motrice?: string;
   targa_rimorchio?: string;
   autista_id?: string;
-  autista_nome?: string;
+  autista?: Driver;
   garage_id?: string;
-  garage_nome?: string;
+  garage?: Garage;
   km_totali?: number;
   costo_stimato?: number;
   stato: TripStato | string;
@@ -184,7 +223,7 @@ export interface Invoice {
   id: string;
   numero?: string;
   cliente_id: string;
-  cliente_nome?: string;
+  cliente?: Customer;
   data_fattura?: string;
   data_scadenza?: string;
   righe?: InvoiceLine[];
@@ -198,12 +237,9 @@ export interface Invoice {
 
 export interface PriceListItem {
   item_id?: string;
-  prodotto_id?: string;
-  prodotto_nome?: string;
-  destinazione_carico_id?: string;
-  destinazione_carico_nome?: string;
-  destinazione_scarico_id?: string;
-  destinazione_scarico_nome?: string;
+  prodotto?: Product;
+  destinazione_carico?: Destination;
+  destinazione_scarico?: Destination;
   tariffa?: number;
   tipo_tariffa?: string;
   range_peso_min?: number;
@@ -217,7 +253,7 @@ export interface PriceListItem {
 export interface PriceList {
   id: string;
   cliente_id: string;
-  cliente_nome?: string;
+  cliente?: Customer;
   data_inizio: string;
   data_fine: string;
   items?: PriceListItem[];

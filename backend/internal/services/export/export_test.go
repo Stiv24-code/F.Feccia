@@ -19,7 +19,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -27,9 +27,13 @@ func newTestDB(t *testing.T) *gorm.DB {
 
 func createOrder(t *testing.T, db *gorm.DB, progressivo, dataRitiro, stato string) {
 	t.Helper()
+	cliente := models.Customer{ID: uuid.New(), RagioneSociale: "Cliente Uno", Active: true}
+	if err := db.Create(&cliente).Error; err != nil {
+		t.Fatalf("failed to seed customer: %v", err)
+	}
 	o := models.Order{
-		ID: uuid.New(), ClienteID: "c1", ClienteNome: "Cliente Uno", Progressivo: progressivo,
-		DataRitiro: dataRitiro, Stato: stato, Tariffa: 100,
+		ID: uuid.New(), ClienteID: cliente.ID, Progressivo: progressivo,
+		DataRitiro: dataRitiro, Stato: models.OrderStato(stato), Tariffa: 100,
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&o).Error; err != nil {

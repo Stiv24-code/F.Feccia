@@ -127,27 +127,29 @@ export default function PlannerCalendar({ orders, onOpen }) {
             {list.map(o => {
               const color = COLOR_BY_STATO[o.stato] || 'gray';
               const style = COLOR_STYLES[color];
+              const clienteNome = o.cliente?.ragione_sociale;
+              const autistaNome = o.autista ? `${o.autista.nome} ${o.autista.cognome}` : '';
               return (
                 <button
                   key={o.id}
                   type="button"
                   onClick={() => onOpen(o)}
-                  title={`${o.progressivo || ''} · ${o.cliente_nome || ''} · ${o.autista_nome || 'nessun autista'}`}
+                  title={`${o.progressivo || ''} · ${clienteNome || ''} · ${autistaNome || 'nessun autista'}`}
                   className={`text-left rounded-md border px-2 py-1.5 text-[11px] leading-tight shadow-sm hover:brightness-95 transition ${style.card}`}
                   data-testid="calendar-order-card"
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <span className="font-semibold truncate">{o.cliente_nome || o.progressivo}</span>
+                    <span className="font-semibold truncate">{clienteNome || o.progressivo}</span>
                     <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
                   </div>
                   <div className="truncate opacity-80">
-                    {o.destinazione_carico_nome} → {o.destinazione_scarico_nome}
+                    {o.destinazione_carico?.nome} → {o.destinazione_scarico?.nome}
                   </div>
                   <div className="flex items-center justify-between mt-0.5 opacity-70">
                     <span>{o.ora_ritiro_da || '—'}</span>
-                    {o.autista_nome && (
+                    {autistaNome && (
                       <span className="flex items-center gap-0.5 truncate max-w-[70%]">
-                        <Truck className="h-2.5 w-2.5 shrink-0" />{o.targa_motrice || o.autista_nome}
+                        <Truck className="h-2.5 w-2.5 shrink-0" />{o.targa_motrice || autistaNome}
                       </span>
                     )}
                   </div>

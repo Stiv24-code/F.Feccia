@@ -421,7 +421,6 @@ export interface DtoInvoicePDFURLResult {
 
 export interface DtoInvoiceRequest {
   cliente_id: string;
-  cliente_nome?: string;
   condizioni_pagamento?: string;
   costi_accessori?: Record<string, any>[];
   data_fattura?: string;
@@ -433,8 +432,8 @@ export interface DtoInvoiceRequest {
 }
 
 export interface DtoInvoiceResponse {
+  cliente?: DtoCustomerResponse;
   cliente_id?: string;
-  cliente_nome?: string;
   condizioni_pagamento?: string;
   costi_accessori?: Record<string, any>[];
   created_at?: string;
@@ -485,9 +484,9 @@ export interface DtoMapPoint {
 }
 
 export interface DtoMapRoute {
-  autista_nome?: string;
+  autista?: DtoDriverResponse;
   carico?: DtoMapPoint;
-  cliente_nome?: string;
+  cliente?: DtoCustomerResponse;
   current_position?: DtoMapPoint;
   data_consegna?: string;
   data_ritiro?: string;
@@ -542,18 +541,22 @@ export interface DtoOKResult {
 
 export interface DtoOrderAssignRequest {
   autista_id?: string;
-  autista_nome?: string;
+  garage_id?: string;
   targa_motrice?: string;
   targa_rimorchio?: string;
   vettore_id?: string;
-  vettore_nome?: string;
+  wash_station_id?: string;
 }
 
-export interface DtoOrderItemDTO {
+export interface DtoOrderItemRequestDTO {
   peso?: number;
-  prodotto_codice?: string;
-  prodotto_descrizione?: string;
   prodotto_id?: string;
+  quantita?: number;
+}
+
+export interface DtoOrderItemResponseDTO {
+  peso?: number;
+  prodotto?: DtoProductResponse;
   quantita?: number;
 }
 
@@ -561,15 +564,12 @@ export interface DtoOrderRequest {
   andata_ritorno?: boolean;
   categoria_trasporto?: string;
   cliente_id: string;
-  cliente_nome?: string;
   costi_accessori?: Record<string, any>[];
   data_consegna?: string;
   data_ritiro?: string;
   destinazione_carico_id?: string;
-  destinazione_carico_nome?: string;
   destinazione_scarico_id?: string;
-  destinazione_scarico_nome?: string;
-  items?: DtoOrderItemDTO[];
+  items?: DtoOrderItemRequestDTO[];
   note?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
@@ -584,22 +584,24 @@ export interface DtoOrderRequest {
 
 export interface DtoOrderResponse {
   andata_ritorno?: boolean;
+  autista?: DtoDriverResponse;
   autista_id?: string;
-  autista_nome?: string;
   categoria_trasporto?: string;
+  cliente?: DtoCustomerResponse;
   cliente_id?: string;
-  cliente_nome?: string;
   costi_accessori?: Record<string, any>[];
   created_at?: string;
   data_consegna?: string;
   data_ritiro?: string;
+  destinazione_carico?: DtoDestinationResponse;
   destinazione_carico_id?: string;
-  destinazione_carico_nome?: string;
+  destinazione_scarico?: DtoDestinationResponse;
   destinazione_scarico_id?: string;
-  destinazione_scarico_nome?: string;
   fattura_id?: string;
+  garage?: DtoGarageResponse;
+  garage_id?: string;
   id?: string;
-  items?: DtoOrderItemDTO[];
+  items?: DtoOrderItemResponseDTO[];
   note?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
@@ -608,16 +610,18 @@ export interface DtoOrderResponse {
   progressivo?: string;
   rif_ordine_cliente?: string;
   servizi_accessori?: string[];
-  stato?: string;
+  stato?: "PIANIFICABILE" | "PIANIFICATO" | "VIAGGIO" | "CHIUSO" | "SCARTATO";
   targa_motrice?: string;
   targa_rimorchio?: string;
   tariffa?: number;
   tipo_tariffa?: string;
   tipologia?: string;
   updated_at?: string;
+  vettore?: DtoCarrierResponse;
   vettore_id?: string;
-  vettore_nome?: string;
   viaggio_id?: string;
+  wash_station?: DtoWashStationResponse;
+  wash_station_id?: string;
 }
 
 export interface DtoOrderReturnSuggestion {
@@ -633,9 +637,9 @@ export interface DtoOrderReturnSuggestionsResponse {
 }
 
 export interface DtoOrderSourceSummary {
-  cliente_nome?: string;
+  cliente?: DtoCustomerResponse;
   data_consegna?: string;
-  destinazione_scarico_nome?: string;
+  destinazione_scarico?: DtoDestinationResponse;
   id?: string;
   progressivo?: string;
 }
@@ -652,16 +656,18 @@ export interface DtoPriceListItemAddResult {
   ok?: boolean;
 }
 
-export interface DtoPriceListItemDTO {
+export interface DtoPriceListItemDeleteResult {
+  items_count?: number;
+  ok?: boolean;
+}
+
+export interface DtoPriceListItemRequestDTO {
   destinazione_carico_id?: string;
-  destinazione_carico_nome?: string;
   destinazione_scarico_id?: string;
-  destinazione_scarico_nome?: string;
   item_id?: string;
   minimo_tassabile?: number;
   perc_adeguamento_carburante?: number;
   prodotto_id?: string;
-  prodotto_nome?: string;
   range_peso_max?: number;
   range_peso_min?: number;
   tariffa?: number;
@@ -670,9 +676,19 @@ export interface DtoPriceListItemDTO {
   unita_peso?: string;
 }
 
-export interface DtoPriceListItemDeleteResult {
-  items_count?: number;
-  ok?: boolean;
+export interface DtoPriceListItemResponseDTO {
+  destinazione_carico?: DtoDestinationResponse;
+  destinazione_scarico?: DtoDestinationResponse;
+  item_id?: string;
+  minimo_tassabile?: number;
+  perc_adeguamento_carburante?: number;
+  prodotto?: DtoProductResponse;
+  range_peso_max?: number;
+  range_peso_min?: number;
+  tariffa?: number;
+  tipo_tariffa?: string;
+  tipo_trasporto?: string;
+  unita_peso?: string;
 }
 
 export interface DtoPriceListItemUpdateResult {
@@ -682,23 +698,22 @@ export interface DtoPriceListItemUpdateResult {
 
 export interface DtoPriceListRequest {
   cliente_id: string;
-  cliente_nome?: string;
   data_fine?: string;
   data_inizio?: string;
-  items?: DtoPriceListItemDTO[];
+  items?: DtoPriceListItemRequestDTO[];
   note?: string;
 }
 
 export interface DtoPriceListResponse {
   active?: boolean;
+  cliente?: DtoCustomerResponse;
   cliente_id?: string;
-  cliente_nome?: string;
   created_at?: string;
   data_fine?: string;
   data_inizio?: string;
   id?: string;
   in_uso?: boolean;
-  items?: DtoPriceListItemDTO[];
+  items?: DtoPriceListItemResponseDTO[];
   note?: string;
 }
 
@@ -801,14 +816,14 @@ export interface DtoTransportCategoryResponse {
 }
 
 export interface DtoTripDetailResponse {
+  autista?: DtoDriverResponse;
   autista_id?: string;
-  autista_nome?: string;
   costo_stimato?: number;
   created_at?: string;
   data_arrivo?: string;
   data_partenza?: string;
+  garage?: DtoGarageResponse;
   garage_id?: string;
-  garage_nome?: string;
   id?: string;
   km_totali?: number;
   note?: string;
@@ -818,34 +833,31 @@ export interface DtoTripDetailResponse {
   stato?: string;
   targa_motrice?: string;
   targa_rimorchio?: string;
+  vettore?: DtoCarrierResponse;
   vettore_id?: string;
-  vettore_nome?: string;
 }
 
 export interface DtoTripRequest {
   autista_id?: string;
-  autista_nome?: string;
   data_arrivo?: string;
   data_partenza?: string;
   garage_id?: string;
-  garage_nome?: string;
   note?: string;
   ordini_ids?: string[];
   targa_motrice?: string;
   targa_rimorchio?: string;
   vettore_id?: string;
-  vettore_nome?: string;
 }
 
 export interface DtoTripResponse {
+  autista?: DtoDriverResponse;
   autista_id?: string;
-  autista_nome?: string;
   costo_stimato?: number;
   created_at?: string;
   data_arrivo?: string;
   data_partenza?: string;
+  garage?: DtoGarageResponse;
   garage_id?: string;
-  garage_nome?: string;
   id?: string;
   km_totali?: number;
   note?: string;
@@ -854,8 +866,8 @@ export interface DtoTripResponse {
   stato?: string;
   targa_motrice?: string;
   targa_rimorchio?: string;
+  vettore?: DtoCarrierResponse;
   vettore_id?: string;
-  vettore_nome?: string;
 }
 
 export interface DtoTripSegmentDTO {

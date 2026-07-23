@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-pdf/fpdf"
+	"github.com/google/uuid"
 
 	"fratelli-feccia/internal/models"
 )
@@ -68,13 +69,13 @@ func BuildCMRPDF(order models.Order, consignee models.Customer, sender *Sender, 
 		provinciaParens(consignee.Provincia),
 		consignee.Nazione,
 	}), " "))
-	if deliveryPlace == "" {
-		deliveryPlace = order.DestinazioneScaricoNome
+	if deliveryPlace == "" && order.DestinazioneScarico != nil {
+		deliveryPlace = order.DestinazioneScarico.Nome
 	}
 
-	pickupPlace := order.DestinazioneCaricoNome
-	if pickupPlace == "" {
-		pickupPlace = snd.CapCitta
+	pickupPlace := snd.CapCitta
+	if order.DestinazioneCarico != nil && order.DestinazioneCarico.Nome != "" {
+		pickupPlace = order.DestinazioneCarico.Nome
 	}
 	pickupDate := fmtDate(order.DataRitiro)
 
@@ -184,19 +185,22 @@ func drawCMRGoodsTable(pdf *fpdf.Fpdf, items []models.OrderItem, totalWeight flo
 
 	pdf.SetFont("Helvetica", "", 8)
 	rows := items
-	if len(rows) == 0 {
-		rows = []models.OrderItem{{ProdottoDescrizione: "Merce varia", Quantita: 0, Peso: totalWeight}}
+	emptyRow := len(rows) == 0
+	if emptyRow {
+		rows = []models.OrderItem{{Quantita: 0, Peso: totalWeight}}
 	}
 	if len(rows) > 6 {
 		rows = rows[:6]
 	}
 	for _, it := range rows {
-		desc := it.ProdottoDescrizione
-		if desc == "" {
-			desc = it.ProdottoCodice
-		}
-		if desc == "" {
-			desc = "merce"
+		desc := "merce"
+		switch {
+		case emptyRow:
+			desc = "Merce varia"
+		case it.Prodotto.Descrizione != "":
+			desc = it.Prodotto.Descrizione
+		case it.Prodotto.Codice != "":
+			desc = it.Prodotto.Codice
 		}
 		if len(desc) > 55 {
 			desc = desc[:55]
@@ -235,8 +239,8 @@ func drawCMRBottomBlock(pdf *fpdf.Fpdf, order models.Order, vehicle *models.Vehi
 	if vehicle != nil {
 		vehicleInfo = fmt.Sprintf("Targa: %s\nMarca: %s %s", orDash(vehicle.Targa), vehicle.Marca, vehicle.Modello)
 	}
-	if vehicleInfo == "" {
-		vehicleInfo = order.VettoreNome
+	if vehicleInfo == "" && order.Vettore != nil {
+		vehicleInfo = order.Vettore.RagioneSociale
 	}
 	if vehicleInfo == "" {
 		vehicleInfo = DefaultSender.RagioneSociale
@@ -252,8 +256,12 @@ func drawCMRBottomBlock(pdf *fpdf.Fpdf, order models.Order, vehicle *models.Vehi
 	cmrBox(pdf, 10, y4+10, 190, 10, 20, "Da pagare", "", 8)
 
 	y5 := y4 + 20
+	clienteNome := ""
+	if order.Cliente.ID != uuid.Nil {
+		clienteNome = order.Cliente.RagioneSociale
+	}
 	cmrBox(pdf, 10, y5, 190, 10, 21, "Stilato a / il",
-		fmt.Sprintf("   %s - %s", orDash(order.ClienteNome), fmtDate(order.DataRitiro)), 9)
+		fmt.Sprintf("   %s - %s", orDash(clienteNome), fmtDate(order.DataRitiro)), 9)
 
 	y6 := y5 + 10
 	sigW := 63.3

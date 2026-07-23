@@ -31,8 +31,8 @@ type InvoiceLine struct {
 type Invoice struct {
 	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	Numero              string         `gorm:"type:varchar(30);index" json:"numero"`
-	ClienteID           string         `gorm:"type:varchar(64);not null;index" json:"cliente_id" validate:"required"`
-	ClienteNome         string         `gorm:"type:varchar(255)" json:"cliente_nome"`
+	ClienteID           uuid.UUID      `gorm:"type:uuid;not null;index" json:"cliente_id" validate:"required"`
+	Cliente             Customer       `gorm:"foreignKey:ClienteID;references:ID" json:"-"`
 	DataFattura         string         `gorm:"type:varchar(20)" json:"data_fattura"`
 	DataScadenza        string         `gorm:"type:varchar(20)" json:"data_scadenza"`
 	CondizioniPagamento string         `gorm:"type:varchar(255)" json:"condizioni_pagamento"`

@@ -20,7 +20,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Destination{}, &models.Vehicle{}, &models.RouteCache{}, &models.Garage{}, &models.WashStation{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Driver{}, &models.Carrier{}, &models.Vehicle{}, &models.RouteCache{}, &models.Garage{}, &models.WashStation{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -45,11 +45,28 @@ func fakeOSRM(t *testing.T) *httptest.Server {
 	}))
 }
 
-func createOrder(t *testing.T, db *gorm.DB, stato, carico, scarico, targa string) models.Order {
+// makeDestination seeds a real Destination row so an order can reference it
+// via FK — active controls whether it shows up in the map's active-POI list,
+// independent of whether the order's carico/scarico association resolves.
+func makeDestination(t *testing.T, db *gorm.DB, nome string, lat, lng float64, active bool) uuid.UUID {
+	t.Helper()
+	d := models.Destination{ID: uuid.New(), Nome: nome, Lat: &lat, Lng: &lng, Active: active}
+	if err := db.Create(&d).Error; err != nil {
+		t.Fatalf("failed to seed destination %q: %v", nome, err)
+	}
+	if !active {
+		if err := db.Model(&models.Destination{}).Where("id = ?", d.ID).Update("active", false).Error; err != nil {
+			t.Fatalf("failed to deactivate destination %q: %v", nome, err)
+		}
+	}
+	return d.ID
+}
+
+func createOrder(t *testing.T, db *gorm.DB, stato string, caricoID, scaricoID *uuid.UUID, targa string) models.Order {
 	t.Helper()
 	o := models.Order{
-		ID: uuid.New(), ClienteID: "cliente-1", ClienteNome: "Cliente Uno", Stato: stato,
-		DestinazioneCaricoNome: carico, DestinazioneScaricoNome: scarico, TargaMotrice: targa,
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: models.OrderStato(stato),
+		DestinazioneCaricoID: caricoID, DestinazioneScaricoID: scaricoID, TargaMotrice: targa,
 		DataRitiro: "2026-01-10", ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&o).Error; err != nil {
@@ -66,7 +83,9 @@ func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
 	svc := NewMapService(db)
 	svc.geo.OsrmBaseURL = osrm.URL
 
-	createOrder(t, db, "VIAGGIO", "Milano (MI)", "Lodi (LO)", "AB123CD")
+	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
+	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
+	createOrder(t, db, "VIAGGIO", &carico, &scarico, "AB123CD")
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
@@ -98,7 +117,9 @@ func TestMapService_Trips_UsesLiveGPSWhenActiveAndInViaggio(t *testing.T) {
 	svc := NewMapService(db)
 	svc.geo.OsrmBaseURL = osrm.URL
 
-	createOrder(t, db, "VIAGGIO", "Milano (MI)", "Lodi (LO)", "AB123CD")
+	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
+	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
+	createOrder(t, db, "VIAGGIO", &carico, &scarico, "AB123CD")
 	vehicle := models.Vehicle{
 		ID: uuid.New(), Targa: "AB123CD", Active: true,
 		LastLat: 45.39, LastLng: 9.35, LastSpeedKmh: 80, GpsActive: true, GpsSource: "webhook",
@@ -130,14 +151,14 @@ func TestMapService_Trips_SkipsOrderWithUnresolvableDestination(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewMapService(db)
 
-	createOrder(t, db, "PIANIFICABILE", "Città Sconosciuta XYZ", "Anche Questa Sconosciuta", "")
+	createOrder(t, db, "PIANIFICABILE", nil, nil, "")
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
 		t.Fatalf("Trips returned error: %v", err)
 	}
 	if len(resp.Routes) != 0 {
-		t.Fatalf("expected order with unresolvable destinations to be skipped, got %d routes", len(resp.Routes))
+		t.Fatalf("expected order with no destination reference to be skipped, got %d routes", len(resp.Routes))
 	}
 }
 
@@ -151,7 +172,9 @@ func TestMapService_Trips_DegradesToStraightLineOnOSRMFailure(t *testing.T) {
 	svc := NewMapService(db)
 	svc.geo.OsrmBaseURL = osrm.URL
 
-	createOrder(t, db, "CHIUSO", "Milano (MI)", "Lodi (LO)", "")
+	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
+	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
+	createOrder(t, db, "CHIUSO", &carico, &scarico, "")
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
@@ -179,12 +202,9 @@ func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
 	svc := NewMapService(db)
 	svc.geo.OsrmBaseURL = osrm.URL
 
-	milanoLat, milanoLng := 45.4642, 9.1900
-	dest := models.Destination{ID: uuid.New(), Nome: "Milano (MI)", Active: true, Lat: &milanoLat, Lng: &milanoLng}
-	if err := db.Create(&dest).Error; err != nil {
-		t.Fatalf("failed to seed destination: %v", err)
-	}
-	createOrder(t, db, "VIAGGIO", "Milano (MI)", "Lodi (LO)", "")
+	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.1900, true)
+	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
+	createOrder(t, db, "VIAGGIO", &carico, &scarico, "")
 
 	lodiLat, lodiLng := 45.3138, 9.5032
 	rhoLat, rhoLng := 45.5306, 9.0393

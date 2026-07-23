@@ -34,8 +34,8 @@ export default function TripsPage() {
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
 
   const [form, setForm] = useState({
-    targa_motrice: '', targa_rimorchio: '', autista_id: '', autista_nome: '',
-    vettore_id: '', vettore_nome: '', garage_id: '', garage_nome: '',
+    targa_motrice: '', targa_rimorchio: '', autista_id: '',
+    vettore_id: '', garage_id: '',
     note: '', data_partenza: '', data_arrivo: ''
   });
 
@@ -43,7 +43,7 @@ export default function TripsPage() {
   useEffect(() => { fetchTrips(); }, [fetchTrips]);
 
   const openNew = () => {
-    setForm({ targa_motrice: '', targa_rimorchio: '', autista_id: '', autista_nome: '', vettore_id: '', vettore_nome: '', garage_id: '', garage_nome: '', note: '', data_partenza: '', data_arrivo: '' });
+    setForm({ targa_motrice: '', targa_rimorchio: '', autista_id: '', vettore_id: '', garage_id: '', note: '', data_partenza: '', data_arrivo: '' });
     setSelectedOrderIds([]);
     Promise.all([getOrders({ stato: 'PIANIFICABILE' }), getVehicles(), getDrivers(), getCarriers(), getGarages()]).then(([o, v, d, c, g]) => {
       setPlanOrders(o.data); setVehicles(v.data); setDrivers(d.data); setCarriers(c.data); setGarages(g.data);
@@ -94,18 +94,9 @@ export default function TripsPage() {
     setSelectedOrderIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const setDriver = (id) => {
-    const d = drivers.find(x => x.id === id);
-    setForm({ ...form, autista_id: id, autista_nome: d ? `${d.nome} ${d.cognome}` : '' });
-  };
-  const setVettore = (id) => {
-    const c = carriers.find(x => x.id === id);
-    setForm({ ...form, vettore_id: id, vettore_nome: c?.ragione_sociale || '' });
-  };
-  const setGarage = (id) => {
-    const g = garages.find(x => x.id === id);
-    setForm({ ...form, garage_id: id, garage_nome: g?.nome || '' });
-  };
+  const setDriver = (id) => setForm({ ...form, autista_id: id });
+  const setVettore = (id) => setForm({ ...form, vettore_id: id });
+  const setGarage = (id) => setForm({ ...form, garage_id: id });
 
   const pianificatoCount = useMemo(() => trips.filter(t => t.stato === 'PIANIFICATO').length, [trips]);
   const inCorsoCount = useMemo(() => trips.filter(t => t.stato === 'IN_CORSO').length, [trips]);
@@ -154,8 +145,8 @@ export default function TripsPage() {
                   <TableCell className="py-2 font-mono text-xs">{t.id?.substring(0, 8)}</TableCell>
                   <TableCell className="py-2 font-mono">{t.targa_motrice || '-'}</TableCell>
                   <TableCell className="py-2 font-mono">{t.targa_rimorchio || '-'}</TableCell>
-                  <TableCell className="py-2">{t.autista_nome || '-'}</TableCell>
-                  <TableCell className="py-2">{t.garage_nome || '-'}</TableCell>
+                  <TableCell className="py-2">{t.autista ? `${t.autista.nome} ${t.autista.cognome}` : '-'}</TableCell>
+                  <TableCell className="py-2">{t.garage?.nome || '-'}</TableCell>
                   <TableCell className="py-2">{t.ordini_ids?.length || 0}</TableCell>
                   <TableCell className="py-2 text-right tabular-nums">{t.km_totali || 0}</TableCell>
                   <TableCell className="py-2"><StatusBadge stato={t.stato} /></TableCell>
@@ -187,8 +178,8 @@ export default function TripsPage() {
                   <label key={o.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer text-sm">
                     <Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={() => toggleOrder(o.id)} />
                     <span className="font-mono text-xs">{o.progressivo}</span>
-                    <span className="truncate">{o.destinazione_carico_nome} → {o.destinazione_scarico_nome}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{o.cliente_nome}</span>
+                    <span className="truncate">{o.destinazione_carico?.nome} → {o.destinazione_scarico?.nome}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">{o.cliente?.ragione_sociale}</span>
                   </label>
                 ))}
               </div>
@@ -220,8 +211,8 @@ export default function TripsPage() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedTrip.targa_motrice || '-'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Rimorchio:</span><span className="font-mono">{selectedTrip.targa_rimorchio || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedTrip.autista_nome || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Garage:</span><span>{selectedTrip.garage_nome || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedTrip.autista ? `${selectedTrip.autista.nome} ${selectedTrip.autista.cognome}` : '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Garage:</span><span>{selectedTrip.garage?.nome || '-'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedTrip.stato} /></div>
               {selectedTrip.ordini && selectedTrip.ordini.length > 0 && (
                 <div>
@@ -231,7 +222,7 @@ export default function TripsPage() {
                       <div key={o.id} className="px-3 py-2 flex justify-between items-center">
                         <div>
                           <span className="font-mono text-xs">{o.progressivo}</span>
-                          <span className="ml-2">{o.destinazione_carico_nome} → {o.destinazione_scarico_nome}</span>
+                          <span className="ml-2">{o.destinazione_carico?.nome} → {o.destinazione_scarico?.nome}</span>
                         </div>
                         <StatusBadge stato={o.stato} />
                       </div>

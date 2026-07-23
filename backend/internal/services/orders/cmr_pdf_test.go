@@ -11,6 +11,8 @@ import (
 	"fratelli-feccia/pkg/utils"
 )
 
+func geoPtr(v float64) *float64 { return &v }
+
 func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewOrderService(db)
@@ -24,9 +26,18 @@ func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 		t.Fatalf("failed to seed vehicle: %v", err)
 	}
 
+	carico := models.Destination{ID: uuid.New(), Nome: "Milano (MI)", Active: true, Lat: geoPtr(45.4642), Lng: geoPtr(9.19)}
+	scarico := models.Destination{ID: uuid.New(), Nome: "Lodi (LO)", Active: true, Lat: geoPtr(45.3138), Lng: geoPtr(9.5032)}
+	if err := db.Create(&carico).Error; err != nil {
+		t.Fatalf("failed to seed destination: %v", err)
+	}
+	if err := db.Create(&scarico).Error; err != nil {
+		t.Fatalf("failed to seed destination: %v", err)
+	}
+
 	order := models.Order{
-		ID: uuid.New(), ClienteID: customer.ID.String(), ClienteNome: customer.RagioneSociale,
-		DestinazioneCaricoNome: "Milano (MI)", DestinazioneScaricoNome: "Lodi (LO)",
+		ID: uuid.New(), ClienteID: customer.ID,
+		DestinazioneCaricoID: &carico.ID, DestinazioneScaricoID: &scarico.ID,
 		DataRitiro: "2026-01-10", TargaMotrice: "AB123CD", Progressivo: "26/0001",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -51,8 +62,7 @@ func TestGetCMRPDF_FallsBackWhenCustomerMissing(t *testing.T) {
 	svc := NewOrderService(db)
 
 	order := models.Order{
-		ID: uuid.New(), ClienteID: "nonexistent-customer-id", ClienteNome: "Cliente Fantasma",
-		DestinazioneCaricoNome: "Milano (MI)", DestinazioneScaricoNome: "Lodi (LO)",
+		ID: uuid.New(), ClienteID: uuid.New(),
 		DataRitiro: "2026-01-10", ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&order).Error; err != nil {

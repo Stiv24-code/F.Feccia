@@ -749,8 +749,6 @@ definitions:
     properties:
       cliente_id:
         type: string
-      cliente_nome:
-        type: string
       condizioni_pagamento:
         type: string
       costi_accessori:
@@ -777,9 +775,9 @@ definitions:
     type: object
   dto.InvoiceResponse:
     properties:
+      cliente:
+        $ref: '#/definitions/dto.CustomerResponse'
       cliente_id:
-        type: string
-      cliente_nome:
         type: string
       condizioni_pagamento:
         type: string
@@ -871,12 +869,12 @@ definitions:
     type: object
   dto.MapRoute:
     properties:
-      autista_nome:
-        type: string
+      autista:
+        $ref: '#/definitions/dto.DriverResponse'
       carico:
         $ref: '#/definitions/dto.MapPoint'
-      cliente_nome:
-        type: string
+      cliente:
+        $ref: '#/definitions/dto.CustomerResponse'
       current_position:
         $ref: '#/definitions/dto.MapPoint'
       data_consegna:
@@ -980,7 +978,7 @@ definitions:
     properties:
       autista_id:
         type: string
-      autista_nome:
+      garage_id:
         type: string
       targa_motrice:
         type: string
@@ -988,19 +986,24 @@ definitions:
         type: string
       vettore_id:
         type: string
-      vettore_nome:
+      wash_station_id:
         type: string
     type: object
-  dto.OrderItemDTO:
+  dto.OrderItemRequestDTO:
     properties:
       peso:
         type: number
-      prodotto_codice:
-        type: string
-      prodotto_descrizione:
-        type: string
       prodotto_id:
         type: string
+      quantita:
+        type: number
+    type: object
+  dto.OrderItemResponseDTO:
+    properties:
+      peso:
+        type: number
+      prodotto:
+        $ref: '#/definitions/dto.ProductResponse'
       quantita:
         type: number
     type: object
@@ -1011,8 +1014,6 @@ definitions:
       categoria_trasporto:
         type: string
       cliente_id:
-        type: string
-      cliente_nome:
         type: string
       costi_accessori:
         items:
@@ -1025,15 +1026,11 @@ definitions:
         type: string
       destinazione_carico_id:
         type: string
-      destinazione_carico_nome:
-        type: string
       destinazione_scarico_id:
-        type: string
-      destinazione_scarico_nome:
         type: string
       items:
         items:
-          $ref: '#/definitions/dto.OrderItemDTO'
+          $ref: '#/definitions/dto.OrderItemRequestDTO'
         type: array
       note:
         type: string
@@ -1064,15 +1061,15 @@ definitions:
     properties:
       andata_ritorno:
         type: boolean
+      autista:
+        $ref: '#/definitions/dto.DriverResponse'
       autista_id:
-        type: string
-      autista_nome:
         type: string
       categoria_trasporto:
         type: string
+      cliente:
+        $ref: '#/definitions/dto.CustomerResponse'
       cliente_id:
-        type: string
-      cliente_nome:
         type: string
       costi_accessori:
         items:
@@ -1085,21 +1082,25 @@ definitions:
         type: string
       data_ritiro:
         type: string
+      destinazione_carico:
+        $ref: '#/definitions/dto.DestinationResponse'
       destinazione_carico_id:
         type: string
-      destinazione_carico_nome:
-        type: string
+      destinazione_scarico:
+        $ref: '#/definitions/dto.DestinationResponse'
       destinazione_scarico_id:
         type: string
-      destinazione_scarico_nome:
-        type: string
       fattura_id:
+        type: string
+      garage:
+        $ref: '#/definitions/dto.GarageResponse'
+      garage_id:
         type: string
       id:
         type: string
       items:
         items:
-          $ref: '#/definitions/dto.OrderItemDTO'
+          $ref: '#/definitions/dto.OrderItemResponseDTO'
         type: array
       note:
         type: string
@@ -1120,6 +1121,12 @@ definitions:
           type: string
         type: array
       stato:
+        enum:
+        - PIANIFICABILE
+        - PIANIFICATO
+        - VIAGGIO
+        - CHIUSO
+        - SCARTATO
         type: string
       targa_motrice:
         type: string
@@ -1133,11 +1140,15 @@ definitions:
         type: string
       updated_at:
         type: string
+      vettore:
+        $ref: '#/definitions/dto.CarrierResponse'
       vettore_id:
         type: string
-      vettore_nome:
-        type: string
       viaggio_id:
+        type: string
+      wash_station:
+        $ref: '#/definitions/dto.WashStationResponse'
+      wash_station_id:
         type: string
     type: object
   dto.OrderReturnSuggestion:
@@ -1164,12 +1175,12 @@ definitions:
     type: object
   dto.OrderSourceSummary:
     properties:
-      cliente_nome:
-        type: string
+      cliente:
+        $ref: '#/definitions/dto.CustomerResponse'
       data_consegna:
         type: string
-      destinazione_scarico_nome:
-        type: string
+      destinazione_scarico:
+        $ref: '#/definitions/dto.DestinationResponse'
       id:
         type: string
       progressivo:
@@ -1193,15 +1204,18 @@ definitions:
       ok:
         type: boolean
     type: object
-  dto.PriceListItemDTO:
+  dto.PriceListItemDeleteResult:
+    properties:
+      items_count:
+        type: integer
+      ok:
+        type: boolean
+    type: object
+  dto.PriceListItemRequestDTO:
     properties:
       destinazione_carico_id:
         type: string
-      destinazione_carico_nome:
-        type: string
       destinazione_scarico_id:
-        type: string
-      destinazione_scarico_nome:
         type: string
       item_id:
         type: string
@@ -1210,8 +1224,6 @@ definitions:
       perc_adeguamento_carburante:
         type: number
       prodotto_id:
-        type: string
-      prodotto_nome:
         type: string
       range_peso_max:
         type: number
@@ -1226,12 +1238,32 @@ definitions:
       unita_peso:
         type: string
     type: object
-  dto.PriceListItemDeleteResult:
+  dto.PriceListItemResponseDTO:
     properties:
-      items_count:
-        type: integer
-      ok:
-        type: boolean
+      destinazione_carico:
+        $ref: '#/definitions/dto.DestinationResponse'
+      destinazione_scarico:
+        $ref: '#/definitions/dto.DestinationResponse'
+      item_id:
+        type: string
+      minimo_tassabile:
+        type: number
+      perc_adeguamento_carburante:
+        type: number
+      prodotto:
+        $ref: '#/definitions/dto.ProductResponse'
+      range_peso_max:
+        type: number
+      range_peso_min:
+        type: number
+      tariffa:
+        type: number
+      tipo_tariffa:
+        type: string
+      tipo_trasporto:
+        type: string
+      unita_peso:
+        type: string
     type: object
   dto.PriceListItemUpdateResult:
     properties:
@@ -1244,15 +1276,13 @@ definitions:
     properties:
       cliente_id:
         type: string
-      cliente_nome:
-        type: string
       data_fine:
         type: string
       data_inizio:
         type: string
       items:
         items:
-          $ref: '#/definitions/dto.PriceListItemDTO'
+          $ref: '#/definitions/dto.PriceListItemRequestDTO'
         type: array
       note:
         type: string
@@ -1263,9 +1293,9 @@ definitions:
     properties:
       active:
         type: boolean
+      cliente:
+        $ref: '#/definitions/dto.CustomerResponse'
       cliente_id:
-        type: string
-      cliente_nome:
         type: string
       created_at:
         type: string
@@ -1279,7 +1309,7 @@ definitions:
         type: boolean
       items:
         items:
-          $ref: '#/definitions/dto.PriceListItemDTO'
+          $ref: '#/definitions/dto.PriceListItemResponseDTO'
         type: array
       note:
         type: string
@@ -1458,9 +1488,9 @@ definitions:
     type: object
   dto.TripDetailResponse:
     properties:
+      autista:
+        $ref: '#/definitions/dto.DriverResponse'
       autista_id:
-        type: string
-      autista_nome:
         type: string
       costo_stimato:
         type: number
@@ -1470,9 +1500,9 @@ definitions:
         type: string
       data_partenza:
         type: string
+      garage:
+        $ref: '#/definitions/dto.GarageResponse'
       garage_id:
-        type: string
-      garage_nome:
         type: string
       id:
         type: string
@@ -1498,24 +1528,20 @@ definitions:
         type: string
       targa_rimorchio:
         type: string
+      vettore:
+        $ref: '#/definitions/dto.CarrierResponse'
       vettore_id:
-        type: string
-      vettore_nome:
         type: string
     type: object
   dto.TripRequest:
     properties:
       autista_id:
         type: string
-      autista_nome:
-        type: string
       data_arrivo:
         type: string
       data_partenza:
         type: string
       garage_id:
-        type: string
-      garage_nome:
         type: string
       note:
         type: string
@@ -1529,14 +1555,12 @@ definitions:
         type: string
       vettore_id:
         type: string
-      vettore_nome:
-        type: string
     type: object
   dto.TripResponse:
     properties:
+      autista:
+        $ref: '#/definitions/dto.DriverResponse'
       autista_id:
-        type: string
-      autista_nome:
         type: string
       costo_stimato:
         type: number
@@ -1546,9 +1570,9 @@ definitions:
         type: string
       data_partenza:
         type: string
+      garage:
+        $ref: '#/definitions/dto.GarageResponse'
       garage_id:
-        type: string
-      garage_nome:
         type: string
       id:
         type: string
@@ -1570,9 +1594,9 @@ definitions:
         type: string
       targa_rimorchio:
         type: string
+      vettore:
+        $ref: '#/definitions/dto.CarrierResponse'
       vettore_id:
-        type: string
-      vettore_nome:
         type: string
     type: object
   dto.TripSegmentDTO:
@@ -4169,7 +4193,7 @@ paths:
         name: item
         required: true
         schema:
-          $ref: '#/definitions/dto.PriceListItemDTO'
+          $ref: '#/definitions/dto.PriceListItemRequestDTO'
       produces:
       - application/json
       responses:
@@ -4238,7 +4262,7 @@ paths:
         name: item
         required: true
         schema:
-          $ref: '#/definitions/dto.PriceListItemDTO'
+          $ref: '#/definitions/dto.PriceListItemRequestDTO'
       produces:
       - application/json
       responses:

@@ -31,23 +31,20 @@ func NewInvoiceService(db *gorm.DB, s3Client *s3invoices.Client) *InvoiceService
 	return &InvoiceService{db: db, s3: s3Client}
 }
 
-// resolveCustomer mirrors _resolve_customer: falls back to a bare
-// ragione_sociale from the invoice's own denormalized cliente_nome when the
-// customer record can't be found (deleted/never existed).
+// resolveCustomer mirrors _resolve_customer: falls back to a placeholder
+// when the customer record can't be found (deleted/never existed) — customers
+// are soft-deleted (Active flag), never hard-deleted, so this is a
+// data-integrity fallback in practice, not a normal path.
 func (s *InvoiceService) resolveCustomer(ctx context.Context, inv models.Invoice) models.Customer {
 	var customer models.Customer
 	if err := s.db.WithContext(ctx).First(&customer, "id = ?", inv.ClienteID).Error; err == nil {
 		return customer
 	}
-	name := inv.ClienteNome
-	if name == "" {
-		name = "-"
-	}
-	return models.Customer{RagioneSociale: name}
+	return models.Customer{RagioneSociale: "-"}
 }
 
 func (s *InvoiceService) List(ctx context.Context, stato, clienteID string) ([]dto.InvoiceResponse, error) {
-	query := s.db.WithContext(ctx).Preload("Righe")
+	query := s.db.WithContext(ctx).Preload("Righe").Preload("Cliente")
 	if stato != "" {
 		query = query.Where("stato = ?", stato)
 	}
@@ -74,8 +71,13 @@ func (s *InvoiceService) Create(ctx context.Context, req dto.InvoiceRequest) (*d
 	}
 	numero := fmt.Sprintf("O/F-%s/%04d", time.Now().Format("06"), seq)
 
+	clienteID, err := utils.ParseUUID(req.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+
 	inv := models.Invoice{
-		ID: uuid.New(), Numero: numero, ClienteID: req.ClienteID, ClienteNome: req.ClienteNome,
+		ID: uuid.New(), Numero: numero, ClienteID: clienteID,
 		DataFattura: req.DataFattura, DataScadenza: req.DataScadenza, CondizioniPagamento: req.CondizioniPagamento,
 		Righe: toLines(req.Righe), CostiAccessori: marshalJSON(req.CostiAccessori),
 		TotaleImponibile: req.TotaleImponibile, TotaleIva: req.TotaleIva, Totale: req.Totale,
@@ -84,13 +86,16 @@ func (s *InvoiceService) Create(ctx context.Context, req dto.InvoiceRequest) (*d
 	if err := s.db.WithContext(ctx).Create(&inv).Error; err != nil {
 		return nil, err
 	}
+	if err := s.db.WithContext(ctx).Preload("Righe").Preload("Cliente").First(&inv, "id = ?", inv.ID).Error; err != nil {
+		return nil, err
+	}
 	resp := toResponse(inv)
 	return &resp, nil
 }
 
 func (s *InvoiceService) GetByID(ctx context.Context, id uuid.UUID) (*dto.InvoiceResponse, error) {
 	var inv models.Invoice
-	if err := s.db.WithContext(ctx).Preload("Righe").First(&inv, "id = ?", id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Righe").Preload("Cliente").First(&inv, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -131,7 +136,7 @@ func (s *InvoiceService) Finalize(ctx context.Context, id uuid.UUID) (*dto.Invoi
 		s.db.WithContext(ctx).Model(&models.Order{}).
 			Where("id = ? AND stato = ?", riga.OrdineID, "CHIUSO").
 			Updates(map[string]interface{}{
-				"fattura_id": id.String(), "updated_at": time.Now().UTC(),
+				"fattura_id": id, "updated_at": time.Now().UTC(),
 			})
 	}
 
@@ -152,7 +157,7 @@ func (s *InvoiceService) Finalize(ctx context.Context, id uuid.UUID) (*dto.Invoi
 	}
 	key := s3invoices.BuildInvoiceKey(id.String(), inv.Numero, year)
 	uploadResult, err := s.s3.UploadInvoicePDF(ctx, pdfBytes, key, map[string]string{
-		"invoice_id": id.String(), "numero": inv.Numero, "cliente_id": inv.ClienteID,
+		"invoice_id": id.String(), "numero": inv.Numero, "cliente_id": inv.ClienteID.String(),
 		"totale": fmt.Sprintf("%v", inv.Totale),
 	})
 	if err != nil {
@@ -292,6 +297,19 @@ func unmarshalMaps(raw datatypes.JSON) []map[string]interface{} {
 	return out
 }
 
+func customerResponse(c models.Customer) *dto.CustomerResponse {
+	if c.ID == uuid.Nil {
+		return nil
+	}
+	return &dto.CustomerResponse{
+		ID: c.ID, RagioneSociale: c.RagioneSociale, Indirizzo: c.Indirizzo, Citta: c.Citta,
+		Cap: c.Cap, Provincia: c.Provincia, Nazione: c.Nazione, PartitaIva: c.PartitaIva,
+		CodiceFiscale: c.CodiceFiscale, Telefono: c.Telefono, Email: c.Email, Pec: c.Pec,
+		CondizioniPagamento: c.CondizioniPagamento, Note: c.Note, RichiedeRifOrdine: c.RichiedeRifOrdine,
+		Active: c.Active, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+	}
+}
+
 func toResponse(inv models.Invoice) dto.InvoiceResponse {
 	righe := make([]dto.InvoiceLineDTO, len(inv.Righe))
 	for i, l := range inv.Righe {
@@ -301,7 +319,7 @@ func toResponse(inv models.Invoice) dto.InvoiceResponse {
 		}
 	}
 	return dto.InvoiceResponse{
-		ID: inv.ID, Numero: inv.Numero, ClienteID: inv.ClienteID, ClienteNome: inv.ClienteNome,
+		ID: inv.ID, Numero: inv.Numero, ClienteID: inv.ClienteID.String(), Cliente: customerResponse(inv.Cliente),
 		DataFattura: inv.DataFattura, DataScadenza: inv.DataScadenza, CondizioniPagamento: inv.CondizioniPagamento,
 		Righe: righe, CostiAccessori: unmarshalMaps(inv.CostiAccessori),
 		TotaleImponibile: inv.TotaleImponibile, TotaleIva: inv.TotaleIva, Totale: inv.Totale,

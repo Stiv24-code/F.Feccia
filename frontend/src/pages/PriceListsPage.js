@@ -18,9 +18,9 @@ import { logger } from '@/lib/logger';
 import { Plus, Trash2, Loader2, Search, Eye, ArrowLeft, Pencil } from 'lucide-react';
 
 const emptyRule = {
-  prodotto_id: '', prodotto_nome: '',
-  destinazione_carico_id: '', destinazione_carico_nome: '',
-  destinazione_scarico_id: '', destinazione_scarico_nome: '',
+  prodotto_id: '',
+  destinazione_carico_id: '',
+  destinazione_scarico_id: '',
   tariffa: 0, tipo_tariffa: 'forfait',
   range_peso_min: 0, range_peso_max: 0, unita_peso: 'Kg',
   minimo_tassabile: 0, tipo_trasporto: 'stradale',
@@ -36,7 +36,7 @@ export default function PriceListsPage() {
   const [destinations, setDestinations] = useState([]);
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ cliente_id: '', cliente_nome: '', data_inizio: '', data_fine: '', items: [], note: '' });
+  const [form, setForm] = useState({ cliente_id: '', data_inizio: '', data_fine: '', items: [], note: '' });
 
   // Dettaglio listino
   const [detailOpen, setDetailOpen] = useState(false);
@@ -56,13 +56,10 @@ export default function PriceListsPage() {
 
   // --- Lista principale ---
   const openNew = () => {
-    setForm({ cliente_id: '', cliente_nome: '', data_inizio: '', data_fine: '', items: [], note: '' });
+    setForm({ cliente_id: '', data_inizio: '', data_fine: '', items: [], note: '' });
     setDialogOpen(true);
   };
-  const setCustomer = (id) => {
-    const c = customers.find(x => x.id === id);
-    setForm({ ...form, cliente_id: id, cliente_nome: c?.ragione_sociale || '' });
-  };
+  const setCustomer = (id) => setForm({ ...form, cliente_id: id });
   const handleSave = async () => {
     if (!form.cliente_id) { toast.error('Selezionare un cliente'); return; }
     setSaving(true);
@@ -99,12 +96,9 @@ export default function PriceListsPage() {
   };
   const openEditRule = (item) => {
     setRuleForm({
-      prodotto_id: item.prodotto_id || '',
-      prodotto_nome: item.prodotto_nome || '',
-      destinazione_carico_id: item.destinazione_carico_id || '',
-      destinazione_carico_nome: item.destinazione_carico_nome || '',
-      destinazione_scarico_id: item.destinazione_scarico_id || '',
-      destinazione_scarico_nome: item.destinazione_scarico_nome || '',
+      prodotto_id: item.prodotto?.id || '',
+      destinazione_carico_id: item.destinazione_carico?.id || '',
+      destinazione_scarico_id: item.destinazione_scarico?.id || '',
       tariffa: item.tariffa || 0,
       tipo_tariffa: item.tipo_tariffa || 'forfait',
       range_peso_min: item.range_peso_min || 0,
@@ -124,9 +118,9 @@ export default function PriceListsPage() {
     try {
       // Pulisci "any" dai select
       const cleanedForm = { ...ruleForm };
-      if (cleanedForm.prodotto_id === 'any') { cleanedForm.prodotto_id = ''; cleanedForm.prodotto_nome = ''; }
-      if (cleanedForm.destinazione_carico_id === 'any') { cleanedForm.destinazione_carico_id = ''; cleanedForm.destinazione_carico_nome = ''; }
-      if (cleanedForm.destinazione_scarico_id === 'any') { cleanedForm.destinazione_scarico_id = ''; cleanedForm.destinazione_scarico_nome = ''; }
+      if (cleanedForm.prodotto_id === 'any') cleanedForm.prodotto_id = '';
+      if (cleanedForm.destinazione_carico_id === 'any') cleanedForm.destinazione_carico_id = '';
+      if (cleanedForm.destinazione_scarico_id === 'any') cleanedForm.destinazione_scarico_id = '';
 
       if (editingItemId) {
         await updatePriceListItem(selectedList.id, editingItemId, cleanedForm);
@@ -150,20 +144,11 @@ export default function PriceListsPage() {
   };
 
   // Setter per select regola
-  const setRuleCarico = (id) => {
-    const d = id === 'any' ? null : destinations.find(x => x.id === id);
-    setRuleForm({ ...ruleForm, destinazione_carico_id: id, destinazione_carico_nome: d?.nome || '' });
-  };
-  const setRuleScarico = (id) => {
-    const d = id === 'any' ? null : destinations.find(x => x.id === id);
-    setRuleForm({ ...ruleForm, destinazione_scarico_id: id, destinazione_scarico_nome: d?.nome || '' });
-  };
-  const setRuleProdotto = (id) => {
-    const p = id === 'any' ? null : products.find(x => x.id === id);
-    setRuleForm({ ...ruleForm, prodotto_id: id, prodotto_nome: p ? `${p.codice} - ${p.descrizione}` : '' });
-  };
+  const setRuleCarico = (id) => setRuleForm({ ...ruleForm, destinazione_carico_id: id });
+  const setRuleScarico = (id) => setRuleForm({ ...ruleForm, destinazione_scarico_id: id });
+  const setRuleProdotto = (id) => setRuleForm({ ...ruleForm, prodotto_id: id });
 
-  const filtered = search ? lists.filter(l => l.cliente_nome?.toLowerCase().includes(search.toLowerCase())) : lists;
+  const filtered = search ? lists.filter(l => l.cliente?.ragione_sociale?.toLowerCase().includes(search.toLowerCase())) : lists;
 
   // ===========================
   // VISTA DETTAGLIO LISTINO
@@ -179,7 +164,7 @@ export default function PriceListsPage() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                Listino: {selectedList.cliente_nome}
+                Listino: {selectedList.cliente?.ragione_sociale}
               </h2>
               <p className="text-sm text-muted-foreground">
                 Validità: {selectedList.data_inizio} → {selectedList.data_fine}
@@ -215,10 +200,10 @@ export default function PriceListsPage() {
                   </TableRow>
                 ) : selectedList.items.map((item) => (
                   <TableRow key={item.item_id} className="hover:bg-muted/60">
-                    <TableCell className="py-2">{item.prodotto_nome || <span className="text-muted-foreground italic">Qualsiasi</span>}</TableCell>
+                    <TableCell className="py-2">{item.prodotto ? `${item.prodotto.codice} - ${item.prodotto.descrizione}` : <span className="text-muted-foreground italic">Qualsiasi</span>}</TableCell>
                     <TableCell className="py-2">
-                      {(item.destinazione_carico_nome || item.destinazione_scarico_nome) ? (
-                        <span className="text-xs">{item.destinazione_carico_nome || '*'} → {item.destinazione_scarico_nome || '*'}</span>
+                      {(item.destinazione_carico?.nome || item.destinazione_scarico?.nome) ? (
+                        <span className="text-xs">{item.destinazione_carico?.nome || '*'} → {item.destinazione_scarico?.nome || '*'}</span>
                       ) : <span className="text-muted-foreground italic">Qualsiasi</span>}
                     </TableCell>
                     <TableCell className="py-2 text-right tabular-nums font-medium">€ {formatEuro(item.tariffa)}</TableCell>
@@ -394,7 +379,7 @@ export default function PriceListsPage() {
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nessun listino</TableCell></TableRow>
               ) : filtered.map(l => (
                 <TableRow key={l.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => openDetail(l)}>
-                  <TableCell className="py-2 font-medium">{l.cliente_nome}</TableCell>
+                  <TableCell className="py-2 font-medium">{l.cliente?.ragione_sociale}</TableCell>
                   <TableCell className="py-2 whitespace-nowrap">{l.data_inizio}</TableCell>
                   <TableCell className="py-2 whitespace-nowrap">{l.data_fine}</TableCell>
                   <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{l.items?.length || 0} regole</Badge></TableCell>

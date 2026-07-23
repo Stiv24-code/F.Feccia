@@ -11,10 +11,10 @@ import (
 
 func TestBuildCMRPDF_ProducesValidPDF(t *testing.T) {
 	order := models.Order{
-		ID: uuid.New(), Progressivo: "26/0001", ClienteNome: "Cliente Test",
-		DestinazioneCaricoNome: "Milano (MI)", DestinazioneScaricoNome: "Lodi (LO)",
+		ID: uuid.New(), Progressivo: "26/0001", Cliente: models.Customer{RagioneSociale: "Cliente Test"},
+		DestinazioneCarico: &models.Destination{Nome: "Milano (MI)"}, DestinazioneScarico: &models.Destination{Nome: "Lodi (LO)"},
 		DataRitiro: "2026-01-10", Note: "Consegna urgente",
-		Items: []models.OrderItem{{ProdottoDescrizione: "Pallet EPAL", Quantita: 2, Peso: 500}},
+		Items: []models.OrderItem{{Prodotto: models.Product{Descrizione: "Pallet EPAL"}, Quantita: 2, Peso: 500}},
 	}
 	consignee := models.Customer{
 		RagioneSociale: "Destinatario Srl", Indirizzo: "Via Roma 1",
@@ -39,8 +39,8 @@ func TestBuildCMRPDF_ProducesValidPDF(t *testing.T) {
 
 func TestBuildCMRPDF_HandlesNoItemsAndNoVehicle(t *testing.T) {
 	order := models.Order{
-		ID: uuid.New(), ClienteNome: "Cliente Senza Items",
-		DestinazioneCaricoNome: "Cuneo (CN)", DestinazioneScaricoNome: "Milano (MI)",
+		ID: uuid.New(), Cliente: models.Customer{RagioneSociale: "Cliente Senza Items"},
+		DestinazioneCarico: &models.Destination{Nome: "Cuneo (CN)"}, DestinazioneScarico: &models.Destination{Nome: "Milano (MI)"},
 		DataRitiro: "2026-02-01",
 	}
 	consignee := models.Customer{RagioneSociale: "Dest Srl"}

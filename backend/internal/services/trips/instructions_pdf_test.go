@@ -25,17 +25,19 @@ func TestGetInstructionsPDF_ResolvesOrdersCustomersAndDriver(t *testing.T) {
 	}
 
 	trip := models.Trip{
-		ID: uuid.New(), TargaMotrice: "AB123CD", AutistaID: driver.ID.String(),
+		ID: uuid.New(), TargaMotrice: "AB123CD", AutistaID: &driver.ID,
 		DataPartenza: "2026-01-10", KmTotali: 200,
 		Segments: []models.TripSegment{{Ordine: 1, Tipo: "base_carico", Km: 40, TempoStimatoMin: 30}},
 	}
 	if err := db.Create(&trip).Error; err != nil {
 		t.Fatal(err)
 	}
+	caricoID := seedDestination(t, db, "Milano (MI)", 45.0, 9.0)
+	scaricoID := seedDestination(t, db, "Lodi (LO)", 45.5, 9.5)
 	order := models.Order{
-		ID: uuid.New(), ClienteID: customer.ID.String(), ClienteNome: customer.RagioneSociale,
-		DestinazioneCaricoNome: "Milano (MI)", DestinazioneScaricoNome: "Lodi (LO)",
-		DataRitiro: "2026-01-10", Stato: "VIAGGIO", ViaggioID: trip.ID.String(),
+		ID: uuid.New(), ClienteID: customer.ID,
+		DestinazioneCaricoID: &caricoID, DestinazioneScaricoID: &scaricoID,
+		DataRitiro: "2026-01-10", Stato: "VIAGGIO", ViaggioID: &trip.ID,
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&order).Error; err != nil {

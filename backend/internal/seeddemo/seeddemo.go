@@ -268,34 +268,37 @@ func Seed(db *gorm.DB) error {
 	// matches Python's net effect exactly.
 
 	// ─────────────────────────── LISTINI ───────────────────────────
-	laivesID := destinations[0].ID.String()
-	bruxellesID := destinations[2].ID.String()
-	zurigoID := destinations[3].ID.String()
-	parmaID := destinations[12].ID.String()
+	laivesID := &destinations[0].ID
+	bruxellesID := &destinations[2].ID
+	zurigoID := &destinations[3].ID
+	parmaID := &destinations[12].ID
+	melaID := &products[0].ID
+	pastaID := &products[3].ID
+	cioccoID := &products[10].ID
 
 	pricelists := []models.PriceList{
 		{
-			ID: uuid.New(), ClienteID: customers[0].ID.String(), ClienteNome: customers[0].RagioneSociale,
+			ID: uuid.New(), ClienteID: customers[0].ID,
 			DataInizio: "2025-01-01", DataFine: "2025-12-31", Note: "Listino annuale 2025", InUso: true, Active: true,
 			Items: []models.PriceListItem{
-				{ID: uuid.New(), ProdottoID: products[0].ID.String(), ProdottoNome: "MELA - Mela", DestinazioneCaricoID: laivesID, DestinazioneCaricoNome: "Laives (BZ)", DestinazioneScaricoID: bruxellesID, DestinazioneScaricoNome: "Bruxelles (BE)", Tariffa: 2150, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
-				{ID: uuid.New(), ProdottoID: products[0].ID.String(), ProdottoNome: "MELA - Mela", DestinazioneCaricoID: laivesID, DestinazioneCaricoNome: "Laives (BZ)", DestinazioneScaricoID: zurigoID, DestinazioneScaricoNome: "Zurigo (CH)", Tariffa: 1800, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
-				{ID: uuid.New(), DestinazioneCaricoID: laivesID, DestinazioneCaricoNome: "Laives (BZ)", Tariffa: 2.5, TipoTariffa: "euro_kg", RangePesoMin: 10000, RangePesoMax: 26000, UnitaPeso: "Kg", MinimoTassabile: 15000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.5},
+				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: laivesID, DestinazioneScaricoID: bruxellesID, Tariffa: 2150, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
+				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: laivesID, DestinazioneScaricoID: zurigoID, Tariffa: 1800, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
+				{ID: uuid.New(), DestinazioneCaricoID: laivesID, Tariffa: 2.5, TipoTariffa: "euro_kg", RangePesoMin: 10000, RangePesoMax: 26000, UnitaPeso: "Kg", MinimoTassabile: 15000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.5},
 			},
 		},
 		{
-			ID: uuid.New(), ClienteID: customers[3].ID.String(), ClienteNome: customers[3].RagioneSociale,
+			ID: uuid.New(), ClienteID: customers[3].ID,
 			DataInizio: "2025-01-01", DataFine: "2025-12-31", Note: "Listino Barilla 2025", InUso: true, Active: true,
 			Items: []models.PriceListItem{
-				{ID: uuid.New(), ProdottoID: products[3].ID.String(), ProdottoNome: "PASTA - Pasta alimentare", DestinazioneCaricoID: parmaID, DestinazioneCaricoNome: "Parma (PR)", DestinazioneScaricoID: bruxellesID, DestinazioneScaricoNome: "Bruxelles (BE)", Tariffa: 2400, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
-				{ID: uuid.New(), ProdottoID: products[3].ID.String(), ProdottoNome: "PASTA - Pasta alimentare", DestinazioneCaricoID: parmaID, DestinazioneCaricoNome: "Parma (PR)", Tariffa: 1950, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
+				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: parmaID, DestinazioneScaricoID: bruxellesID, Tariffa: 2400, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
+				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: parmaID, Tariffa: 1950, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
 			},
 		},
 		{
-			ID: uuid.New(), ClienteID: customers[5].ID.String(), ClienteNome: customers[5].RagioneSociale,
+			ID: uuid.New(), ClienteID: customers[5].ID,
 			DataInizio: "2025-06-01", DataFine: "2026-05-31", Note: "Listino Ferrero semestrale", InUso: true, Active: true,
 			Items: []models.PriceListItem{
-				{ID: uuid.New(), ProdottoID: products[10].ID.String(), ProdottoNome: "CIOCCO - Cioccolato / Praline", Tariffa: 3.2, TipoTariffa: "euro_kg", RangePesoMin: 5000, RangePesoMax: 24000, UnitaPeso: "Kg", MinimoTassabile: 12000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.0},
+				{ID: uuid.New(), ProdottoID: cioccoID, Tariffa: 3.2, TipoTariffa: "euro_kg", RangePesoMin: 5000, RangePesoMax: 24000, UnitaPeso: "Kg", MinimoTassabile: 12000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.0},
 			},
 		},
 	}
@@ -360,30 +363,37 @@ func Seed(db *gorm.DB) error {
 
 		order := models.Order{
 			ID: uuid.New(), Progressivo: fmt.Sprintf("%s/%04d", today.Format("06"), seq),
-			ClienteID: cust.ID.String(), ClienteNome: cust.RagioneSociale,
-			DestinazioneCaricoID: carico.ID.String(), DestinazioneCaricoNome: carico.Nome,
-			DestinazioneScaricoID: scarico.ID.String(), DestinazioneScaricoNome: scarico.Nome,
-			DataRitiro: ritiro.Format("2006-01-02"), OraRitiroDa: pick(oraRitiroDa), OraRitiroA: pick(oraRitiroA),
+			ClienteID:             cust.ID,
+			DestinazioneCaricoID:  &carico.ID,
+			DestinazioneScaricoID: &scarico.ID,
+			DataRitiro:            ritiro.Format("2006-01-02"), OraRitiroDa: pick(oraRitiroDa), OraRitiroA: pick(oraRitiroA),
 			DataConsegna: consegna.Format("2006-01-02"), OraConsegnaDa: pick(oraConsegnaDa), OraConsegnaA: pick(oraConsegnaA),
 			Tariffa: pick(tariffe), TipoTariffa: pick(tipoTariffe), Tipologia: pick(tipologie),
 			CategoriaTrasporto: pick(categorieTrasporto), RifOrdineCliente: rifOrdineCliente,
 			AndataRitorno: randBelow(5) == 0,
 			Items: []models.OrderItem{
-				{ID: uuid.New(), ProdottoID: prod.ID.String(), ProdottoCodice: prod.Codice, ProdottoDescrizione: prod.Descrizione, Quantita: 1, Peso: float64(randRange(8000, 25000))},
+				{ID: uuid.New(), ProdottoID: prod.ID, Quantita: 1, Peso: float64(randRange(8000, 25000))},
 			},
-			ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"), Stato: stato,
+			ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"), Stato: models.OrderStato(stato),
 		}
 
 		if stato == "PIANIFICATO" || stato == "VIAGGIO" || stato == "CHIUSO" {
 			m := pick(motrici)
 			d := pick(drivers)
 			order.TargaMotrice = m.Targa
-			order.AutistaID = d.ID.String()
-			order.AutistaNome = d.Nome + " " + d.Cognome
+			order.AutistaID = &d.ID
+			// Punto di partenza: sempre presente su un ordine assegnato (come nel
+			// form di assegnazione reale). Punto di lavaggio dopo lo scarico:
+			// solo su una parte degli ordini, è opzionale anche a mano.
+			g := pick(garages)
+			order.GarageID = &g.ID
+			if randBelow(2) == 0 {
+				w := pick(washStations)
+				order.WashStationID = &w.ID
+			}
 			if randBelow(3) == 0 {
 				c := pick(carriers)
-				order.VettoreID = c.ID.String()
-				order.VettoreNome = c.RagioneSociale
+				order.VettoreID = &c.ID
 			}
 		}
 
@@ -424,17 +434,16 @@ func Seed(db *gorm.DB) error {
 		trip := models.Trip{
 			ID: uuid.New(), OrdiniIds: ordiniIdsJSON,
 			TargaMotrice: m.Targa, TargaRimorchio: trailer.Targa,
-			AutistaID: d.ID.String(), AutistaNome: d.Nome + " " + d.Cognome,
-			GarageID: garages[0].ID.String(), GarageNome: garages[0].Nome,
-			KmTotali: float64(randRange(300, 2500)), CostoStimato: float64(randRange(800, 4000)),
+			AutistaID: &d.ID,
+			GarageID:  &garages[0].ID,
+			KmTotali:  float64(randRange(300, 2500)), CostoStimato: float64(randRange(800, 4000)),
 			Stato: "IN_CORSO", DataPartenza: tripOrds[0].DataRitiro, DataArrivo: tripOrds[0].DataConsegna,
 		}
 		trips = append(trips, trip)
 
-		autistaNome := d.Nome + " " + d.Cognome
 		for _, o := range tripOrds {
 			db.Model(&models.Order{}).Where("id = ?", o.ID).Updates(map[string]interface{}{
-				"viaggio_id": trip.ID.String(), "targa_motrice": m.Targa, "autista_id": d.ID.String(), "autista_nome": autistaNome,
+				"viaggio_id": trip.ID, "targa_motrice": m.Targa, "autista_id": d.ID,
 			})
 		}
 	}
@@ -462,16 +471,25 @@ func Seed(db *gorm.DB) error {
 	mid := len(chiusoOrders) / 2
 	definitivaPool, proformaPool := chiusoOrders[:mid], chiusoOrders[mid:]
 
+	destByID := make(map[uuid.UUID]models.Destination, len(destinations))
+	for _, d := range destinations {
+		destByID[d.ID] = d
+	}
+	prodByID := make(map[uuid.UUID]models.Product, len(products))
+	for _, p := range products {
+		prodByID[p.ID] = p
+	}
+
 	var invoices []models.Invoice
 	for k := 0; k < min(4, len(definitivaPool)); k++ {
 		invOrders := sliceClamp(definitivaPool, k*3, k*3+randRange(2, 4))
 		if len(invOrders) == 0 {
 			continue
 		}
-		righe, totale := buildInvoiceLines(invOrders)
+		righe, totale := buildInvoiceLines(invOrders, destByID, prodByID)
 		inv := models.Invoice{
 			ID: uuid.New(), Numero: fmt.Sprintf("O/F-25/%04d", k+1),
-			ClienteID: invOrders[0].ClienteID, ClienteNome: invOrders[0].ClienteNome,
+			ClienteID:           invOrders[0].ClienteID,
 			DataFattura:         fmt.Sprintf("2025-%02d-%02d", randRange(7, 11), randRange(1, 28)),
 			DataScadenza:        fmt.Sprintf("2025-%02d-%02d", randRange(9, 12), randRange(1, 28)),
 			CondizioniPagamento: "BB 30gg DF FM", Righe: righe, CostiAccessori: []byte("[]"),
@@ -482,17 +500,17 @@ func Seed(db *gorm.DB) error {
 		for i, o := range invOrders {
 			ordIDs[i] = o.ID.String()
 		}
-		db.Model(&models.Order{}).Where("id IN ?", ordIDs).Update("fattura_id", inv.ID.String())
+		db.Model(&models.Order{}).Where("id IN ?", ordIDs).Update("fattura_id", inv.ID)
 	}
 	for k := 0; k < min(4, len(proformaPool)); k++ {
 		invOrders := sliceClamp(proformaPool, k*2, k*2+randRange(1, 3))
 		if len(invOrders) == 0 {
 			continue
 		}
-		righe, totale := buildInvoiceLines(invOrders)
+		righe, totale := buildInvoiceLines(invOrders, destByID, prodByID)
 		invoices = append(invoices, models.Invoice{
 			ID: uuid.New(), Numero: fmt.Sprintf("O/F-25/%04d", k+5),
-			ClienteID: invOrders[0].ClienteID, ClienteNome: invOrders[0].ClienteNome,
+			ClienteID:   invOrders[0].ClienteID,
 			DataFattura: fmt.Sprintf("2025-%02d-%02d", randRange(9, 12), randRange(1, 28)),
 			Righe:       righe, CostiAccessori: []byte("[]"),
 			TotaleImponibile: totale, Totale: totale, Stato: "PROFORMA", Tipo: "ordine",
@@ -532,18 +550,32 @@ func Seed(db *gorm.DB) error {
 	return nil
 }
 
-func buildInvoiceLines(orders []models.Order) ([]models.InvoiceLine, float64) {
+// buildInvoiceLines snapshots destinazione/prodotto names onto the invoice
+// line at billing time (InvoiceLine.Descrizione/Prodotto are historical
+// document text, not live FK references — see models/invoice.go) — destByID/
+// prodByID resolve the in-memory orders' FK ids since Order no longer
+// carries a denormalized name column to read directly.
+func buildInvoiceLines(orders []models.Order, destByID map[uuid.UUID]models.Destination, prodByID map[uuid.UUID]models.Product) ([]models.InvoiceLine, float64) {
 	righe := make([]models.InvoiceLine, len(orders))
 	var totale float64
 	for i, o := range orders {
 		prodotto, peso := "", 0.0
 		if len(o.Items) > 0 {
-			prodotto = o.Items[0].ProdottoDescrizione
+			if p, ok := prodByID[o.Items[0].ProdottoID]; ok {
+				prodotto = p.Descrizione
+			}
 			peso = o.Items[0].Peso
+		}
+		caricoNome, scaricoNome := "", ""
+		if o.DestinazioneCaricoID != nil {
+			caricoNome = destByID[*o.DestinazioneCaricoID].Nome
+		}
+		if o.DestinazioneScaricoID != nil {
+			scaricoNome = destByID[*o.DestinazioneScaricoID].Nome
 		}
 		righe[i] = models.InvoiceLine{
 			ID: uuid.New(), OrdineID: o.ID.String(),
-			Descrizione: o.DestinazioneCaricoNome + " - " + o.DestinazioneScaricoNome,
+			Descrizione: caricoNome + " - " + scaricoNome,
 			Prodotto:    prodotto, Peso: peso, Quantita: 1, Tariffa: o.Tariffa, Totale: o.Tariffa, IvaCodice: "N8",
 		}
 		totale += o.Tariffa

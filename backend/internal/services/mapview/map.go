@@ -9,6 +9,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"fratelli-feccia/internal/dto"
@@ -31,6 +32,8 @@ func NewMapService(db *gorm.DB) *MapService {
 func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 	var activeOrders []models.Order
 	if err := s.db.WithContext(ctx).
+		Preload("Cliente").Preload("Autista").Preload("DestinazioneCarico").Preload("DestinazioneScarico").
+		Preload("Garage").Preload("WashStation").
 		Where("stato IN ?", []string{"VIAGGIO", "PIANIFICABILE", "CHIUSO"}).
 		Order("created_at DESC").Limit(activeOrdersLimit).Find(&activeOrders).Error; err != nil {
 		return nil, err
@@ -136,16 +139,22 @@ func (s *MapService) buildDestinationMap(ctx context.Context) (map[string]geo.Na
 // resolveOrderEndpoints mirrors resolve_order_endpoints: destMap lookup by
 // id first, falls back to name-based coordinate resolution.
 func resolveOrderEndpoints(o models.Order, destMap map[string]geo.NamedPoint) (carico, scarico geo.NamedPoint, ok bool) {
-	carico, found := destMap[o.DestinazioneCaricoID]
-	if !found {
-		carico, found = geo.ResolveDestination(o.DestinazioneCaricoNome, nil, nil)
+	var found bool
+	if o.DestinazioneCaricoID != nil {
+		carico, found = destMap[o.DestinazioneCaricoID.String()]
+	}
+	if !found && o.DestinazioneCarico != nil {
+		carico, found = geo.ResolveDestination(o.DestinazioneCarico.Nome, nil, nil)
 	}
 	if !found {
 		return geo.NamedPoint{}, geo.NamedPoint{}, false
 	}
-	scarico, found = destMap[o.DestinazioneScaricoID]
-	if !found {
-		scarico, found = geo.ResolveDestination(o.DestinazioneScaricoNome, nil, nil)
+	found = false
+	if o.DestinazioneScaricoID != nil {
+		scarico, found = destMap[o.DestinazioneScaricoID.String()]
+	}
+	if !found && o.DestinazioneScarico != nil {
+		scarico, found = geo.ResolveDestination(o.DestinazioneScarico.Nome, nil, nil)
 	}
 	if !found {
 		return geo.NamedPoint{}, geo.NamedPoint{}, false
@@ -169,7 +178,7 @@ func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints []
 		lastTempAlert = gpsData.LastTempAlert
 	}
 
-	if hasGps && gpsData.LastLat != 0 && gpsData.GpsActive && o.Stato == "VIAGGIO" {
+	if hasGps && gpsData.LastLat != 0 && gpsData.GpsActive && o.Stato == models.OrderStatoViaggio {
 		curLat, curLng = gpsData.LastLat, gpsData.LastLng
 		gpsLive = true
 		gpsSpeed = gpsData.LastSpeedKmh
@@ -225,11 +234,9 @@ func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints []
 		mapRoadPoints[i] = dto.MapPoint{Lat: p[0], Lng: p[1]}
 	}
 
-	garageCoords := geo.GarageCoords[geo.DefaultGarageName]
-
 	return dto.MapRoute{
-		ID: o.ID, Progressivo: o.Progressivo, ClienteNome: o.ClienteNome, Stato: o.Stato,
-		Tipologia: o.Tipologia, TargaMotrice: targa, AutistaNome: o.AutistaNome,
+		ID: o.ID, Progressivo: o.Progressivo, Cliente: customerResponse(o.Cliente), Stato: string(o.Stato),
+		Tipologia: o.Tipologia, TargaMotrice: targa, Autista: driverResponse(o.Autista),
 		DataRitiro: o.DataRitiro, DataConsegna: o.DataConsegna, Tariffa: o.Tariffa,
 		Carico: dto.MapPoint{Lat: carico.Lat, Lng: carico.Lng}, Scarico: dto.MapPoint{Lat: scarico.Lat, Lng: scarico.Lng},
 		CurrentPosition: dto.MapPoint{Lat: curLat, Lng: curLng}, Progress: progress,
@@ -238,10 +245,48 @@ func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints []
 		GpsLive: gpsLive, GpsSpeedKmh: gpsSpeed, GpsHeading: gpsHeading,
 		GpsTrackerUrl: gpsTrackerUrl, GpsLastUpdate: gpsLastUpdate, GpsSource: gpsSource,
 		LastTempCelsius: lastTempCelsius, LastTempAlert: lastTempAlert,
-		Garage: dto.MapPoint{Lat: garageCoords[0], Lng: garageCoords[1]},
+		Garage: garageNamedPoint(o.Garage), WashStation: washStationNamedPoint(o.WashStation),
 	}
+}
+
+func garageNamedPoint(g *models.Garage) *dto.MapNamedPoint {
+	if g == nil || g.Lat == nil || g.Lng == nil {
+		return nil
+	}
+	return &dto.MapNamedPoint{Nome: g.Nome, Lat: *g.Lat, Lng: *g.Lng}
+}
+
+func washStationNamedPoint(w *models.WashStation) *dto.MapNamedPoint {
+	if w == nil || w.Lat == nil || w.Lng == nil {
+		return nil
+	}
+	return &dto.MapNamedPoint{Nome: w.Nome, Lat: *w.Lat, Lng: *w.Lng}
 }
 
 func roundTo1(v float64) float64 {
 	return float64(int(v*10+0.5)) / 10
+}
+
+func customerResponse(c models.Customer) *dto.CustomerResponse {
+	if c.ID == uuid.Nil {
+		return nil
+	}
+	return &dto.CustomerResponse{
+		ID: c.ID, RagioneSociale: c.RagioneSociale, Indirizzo: c.Indirizzo, Citta: c.Citta,
+		Cap: c.Cap, Provincia: c.Provincia, Nazione: c.Nazione, PartitaIva: c.PartitaIva,
+		CodiceFiscale: c.CodiceFiscale, Telefono: c.Telefono, Email: c.Email, Pec: c.Pec,
+		CondizioniPagamento: c.CondizioniPagamento, Note: c.Note, RichiedeRifOrdine: c.RichiedeRifOrdine,
+		Active: c.Active, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+	}
+}
+
+func driverResponse(d *models.Driver) *dto.DriverResponse {
+	if d == nil {
+		return nil
+	}
+	return &dto.DriverResponse{
+		ID: d.ID, Nome: d.Nome, Cognome: d.Cognome, CodiceFiscale: d.CodiceFiscale,
+		Patente: d.Patente, ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
+		Email: d.Email, Note: d.Note, Active: d.Active, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+	}
 }

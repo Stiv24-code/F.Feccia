@@ -22,7 +22,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Garage{}, &models.Trip{}, &models.TripSegment{}, &models.RouteCache{}, &models.Customer{}, &models.Driver{}); err != nil {
+	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Garage{}, &models.Trip{}, &models.TripSegment{}, &models.RouteCache{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -58,11 +58,25 @@ func newTestService(t *testing.T, osrmURL string) *TripService {
 	return svc
 }
 
+func geoPtr(v float64) *float64 { return &v }
+
+func seedDestination(t *testing.T, db *gorm.DB, nome string, lat, lng float64) uuid.UUID {
+	t.Helper()
+	d := models.Destination{ID: uuid.New(), Nome: nome, Active: true, Lat: geoPtr(lat), Lng: geoPtr(lng)}
+	if err := db.Create(&d).Error; err != nil {
+		t.Fatalf("failed to seed destination %q: %v", nome, err)
+	}
+	return d.ID
+}
+
 func createOrder(t *testing.T, db *gorm.DB, carico, scarico, dataRitiro string) models.Order {
 	t.Helper()
+	caricoID := seedDestination(t, db, carico, 45.0, 9.0)
+	scaricoID := seedDestination(t, db, scarico, 45.5, 9.5)
 	o := models.Order{
-		ID: uuid.New(), ClienteID: "cliente-1", DestinazioneCaricoNome: carico,
-		DestinazioneScaricoNome: scarico, DataRitiro: dataRitiro, Stato: "PIANIFICABILE",
+		ID: uuid.New(), ClienteID: uuid.New(),
+		DestinazioneCaricoID: &caricoID, DestinazioneScaricoID: &scaricoID,
+		DataRitiro: dataRitiro, Stato: "PIANIFICABILE",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&o).Error; err != nil {
@@ -82,7 +96,7 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 
 	trip, err := svc.Create(context.Background(), dto.TripRequest{
-		OrdiniIds: []string{order.ID.String()}, TargaMotrice: "AB123CD", AutistaID: "driver-1",
+		OrdiniIds: []string{order.ID.String()}, TargaMotrice: "AB123CD", AutistaID: uuid.New().String(),
 	})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
@@ -100,7 +114,7 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 
 	var updatedOrder models.Order
 	db.First(&updatedOrder, "id = ?", order.ID)
-	if updatedOrder.Stato != "PIANIFICATO" || updatedOrder.ViaggioID != trip.ID.String() {
+	if updatedOrder.Stato != "PIANIFICATO" || updatedOrder.ViaggioID == nil || *updatedOrder.ViaggioID != trip.ID {
 		t.Fatalf("expected order synced to PIANIFICATO with viaggio_id set, got %+v", updatedOrder)
 	}
 }
@@ -122,7 +136,7 @@ func TestTripService_Create_SkipsOrdersNotPianificabile(t *testing.T) {
 
 	var untouched models.Order
 	db.First(&untouched, "id = ?", order.ID)
-	if untouched.Stato != "CHIUSO" || untouched.ViaggioID != "" {
+	if untouched.Stato != "CHIUSO" || untouched.ViaggioID != nil {
 		t.Fatalf("expected non-PIANIFICABILE order to be left untouched, got %+v", untouched)
 	}
 }

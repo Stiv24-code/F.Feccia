@@ -178,8 +178,8 @@ type PriceList interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.PriceListResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.PriceListRequest) (*dto.PriceListUpdateResult, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-	AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemAddResult, error)
-	UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemUpdateResult, error)
+	AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemAddResult, error)
+	UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemUpdateResult, error)
 	DeleteItem(ctx context.Context, plID, itemID uuid.UUID) (*dto.PriceListItemDeleteResult, error)
 	LookupTariff(ctx context.Context, clienteID, caricoID, scaricoID, prodottoID string, peso float64) (*dto.TariffLookupResult, error)
 }

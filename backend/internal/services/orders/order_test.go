@@ -21,32 +21,67 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Vehicle{}); err != nil {
+	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Vehicle{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
 }
 
-func baseRequest() dto.OrderRequest {
+func seedCustomer(t *testing.T, db *gorm.DB, ragioneSociale string) uuid.UUID {
+	t.Helper()
+	c := models.Customer{ID: uuid.New(), RagioneSociale: ragioneSociale, Active: true}
+	if err := db.Create(&c).Error; err != nil {
+		t.Fatalf("failed to seed customer: %v", err)
+	}
+	return c.ID
+}
+
+func seedDestination(t *testing.T, db *gorm.DB, nome string) uuid.UUID {
+	t.Helper()
+	d := models.Destination{ID: uuid.New(), Nome: nome, Active: true, Lat: geoPtr(0), Lng: geoPtr(0)}
+	if err := db.Create(&d).Error; err != nil {
+		t.Fatalf("failed to seed destination: %v", err)
+	}
+	return d.ID
+}
+
+func seedProduct(t *testing.T, db *gorm.DB, codice string) uuid.UUID {
+	t.Helper()
+	p := models.Product{ID: uuid.New(), Codice: codice, Descrizione: codice, Active: true}
+	if err := db.Create(&p).Error; err != nil {
+		t.Fatalf("failed to seed product: %v", err)
+	}
+	return p.ID
+}
+
+// baseRequest seeds a generic customer/destinations/product and returns an
+// OrderRequest referencing their real ids — the write-side DTO only carries
+// ids now, the server resolves names via Preload.
+func baseRequest(t *testing.T, db *gorm.DB) dto.OrderRequest {
+	t.Helper()
+	clienteID := seedCustomer(t, db, "Acme S.r.l.")
+	caricoID := seedDestination(t, db, "Milano")
+	scaricoID := seedDestination(t, db, "Roma")
+	prodottoID := seedProduct(t, db, "P-"+uuid.New().String())
 	return dto.OrderRequest{
-		ClienteID:               "cliente-1",
-		ClienteNome:             "Acme S.r.l.",
-		DestinazioneCaricoNome:  "Milano",
-		DestinazioneScaricoNome: "Roma",
-		DataRitiro:              "2026-01-10",
-		DataConsegna:            "2026-01-12",
-		Tariffa:                 500,
-		Items: []dto.OrderItemDTO{
-			{ProdottoCodice: "P001", ProdottoDescrizione: "Cemento", Quantita: 1, Peso: 10000},
+		ClienteID:             clienteID.String(),
+		DestinazioneCaricoID:  caricoID.String(),
+		DestinazioneScaricoID: scaricoID.String(),
+		DataRitiro:            "2026-01-10",
+		DataConsegna:          "2026-01-12",
+		Tariffa:               500,
+		Items: []dto.OrderItemRequestDTO{
+			{ProdottoID: prodottoID.String(), Quantita: 1, Peso: 10000},
 		},
 	}
 }
 
 func TestOrderService_Create_AssignsProgressivoAndDefaults(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	resp, err := svc.Create(ctx, baseRequest())
+	resp, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -59,20 +94,21 @@ func TestOrderService_Create_AssignsProgressivoAndDefaults(t *testing.T) {
 	if resp.Progressivo == "" {
 		t.Fatalf("expected a non-empty progressivo")
 	}
-	if len(resp.Items) != 1 || resp.Items[0].ProdottoCodice != "P001" {
-		t.Fatalf("expected 1 item to be persisted, got %+v", resp.Items)
+	if len(resp.Items) != 1 || resp.Items[0].Prodotto == nil || resp.Items[0].Prodotto.Codice == "" {
+		t.Fatalf("expected 1 item to be persisted with a resolved product, got %+v", resp.Items)
 	}
 }
 
 func TestOrderService_Create_ProgressivoIncrements(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	first, err := svc.Create(ctx, baseRequest())
+	first, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	second, err := svc.Create(ctx, baseRequest())
+	second, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -83,25 +119,30 @@ func TestOrderService_Create_ProgressivoIncrements(t *testing.T) {
 
 func TestOrderService_Update_ReplacesItemsAndDoesNotTouchState(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	created, err := svc.Create(ctx, baseRequest())
+	created, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	updateReq := baseRequest()
-	updateReq.ClienteNome = "Beta S.p.A."
-	updateReq.Items = []dto.OrderItemDTO{
-		{ProdottoCodice: "P002", Quantita: 2, Peso: 500},
-		{ProdottoCodice: "P003", Quantita: 3, Peso: 700},
+	betaID := seedCustomer(t, db, "Beta S.p.A.")
+	p002 := seedProduct(t, db, "P002")
+	p003 := seedProduct(t, db, "P003")
+
+	updateReq := baseRequest(t, db)
+	updateReq.ClienteID = betaID.String()
+	updateReq.Items = []dto.OrderItemRequestDTO{
+		{ProdottoID: p002.String(), Quantita: 2, Peso: 500},
+		{ProdottoID: p003.String(), Quantita: 3, Peso: 700},
 	}
 	updated, err := svc.Update(ctx, created.ID, updateReq)
 	if err != nil {
 		t.Fatalf("Update returned error: %v", err)
 	}
-	if updated.ClienteNome != "Beta S.p.A." {
-		t.Fatalf("expected updated cliente_nome, got %q", updated.ClienteNome)
+	if updated.Cliente == nil || updated.Cliente.RagioneSociale != "Beta S.p.A." {
+		t.Fatalf("expected updated cliente, got %+v", updated.Cliente)
 	}
 	if len(updated.Items) != 2 {
 		t.Fatalf("expected item replacement to leave exactly 2 items, got %+v", updated.Items)
@@ -113,9 +154,10 @@ func TestOrderService_Update_ReplacesItemsAndDoesNotTouchState(t *testing.T) {
 
 func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	order, err := svc.Create(ctx, baseRequest())
+	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -126,7 +168,7 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	_, err = svc.Close(ctx, order.ID)
 	assertAPIError(t, err, 400)
 
-	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{TargaMotrice: "AB123CD", AutistaID: "driver-1"})
+	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{TargaMotrice: "AB123CD", AutistaID: uuid.New().String()})
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
@@ -173,9 +215,10 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 
 func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	order, err := svc.Create(ctx, baseRequest())
+	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -183,7 +226,7 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 	// Simulate the order having been grouped into a Trip meanwhile.
-	if err := svc.db.Model(&models.Order{}).Where("id = ?", order.ID).Update("viaggio_id", uuid.New().String()).Error; err != nil {
+	if err := svc.db.Model(&models.Order{}).Where("id = ?", order.ID).Update("viaggio_id", uuid.New()).Error; err != nil {
 		t.Fatalf("failed to set viaggio_id: %v", err)
 	}
 
@@ -193,10 +236,11 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 
 func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
 	// From PIANIFICABILE.
-	a, err := svc.Create(ctx, baseRequest())
+	a, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -209,7 +253,7 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	}
 
 	// From PIANIFICATO.
-	b, err := svc.Create(ctx, baseRequest())
+	b, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -229,7 +273,7 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	assertAPIError(t, err, 400)
 
 	// From VIAGGIO must fail.
-	c, err := svc.Create(ctx, baseRequest())
+	c, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -245,9 +289,10 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 
 func TestOrderService_Delete_OnlyWhenPianificabile(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	order, err := svc.Create(ctx, baseRequest())
+	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -266,15 +311,16 @@ func TestOrderService_Delete_OnlyWhenPianificabile(t *testing.T) {
 
 func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	a := baseRequest()
-	a.ClienteNome = "Acme"
+	a := baseRequest(t, db)
+	a.ClienteID = seedCustomer(t, db, "Acme").String()
 	if _, err := svc.Create(ctx, a); err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	b := baseRequest()
-	b.ClienteNome = "Beta"
+	b := baseRequest(t, db)
+	b.ClienteID = seedCustomer(t, db, "Beta").String()
 	created, err := svc.Create(ctx, b)
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
@@ -284,7 +330,7 @@ func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 	}
 
 	byStato, err := svc.List(ctx, ListFilters{Stato: "PIANIFICATO"})
-	if err != nil || len(byStato) != 1 || byStato[0].ClienteNome != "Beta" {
+	if err != nil || len(byStato) != 1 || byStato[0].Cliente == nil || byStato[0].Cliente.RagioneSociale != "Beta" {
 		t.Fatalf("expected 1 PIANIFICATO order (Beta), got %+v (err=%v)", byStato, err)
 	}
 
@@ -296,11 +342,14 @@ func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 
 func TestOrderService_ReturnSuggestions_ScoresAndFilters(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewOrderService(db)
 
-	source := baseRequest()
-	source.ClienteID = "cliente-A"
-	source.DestinazioneScaricoNome = "Roma"
+	romaID := seedDestination(t, db, "Roma")
+
+	source := baseRequest(t, db)
+	source.ClienteID = seedCustomer(t, db, "Cliente A").String()
+	source.DestinazioneScaricoID = romaID.String()
 	source.DataConsegna = "2026-01-12"
 	source.Tariffa = 1000
 	source.Tipologia = "nazionale"
@@ -309,9 +358,9 @@ func TestOrderService_ReturnSuggestions_ScoresAndFilters(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	goodMatch := baseRequest()
-	goodMatch.ClienteID = "cliente-B"
-	goodMatch.DestinazioneCaricoNome = "Roma"
+	goodMatch := baseRequest(t, db)
+	goodMatch.ClienteID = seedCustomer(t, db, "Cliente B").String()
+	goodMatch.DestinazioneCaricoID = romaID.String()
 	goodMatch.DataRitiro = "2026-01-12"
 	goodMatch.Tariffa = 800
 	goodMatch.Tipologia = "nazionale"
@@ -319,8 +368,8 @@ func TestOrderService_ReturnSuggestions_ScoresAndFilters(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	tooLate := baseRequest()
-	tooLate.DestinazioneCaricoNome = "Roma"
+	tooLate := baseRequest(t, db)
+	tooLate.DestinazioneCaricoID = romaID.String()
 	tooLate.DataRitiro = "2026-02-01"
 	if _, err := svc.Create(ctx, tooLate); err != nil {
 		t.Fatalf("Create returned error: %v", err)

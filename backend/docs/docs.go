@@ -3725,7 +3725,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.PriceListItemDTO"
+                            "$ref": "#/definitions/dto.PriceListItemRequestDTO"
                         }
                     }
                 ],
@@ -3786,7 +3786,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.PriceListItemDTO"
+                            "$ref": "#/definitions/dto.PriceListItemRequestDTO"
                         }
                     }
                 ],
@@ -6429,9 +6429,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "cliente_nome": {
-                    "type": "string"
-                },
                 "condizioni_pagamento": {
                     "type": "string"
                 },
@@ -6468,10 +6465,10 @@ const docTemplate = `{
         "dto.InvoiceResponse": {
             "type": "object",
             "properties": {
-                "cliente_id": {
-                    "type": "string"
+                "cliente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
                 },
-                "cliente_nome": {
+                "cliente_id": {
                     "type": "string"
                 },
                 "condizioni_pagamento": {
@@ -6611,14 +6608,14 @@ const docTemplate = `{
         "dto.MapRoute": {
             "type": "object",
             "properties": {
-                "autista_nome": {
-                    "type": "string"
+                "autista": {
+                    "$ref": "#/definitions/dto.DriverResponse"
                 },
                 "carico": {
                     "$ref": "#/definitions/dto.MapPoint"
                 },
-                "cliente_nome": {
-                    "type": "string"
+                "cliente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
                 },
                 "current_position": {
                     "$ref": "#/definitions/dto.MapPoint"
@@ -6777,7 +6774,7 @@ const docTemplate = `{
                 "autista_id": {
                     "type": "string"
                 },
-                "autista_nome": {
+                "garage_id": {
                     "type": "string"
                 },
                 "targa_motrice": {
@@ -6789,25 +6786,33 @@ const docTemplate = `{
                 "vettore_id": {
                     "type": "string"
                 },
-                "vettore_nome": {
+                "wash_station_id": {
                     "type": "string"
                 }
             }
         },
-        "dto.OrderItemDTO": {
+        "dto.OrderItemRequestDTO": {
             "type": "object",
             "properties": {
                 "peso": {
                     "type": "number"
                 },
-                "prodotto_codice": {
-                    "type": "string"
-                },
-                "prodotto_descrizione": {
-                    "type": "string"
-                },
                 "prodotto_id": {
                     "type": "string"
+                },
+                "quantita": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.OrderItemResponseDTO": {
+            "type": "object",
+            "properties": {
+                "peso": {
+                    "type": "number"
+                },
+                "prodotto": {
+                    "$ref": "#/definitions/dto.ProductResponse"
                 },
                 "quantita": {
                     "type": "number"
@@ -6829,9 +6834,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "cliente_nome": {
-                    "type": "string"
-                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -6848,19 +6850,13 @@ const docTemplate = `{
                 "destinazione_carico_id": {
                     "type": "string"
                 },
-                "destinazione_carico_nome": {
-                    "type": "string"
-                },
                 "destinazione_scarico_id": {
-                    "type": "string"
-                },
-                "destinazione_scarico_nome": {
                     "type": "string"
                 },
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.OrderItemDTO"
+                        "$ref": "#/definitions/dto.OrderItemRequestDTO"
                     }
                 },
                 "note": {
@@ -6904,19 +6900,19 @@ const docTemplate = `{
                 "andata_ritorno": {
                     "type": "boolean"
                 },
-                "autista_id": {
-                    "type": "string"
+                "autista": {
+                    "$ref": "#/definitions/dto.DriverResponse"
                 },
-                "autista_nome": {
+                "autista_id": {
                     "type": "string"
                 },
                 "categoria_trasporto": {
                     "type": "string"
                 },
-                "cliente_id": {
-                    "type": "string"
+                "cliente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
                 },
-                "cliente_nome": {
+                "cliente_id": {
                     "type": "string"
                 },
                 "costi_accessori": {
@@ -6935,19 +6931,25 @@ const docTemplate = `{
                 "data_ritiro": {
                     "type": "string"
                 },
+                "destinazione_carico": {
+                    "$ref": "#/definitions/dto.DestinationResponse"
+                },
                 "destinazione_carico_id": {
                     "type": "string"
                 },
-                "destinazione_carico_nome": {
-                    "type": "string"
+                "destinazione_scarico": {
+                    "$ref": "#/definitions/dto.DestinationResponse"
                 },
                 "destinazione_scarico_id": {
                     "type": "string"
                 },
-                "destinazione_scarico_nome": {
+                "fattura_id": {
                     "type": "string"
                 },
-                "fattura_id": {
+                "garage": {
+                    "$ref": "#/definitions/dto.GarageResponse"
+                },
+                "garage_id": {
                     "type": "string"
                 },
                 "id": {
@@ -6956,7 +6958,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.OrderItemDTO"
+                        "$ref": "#/definitions/dto.OrderItemResponseDTO"
                     }
                 },
                 "note": {
@@ -6987,7 +6989,14 @@ const docTemplate = `{
                     }
                 },
                 "stato": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "PIANIFICABILE",
+                        "PIANIFICATO",
+                        "VIAGGIO",
+                        "CHIUSO",
+                        "SCARTATO"
+                    ]
                 },
                 "targa_motrice": {
                     "type": "string"
@@ -7007,13 +7016,19 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
+                "vettore": {
+                    "$ref": "#/definitions/dto.CarrierResponse"
+                },
                 "vettore_id": {
                     "type": "string"
                 },
-                "vettore_nome": {
+                "viaggio_id": {
                     "type": "string"
                 },
-                "viaggio_id": {
+                "wash_station": {
+                    "$ref": "#/definitions/dto.WashStationResponse"
+                },
+                "wash_station_id": {
                     "type": "string"
                 }
             }
@@ -7055,14 +7070,14 @@ const docTemplate = `{
         "dto.OrderSourceSummary": {
             "type": "object",
             "properties": {
-                "cliente_nome": {
-                    "type": "string"
+                "cliente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
                 },
                 "data_consegna": {
                     "type": "string"
                 },
-                "destinazione_scarico_nome": {
-                    "type": "string"
+                "destinazione_scarico": {
+                    "$ref": "#/definitions/dto.DestinationResponse"
                 },
                 "id": {
                     "type": "string"
@@ -7100,19 +7115,24 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PriceListItemDTO": {
+        "dto.PriceListItemDeleteResult": {
+            "type": "object",
+            "properties": {
+                "items_count": {
+                    "type": "integer"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.PriceListItemRequestDTO": {
             "type": "object",
             "properties": {
                 "destinazione_carico_id": {
                     "type": "string"
                 },
-                "destinazione_carico_nome": {
-                    "type": "string"
-                },
                 "destinazione_scarico_id": {
-                    "type": "string"
-                },
-                "destinazione_scarico_nome": {
                     "type": "string"
                 },
                 "item_id": {
@@ -7125,9 +7145,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "prodotto_id": {
-                    "type": "string"
-                },
-                "prodotto_nome": {
                     "type": "string"
                 },
                 "range_peso_max": {
@@ -7150,14 +7167,44 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.PriceListItemDeleteResult": {
+        "dto.PriceListItemResponseDTO": {
             "type": "object",
             "properties": {
-                "items_count": {
-                    "type": "integer"
+                "destinazione_carico": {
+                    "$ref": "#/definitions/dto.DestinationResponse"
                 },
-                "ok": {
-                    "type": "boolean"
+                "destinazione_scarico": {
+                    "$ref": "#/definitions/dto.DestinationResponse"
+                },
+                "item_id": {
+                    "type": "string"
+                },
+                "minimo_tassabile": {
+                    "type": "number"
+                },
+                "perc_adeguamento_carburante": {
+                    "type": "number"
+                },
+                "prodotto": {
+                    "$ref": "#/definitions/dto.ProductResponse"
+                },
+                "range_peso_max": {
+                    "type": "number"
+                },
+                "range_peso_min": {
+                    "type": "number"
+                },
+                "tariffa": {
+                    "type": "number"
+                },
+                "tipo_tariffa": {
+                    "type": "string"
+                },
+                "tipo_trasporto": {
+                    "type": "string"
+                },
+                "unita_peso": {
+                    "type": "string"
                 }
             }
         },
@@ -7181,9 +7228,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "cliente_nome": {
-                    "type": "string"
-                },
                 "data_fine": {
                     "type": "string"
                 },
@@ -7193,7 +7237,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.PriceListItemDTO"
+                        "$ref": "#/definitions/dto.PriceListItemRequestDTO"
                     }
                 },
                 "note": {
@@ -7207,10 +7251,10 @@ const docTemplate = `{
                 "active": {
                     "type": "boolean"
                 },
-                "cliente_id": {
-                    "type": "string"
+                "cliente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
                 },
-                "cliente_nome": {
+                "cliente_id": {
                     "type": "string"
                 },
                 "created_at": {
@@ -7231,7 +7275,7 @@ const docTemplate = `{
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.PriceListItemDTO"
+                        "$ref": "#/definitions/dto.PriceListItemResponseDTO"
                     }
                 },
                 "note": {
@@ -7502,10 +7546,10 @@ const docTemplate = `{
         "dto.TripDetailResponse": {
             "type": "object",
             "properties": {
-                "autista_id": {
-                    "type": "string"
+                "autista": {
+                    "$ref": "#/definitions/dto.DriverResponse"
                 },
-                "autista_nome": {
+                "autista_id": {
                     "type": "string"
                 },
                 "costo_stimato": {
@@ -7520,10 +7564,10 @@ const docTemplate = `{
                 "data_partenza": {
                     "type": "string"
                 },
-                "garage_id": {
-                    "type": "string"
+                "garage": {
+                    "$ref": "#/definitions/dto.GarageResponse"
                 },
-                "garage_nome": {
+                "garage_id": {
                     "type": "string"
                 },
                 "id": {
@@ -7562,10 +7606,10 @@ const docTemplate = `{
                 "targa_rimorchio": {
                     "type": "string"
                 },
-                "vettore_id": {
-                    "type": "string"
+                "vettore": {
+                    "$ref": "#/definitions/dto.CarrierResponse"
                 },
-                "vettore_nome": {
+                "vettore_id": {
                     "type": "string"
                 }
             }
@@ -7576,9 +7620,6 @@ const docTemplate = `{
                 "autista_id": {
                     "type": "string"
                 },
-                "autista_nome": {
-                    "type": "string"
-                },
                 "data_arrivo": {
                     "type": "string"
                 },
@@ -7586,9 +7627,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "garage_id": {
-                    "type": "string"
-                },
-                "garage_nome": {
                     "type": "string"
                 },
                 "note": {
@@ -7608,19 +7646,16 @@ const docTemplate = `{
                 },
                 "vettore_id": {
                     "type": "string"
-                },
-                "vettore_nome": {
-                    "type": "string"
                 }
             }
         },
         "dto.TripResponse": {
             "type": "object",
             "properties": {
-                "autista_id": {
-                    "type": "string"
+                "autista": {
+                    "$ref": "#/definitions/dto.DriverResponse"
                 },
-                "autista_nome": {
+                "autista_id": {
                     "type": "string"
                 },
                 "costo_stimato": {
@@ -7635,10 +7670,10 @@ const docTemplate = `{
                 "data_partenza": {
                     "type": "string"
                 },
-                "garage_id": {
-                    "type": "string"
+                "garage": {
+                    "$ref": "#/definitions/dto.GarageResponse"
                 },
-                "garage_nome": {
+                "garage_id": {
                     "type": "string"
                 },
                 "id": {
@@ -7671,10 +7706,10 @@ const docTemplate = `{
                 "targa_rimorchio": {
                     "type": "string"
                 },
-                "vettore_id": {
-                    "type": "string"
+                "vettore": {
+                    "$ref": "#/definitions/dto.CarrierResponse"
                 },
-                "vettore_nome": {
+                "vettore_id": {
                     "type": "string"
                 }
             }

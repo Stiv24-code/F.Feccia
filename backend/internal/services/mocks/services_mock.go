@@ -1783,7 +1783,7 @@ func (m *MockPriceList) EXPECT() *MockPriceListMockRecorder {
 }
 
 // AddItem mocks base method.
-func (m *MockPriceList) AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemAddResult, error) {
+func (m *MockPriceList) AddItem(ctx context.Context, plID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemAddResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddItem", ctx, plID, item)
 	ret0, _ := ret[0].(*dto.PriceListItemAddResult)
@@ -1902,7 +1902,7 @@ func (mr *MockPriceListMockRecorder) Update(ctx, id, req interface{}) *gomock.Ca
 }
 
 // UpdateItem mocks base method.
-func (m *MockPriceList) UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemDTO) (*dto.PriceListItemUpdateResult, error) {
+func (m *MockPriceList) UpdateItem(ctx context.Context, plID, itemID uuid.UUID, item dto.PriceListItemRequestDTO) (*dto.PriceListItemUpdateResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateItem", ctx, plID, itemID, item)
 	ret0, _ := ret[0].(*dto.PriceListItemUpdateResult)

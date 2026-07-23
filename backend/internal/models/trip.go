@@ -29,23 +29,26 @@ type TripSegment struct {
 
 // Trip mirrors backend/routers/trips.py + TripBase/TripCreate in
 // backend/models.py. Reference fields (AutistaID, VettoreID, GarageID) are
-// plain strings, matching the untyped Mongo references used everywhere else
-// in this port (see Order for the same reasoning). OrdiniIds is a JSON
-// string array — Mongo has no child-table equivalent for a plain id list,
-// and turning it into a join table would add join overhead for no query
-// benefit over the orders.viaggio_id back-reference already used to fetch
-// a trip's orders.
+// real belongs-to FKs (*uuid.UUID, nil until assigned) — see Order for the
+// same reasoning/history (these used to be untyped Mongo-style strings).
+// Associations are Preloaded by the trips service and mapped to nested
+// Response DTOs; there is no stored *Nome snapshot column anymore.
+//
+// OrdiniIds is a JSON string array — Mongo has no child-table equivalent for
+// a plain id list, and turning it into a join table would add join overhead
+// for no query benefit over the orders.viaggio_id back-reference already
+// used to fetch a trip's orders.
 type Trip struct {
 	ID             uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	OrdiniIds      datatypes.JSON `json:"ordini_ids"`
 	TargaMotrice   string         `gorm:"type:varchar(20)" json:"targa_motrice"`
 	TargaRimorchio string         `gorm:"type:varchar(20)" json:"targa_rimorchio"`
-	AutistaID      string         `gorm:"type:varchar(64)" json:"autista_id"`
-	AutistaNome    string         `gorm:"type:varchar(255)" json:"autista_nome"`
-	VettoreID      string         `gorm:"type:varchar(64)" json:"vettore_id"`
-	VettoreNome    string         `gorm:"type:varchar(255)" json:"vettore_nome"`
-	GarageID       string         `gorm:"type:varchar(64)" json:"garage_id"`
-	GarageNome     string         `gorm:"type:varchar(255)" json:"garage_nome"`
+	AutistaID      *uuid.UUID     `gorm:"type:uuid" json:"autista_id"`
+	Autista        *Driver        `gorm:"foreignKey:AutistaID;references:ID" json:"-"`
+	VettoreID      *uuid.UUID     `gorm:"type:uuid" json:"vettore_id"`
+	Vettore        *Carrier       `gorm:"foreignKey:VettoreID;references:ID" json:"-"`
+	GarageID       *uuid.UUID     `gorm:"type:uuid" json:"garage_id"`
+	Garage         *Garage        `gorm:"foreignKey:GarageID;references:ID" json:"-"`
 	Segments       []TripSegment  `gorm:"foreignKey:TripID;constraint:OnDelete:CASCADE" json:"segmenti"`
 	KmTotali       float64        `gorm:"not null;default:0" json:"km_totali"`
 	CostoStimato   float64        `gorm:"not null;default:0" json:"costo_stimato"`

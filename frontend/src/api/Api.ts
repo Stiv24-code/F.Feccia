@@ -54,8 +54,8 @@ import {
   DtoOrderReturnSuggestionsResponse,
   DtoPatchUserRequest,
   DtoPriceListItemAddResult,
-  DtoPriceListItemDTO,
   DtoPriceListItemDeleteResult,
+  DtoPriceListItemRequestDTO,
   DtoPriceListItemUpdateResult,
   DtoPriceListRequest,
   DtoPriceListResponse,
@@ -1798,7 +1798,7 @@ export class Api<SecurityDataType = unknown> {
    */
   v1PricelistsItemsCreate = (
     id: string,
-    item: DtoPriceListItemDTO,
+    item: DtoPriceListItemRequestDTO,
     params: RequestParams = {},
   ) =>
     this.http.request<DtoPriceListItemAddResult, Record<string, string>>({
@@ -1822,7 +1822,7 @@ export class Api<SecurityDataType = unknown> {
   v1PricelistsItemsUpdate = (
     id: string,
     itemId: string,
-    item: DtoPriceListItemDTO,
+    item: DtoPriceListItemRequestDTO,
     params: RequestParams = {},
   ) =>
     this.http.request<DtoPriceListItemUpdateResult, Record<string, string>>({

@@ -19,22 +19,44 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.PriceList{}, &models.PriceListItem{}); err != nil {
+	if err := db.AutoMigrate(&models.PriceList{}, &models.PriceListItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
 }
 
+func seedCustomer(t *testing.T, db *gorm.DB, ragioneSociale string) uuid.UUID {
+	t.Helper()
+	c := models.Customer{ID: uuid.New(), RagioneSociale: ragioneSociale, Active: true}
+	if err := db.Create(&c).Error; err != nil {
+		t.Fatalf("failed to seed customer: %v", err)
+	}
+	return c.ID
+}
+
+func seedDestination(t *testing.T, db *gorm.DB, nome string) uuid.UUID {
+	t.Helper()
+	d := models.Destination{ID: uuid.New(), Nome: nome, Active: true, Lat: geoPtr(0), Lng: geoPtr(0)}
+	if err := db.Create(&d).Error; err != nil {
+		t.Fatalf("failed to seed destination: %v", err)
+	}
+	return d.ID
+}
+
+func geoPtr(v float64) *float64 { return &v }
+
 func TestPriceListService_CreateAndAddItem(t *testing.T) {
 	ctx := context.Background()
-	svc := NewPriceListService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
 
-	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: "cliente-1", DataInizio: "2026-01-01", DataFine: "2026-12-31"})
+	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: clienteID.String(), DataInizio: "2026-01-01", DataFine: "2026-12-31"})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	added, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemDTO{Tariffa: 500, TipoTariffa: "forfait"})
+	added, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemRequestDTO{Tariffa: 500, TipoTariffa: "forfait"})
 	if err != nil {
 		t.Fatalf("AddItem returned error: %v", err)
 	}
@@ -52,14 +74,16 @@ func TestPriceListService_Update_DuplicatesWhenInUso(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
 	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
+	rinnovatoID := seedCustomer(t, db, "Rinnovato")
 
-	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: "cliente-1"})
+	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: clienteID.String()})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
 	db.Model(&models.PriceList{}).Where("id = ?", pl.ID).Update("in_uso", true)
 
-	result, err := svc.Update(ctx, pl.ID, dto.PriceListRequest{ClienteID: "cliente-1", ClienteNome: "Rinnovato"})
+	result, err := svc.Update(ctx, pl.ID, dto.PriceListRequest{ClienteID: rinnovatoID.String()})
 	if err != nil {
 		t.Fatalf("Update returned error: %v", err)
 	}
@@ -82,14 +106,17 @@ func TestPriceListService_Update_DuplicatesWhenInUso(t *testing.T) {
 
 func TestPriceListService_Update_InPlaceWhenNotInUso(t *testing.T) {
 	ctx := context.Background()
-	svc := NewPriceListService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
+	aggiornatoID := seedCustomer(t, db, "Aggiornato")
 
-	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: "cliente-1"})
+	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: clienteID.String()})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	result, err := svc.Update(ctx, pl.ID, dto.PriceListRequest{ClienteID: "cliente-1", ClienteNome: "Aggiornato"})
+	result, err := svc.Update(ctx, pl.ID, dto.PriceListRequest{ClienteID: aggiornatoID.String()})
 	if err != nil {
 		t.Fatalf("Update returned error: %v", err)
 	}
@@ -98,20 +125,22 @@ func TestPriceListService_Update_InPlaceWhenNotInUso(t *testing.T) {
 	}
 
 	refreshed, err := svc.GetByID(ctx, pl.ID)
-	if err != nil || refreshed.ClienteNome != "Aggiornato" {
+	if err != nil || refreshed.Cliente == nil || refreshed.Cliente.RagioneSociale != "Aggiornato" {
 		t.Fatalf("expected in-place update to apply, got %+v (err=%v)", refreshed, err)
 	}
 }
 
 func TestPriceListService_DeleteItem(t *testing.T) {
 	ctx := context.Background()
-	svc := NewPriceListService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
 
-	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: "cliente-1"})
+	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: clienteID.String()})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	added, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemDTO{Tariffa: 100})
+	added, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemRequestDTO{Tariffa: 100})
 	if err != nil {
 		t.Fatalf("AddItem returned error: %v", err)
 	}
@@ -124,7 +153,7 @@ func TestPriceListService_DeleteItem(t *testing.T) {
 		t.Fatalf("expected 0 items after delete, got %d", result.ItemsCount)
 	}
 
-	_, err = svc.UpdateItem(ctx, pl.ID, added.ItemID, dto.PriceListItemDTO{Tariffa: 200})
+	_, err = svc.UpdateItem(ctx, pl.ID, added.ItemID, dto.PriceListItemRequestDTO{Tariffa: 200})
 	if err == nil {
 		t.Fatal("expected error updating a deleted item")
 	}
@@ -132,11 +161,15 @@ func TestPriceListService_DeleteItem(t *testing.T) {
 
 func TestPriceListService_LookupTariff_PicksBestScoringRule(t *testing.T) {
 	ctx := context.Background()
-	svc := NewPriceListService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
+	caricoID := seedDestination(t, db, "Carico Uno")
+	scaricoID := seedDestination(t, db, "Scarico Uno")
 
 	today := time.Now().UTC()
 	pl, err := svc.Create(ctx, dto.PriceListRequest{
-		ClienteID:  "cliente-1",
+		ClienteID:  clienteID.String(),
 		DataInizio: today.AddDate(0, 0, -1).Format("2006-01-02"),
 		DataFine:   today.AddDate(0, 0, 1).Format("2006-01-02"),
 	})
@@ -145,18 +178,18 @@ func TestPriceListService_LookupTariff_PicksBestScoringRule(t *testing.T) {
 	}
 
 	// Generic rule: no tratta/prodotto/peso constraints -> score 0.
-	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemDTO{Tariffa: 300, TipoTariffa: "forfait"}); err != nil {
+	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemRequestDTO{Tariffa: 300, TipoTariffa: "forfait"}); err != nil {
 		t.Fatalf("AddItem returned error: %v", err)
 	}
 	// Specific rule: exact tratta match -> score 10, should win.
-	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemDTO{
+	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemRequestDTO{
 		Tariffa: 500, TipoTariffa: "forfait",
-		DestinazioneCaricoID: "carico-1", DestinazioneScaricoID: "scarico-1",
+		DestinazioneCaricoID: caricoID.String(), DestinazioneScaricoID: scaricoID.String(),
 	}); err != nil {
 		t.Fatalf("AddItem returned error: %v", err)
 	}
 
-	result, err := svc.LookupTariff(ctx, "cliente-1", "carico-1", "scarico-1", "", 0)
+	result, err := svc.LookupTariff(ctx, clienteID.String(), caricoID.String(), scaricoID.String(), "", 0)
 	if err != nil {
 		t.Fatalf("LookupTariff returned error: %v", err)
 	}
@@ -167,21 +200,23 @@ func TestPriceListService_LookupTariff_PicksBestScoringRule(t *testing.T) {
 
 func TestPriceListService_LookupTariff_EuroKgWithMinimoAndFuel(t *testing.T) {
 	ctx := context.Background()
-	svc := NewPriceListService(newTestDB(t))
+	db := newTestDB(t)
+	svc := NewPriceListService(db)
+	clienteID := seedCustomer(t, db, "Cliente Uno")
 
 	today := time.Now().UTC().Format("2006-01-02")
-	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: "cliente-1", DataInizio: today, DataFine: today})
+	pl, err := svc.Create(ctx, dto.PriceListRequest{ClienteID: clienteID.String(), DataInizio: today, DataFine: today})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemDTO{
+	if _, err := svc.AddItem(ctx, pl.ID, dto.PriceListItemRequestDTO{
 		Tariffa: 2, TipoTariffa: "euro_kg", MinimoTassabile: 100, PercAdeguamentoCarburante: 10,
 	}); err != nil {
 		t.Fatalf("AddItem returned error: %v", err)
 	}
 
 	// peso (50) below minimo (100) -> billed at minimo: 2 * 100 * 1.10 = 220.
-	result, err := svc.LookupTariff(ctx, "cliente-1", "", "", "", 50)
+	result, err := svc.LookupTariff(ctx, clienteID.String(), "", "", "", 50)
 	if err != nil {
 		t.Fatalf("LookupTariff returned error: %v", err)
 	}
@@ -194,7 +229,7 @@ func TestPriceListService_LookupTariff_NotFound(t *testing.T) {
 	ctx := context.Background()
 	svc := NewPriceListService(newTestDB(t))
 
-	result, err := svc.LookupTariff(ctx, "cliente-inesistente", "", "", "", 0)
+	result, err := svc.LookupTariff(ctx, uuid.New().String(), "", "", "", 0)
 	if err != nil {
 		t.Fatalf("LookupTariff returned error: %v", err)
 	}
@@ -204,21 +239,25 @@ func TestPriceListService_LookupTariff_NotFound(t *testing.T) {
 }
 
 func TestScoreRuleMatch(t *testing.T) {
+	a := uuid.New()
+	b := uuid.New()
+	p1 := uuid.New()
 	item := models.PriceListItem{
-		ID: uuid.New(), DestinazioneCaricoID: "A", DestinazioneScaricoID: "B",
-		ProdottoID: "P1", RangePesoMin: 10, RangePesoMax: 100,
+		ID: uuid.New(), DestinazioneCaricoID: &a, DestinazioneScaricoID: &b,
+		ProdottoID: &p1, RangePesoMin: 10, RangePesoMax: 100,
 	}
 
-	if score := scoreRuleMatch(item, "A", "B", "P1", 50); score != 18 {
+	other := uuid.New()
+	if score := scoreRuleMatch(item, &a, &b, &p1, 50); score != 18 {
 		t.Fatalf("expected score 10+5+3=18 for full match, got %d", score)
 	}
-	if score := scoreRuleMatch(item, "X", "Y", "P1", 50); score != -1 {
+	if score := scoreRuleMatch(item, &other, &other, &p1, 50); score != -1 {
 		t.Fatalf("expected -1 for tratta mismatch, got %d", score)
 	}
-	if score := scoreRuleMatch(item, "A", "B", "OTHER", 50); score != -1 {
+	if score := scoreRuleMatch(item, &a, &b, &other, 50); score != -1 {
 		t.Fatalf("expected -1 for prodotto mismatch, got %d", score)
 	}
-	if score := scoreRuleMatch(item, "A", "B", "P1", 5); score != -1 {
+	if score := scoreRuleMatch(item, &a, &b, &p1, 5); score != -1 {
 		t.Fatalf("expected -1 for peso below range, got %d", score)
 	}
 }

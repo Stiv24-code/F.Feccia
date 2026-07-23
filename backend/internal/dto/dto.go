@@ -369,88 +369,100 @@ type DriverUnavailabilityResponse struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type OrderItemDTO struct {
-	ProdottoID          string  `json:"prodotto_id"`
-	ProdottoCodice      string  `json:"prodotto_codice"`
-	ProdottoDescrizione string  `json:"prodotto_descrizione"`
-	Quantita            float64 `json:"quantita"`
-	Peso                float64 `json:"peso"`
+// OrderItemRequestDTO is the write-side shape of an order line — only the
+// product reference id, the server resolves/validates the rest via Preload.
+type OrderItemRequestDTO struct {
+	ProdottoID string  `json:"prodotto_id"`
+	Quantita   float64 `json:"quantita"`
+	Peso       float64 `json:"peso"`
+}
+
+// OrderItemResponseDTO is the read-side shape — Prodotto is the full nested
+// product (nil if the product reference is somehow unresolved), replacing
+// the old denormalized ProdottoCodice/ProdottoDescrizione snapshot fields.
+type OrderItemResponseDTO struct {
+	Prodotto *ProductResponse `json:"prodotto"`
+	Quantita float64          `json:"quantita"`
+	Peso     float64          `json:"peso"`
 }
 
 // OrderRequest mirrors OrderCreate — used for both POST and PUT; state-machine
 // fields (stato, targa_motrice, autista_id, vettore_id, viaggio_id, fattura_id,
 // progressivo) are intentionally absent, exactly like the Python schema, so a
-// PUT can never touch them.
+// PUT can never touch them. Reference fields are ids only — the server no
+// longer stores a client-submitted denormalized name, it's always derived
+// from the live associated row via Preload.
 type OrderRequest struct {
-	ClienteID               string                   `json:"cliente_id" validate:"required"`
-	ClienteNome             string                   `json:"cliente_nome"`
-	DestinazioneCaricoID    string                   `json:"destinazione_carico_id"`
-	DestinazioneCaricoNome  string                   `json:"destinazione_carico_nome"`
-	DestinazioneScaricoID   string                   `json:"destinazione_scarico_id"`
-	DestinazioneScaricoNome string                   `json:"destinazione_scarico_nome"`
-	DataRitiro              string                   `json:"data_ritiro"`
-	OraRitiroDa             string                   `json:"ora_ritiro_da"`
-	OraRitiroA              string                   `json:"ora_ritiro_a"`
-	DataConsegna            string                   `json:"data_consegna"`
-	OraConsegnaDa           string                   `json:"ora_consegna_da"`
-	OraConsegnaA            string                   `json:"ora_consegna_a"`
-	Tariffa                 float64                  `json:"tariffa"`
-	TipoTariffa             string                   `json:"tipo_tariffa"`
-	Tipologia               string                   `json:"tipologia"`
-	CategoriaTrasporto      string                   `json:"categoria_trasporto"`
-	RifOrdineCliente        string                   `json:"rif_ordine_cliente"`
-	AndataRitorno           bool                     `json:"andata_ritorno"`
-	Note                    string                   `json:"note"`
-	Items                   []OrderItemDTO           `json:"items"`
-	ServiziAccessori        []string                 `json:"servizi_accessori"`
-	CostiAccessori          []map[string]interface{} `json:"costi_accessori"`
+	ClienteID             string                   `json:"cliente_id" validate:"required"`
+	DestinazioneCaricoID  string                   `json:"destinazione_carico_id"`
+	DestinazioneScaricoID string                   `json:"destinazione_scarico_id"`
+	DataRitiro            string                   `json:"data_ritiro"`
+	OraRitiroDa           string                   `json:"ora_ritiro_da"`
+	OraRitiroA            string                   `json:"ora_ritiro_a"`
+	DataConsegna          string                   `json:"data_consegna"`
+	OraConsegnaDa         string                   `json:"ora_consegna_da"`
+	OraConsegnaA          string                   `json:"ora_consegna_a"`
+	Tariffa               float64                  `json:"tariffa"`
+	TipoTariffa           string                   `json:"tipo_tariffa"`
+	Tipologia             string                   `json:"tipologia"`
+	CategoriaTrasporto    string                   `json:"categoria_trasporto"`
+	RifOrdineCliente      string                   `json:"rif_ordine_cliente"`
+	AndataRitorno         bool                     `json:"andata_ritorno"`
+	Note                  string                   `json:"note"`
+	Items                 []OrderItemRequestDTO    `json:"items"`
+	ServiziAccessori      []string                 `json:"servizi_accessori"`
+	CostiAccessori        []map[string]interface{} `json:"costi_accessori"`
 }
 
 type OrderAssignRequest struct {
+	GarageID       string `json:"garage_id"`
 	TargaMotrice   string `json:"targa_motrice"`
 	TargaRimorchio string `json:"targa_rimorchio"`
 	AutistaID      string `json:"autista_id"`
-	AutistaNome    string `json:"autista_nome"`
 	VettoreID      string `json:"vettore_id"`
-	VettoreNome    string `json:"vettore_nome"`
+	WashStationID  string `json:"wash_station_id"`
 }
 
 type OrderResponse struct {
-	ID                      uuid.UUID                `json:"id"`
-	Progressivo             string                   `json:"progressivo"`
-	ClienteID               string                   `json:"cliente_id"`
-	ClienteNome             string                   `json:"cliente_nome"`
-	DestinazioneCaricoID    string                   `json:"destinazione_carico_id"`
-	DestinazioneCaricoNome  string                   `json:"destinazione_carico_nome"`
-	DestinazioneScaricoID   string                   `json:"destinazione_scarico_id"`
-	DestinazioneScaricoNome string                   `json:"destinazione_scarico_nome"`
-	DataRitiro              string                   `json:"data_ritiro"`
-	OraRitiroDa             string                   `json:"ora_ritiro_da"`
-	OraRitiroA              string                   `json:"ora_ritiro_a"`
-	DataConsegna            string                   `json:"data_consegna"`
-	OraConsegnaDa           string                   `json:"ora_consegna_da"`
-	OraConsegnaA            string                   `json:"ora_consegna_a"`
-	Tariffa                 float64                  `json:"tariffa"`
-	TipoTariffa             string                   `json:"tipo_tariffa"`
-	Tipologia               string                   `json:"tipologia"`
-	CategoriaTrasporto      string                   `json:"categoria_trasporto"`
-	RifOrdineCliente        string                   `json:"rif_ordine_cliente"`
-	AndataRitorno           bool                     `json:"andata_ritorno"`
-	Note                    string                   `json:"note"`
-	Items                   []OrderItemDTO           `json:"items"`
-	ServiziAccessori        []string                 `json:"servizi_accessori"`
-	CostiAccessori          []map[string]interface{} `json:"costi_accessori"`
-	Stato                   string                   `json:"stato"`
-	TargaMotrice            string                   `json:"targa_motrice"`
-	TargaRimorchio          string                   `json:"targa_rimorchio"`
-	AutistaID               string                   `json:"autista_id"`
-	AutistaNome             string                   `json:"autista_nome"`
-	VettoreID               string                   `json:"vettore_id"`
-	VettoreNome             string                   `json:"vettore_nome"`
-	ViaggioID               string                   `json:"viaggio_id"`
-	FatturaID               string                   `json:"fattura_id"`
-	CreatedAt               time.Time                `json:"created_at"`
-	UpdatedAt               time.Time                `json:"updated_at"`
+	ID                    uuid.UUID                `json:"id"`
+	Progressivo           string                   `json:"progressivo"`
+	ClienteID             string                   `json:"cliente_id"`
+	Cliente               *CustomerResponse        `json:"cliente"`
+	DestinazioneCaricoID  string                   `json:"destinazione_carico_id"`
+	DestinazioneCarico    *DestinationResponse     `json:"destinazione_carico"`
+	DestinazioneScaricoID string                   `json:"destinazione_scarico_id"`
+	DestinazioneScarico   *DestinationResponse     `json:"destinazione_scarico"`
+	DataRitiro            string                   `json:"data_ritiro"`
+	OraRitiroDa           string                   `json:"ora_ritiro_da"`
+	OraRitiroA            string                   `json:"ora_ritiro_a"`
+	DataConsegna          string                   `json:"data_consegna"`
+	OraConsegnaDa         string                   `json:"ora_consegna_da"`
+	OraConsegnaA          string                   `json:"ora_consegna_a"`
+	Tariffa               float64                  `json:"tariffa"`
+	TipoTariffa           string                   `json:"tipo_tariffa"`
+	Tipologia             string                   `json:"tipologia"`
+	CategoriaTrasporto    string                   `json:"categoria_trasporto"`
+	RifOrdineCliente      string                   `json:"rif_ordine_cliente"`
+	AndataRitorno         bool                     `json:"andata_ritorno"`
+	Note                  string                   `json:"note"`
+	Items                 []OrderItemResponseDTO   `json:"items"`
+	ServiziAccessori      []string                 `json:"servizi_accessori"`
+	CostiAccessori        []map[string]interface{} `json:"costi_accessori"`
+	Stato                 string                   `json:"stato" enums:"PIANIFICABILE,PIANIFICATO,VIAGGIO,CHIUSO,SCARTATO"`
+	GarageID              string                   `json:"garage_id"`
+	Garage                *GarageResponse          `json:"garage"`
+	TargaMotrice          string                   `json:"targa_motrice"`
+	TargaRimorchio        string                   `json:"targa_rimorchio"`
+	AutistaID             string                   `json:"autista_id"`
+	Autista               *DriverResponse          `json:"autista"`
+	VettoreID             string                   `json:"vettore_id"`
+	Vettore               *CarrierResponse         `json:"vettore"`
+	WashStationID         string                   `json:"wash_station_id"`
+	WashStation           *WashStationResponse     `json:"wash_station"`
+	ViaggioID             string                   `json:"viaggio_id"`
+	FatturaID             string                   `json:"fattura_id"`
+	CreatedAt             time.Time                `json:"created_at"`
+	UpdatedAt             time.Time                `json:"updated_at"`
 }
 
 type OrderReturnSuggestion struct {
@@ -466,11 +478,11 @@ type OrderReturnSuggestionsResponse struct {
 }
 
 type OrderSourceSummary struct {
-	ID                      uuid.UUID `json:"id"`
-	Progressivo             string    `json:"progressivo"`
-	ClienteNome             string    `json:"cliente_nome"`
-	DestinazioneScaricoNome string    `json:"destinazione_scarico_nome"`
-	DataConsegna            string    `json:"data_consegna"`
+	ID                  uuid.UUID            `json:"id"`
+	Progressivo         string               `json:"progressivo"`
+	Cliente             *CustomerResponse    `json:"cliente"`
+	DestinazioneScarico *DestinationResponse `json:"destinazione_scarico"`
+	DataConsegna        string               `json:"data_consegna"`
 }
 
 // VehicleRequest mirrors VehicleCreate — telemetry fields (GPS/temperature)
@@ -652,11 +664,8 @@ type TripRequest struct {
 	TargaMotrice   string   `json:"targa_motrice"`
 	TargaRimorchio string   `json:"targa_rimorchio"`
 	AutistaID      string   `json:"autista_id"`
-	AutistaNome    string   `json:"autista_nome"`
 	VettoreID      string   `json:"vettore_id"`
-	VettoreNome    string   `json:"vettore_nome"`
 	GarageID       string   `json:"garage_id"`
-	GarageNome     string   `json:"garage_nome"`
 	Note           string   `json:"note"`
 	DataPartenza   string   `json:"data_partenza"`
 	DataArrivo     string   `json:"data_arrivo"`
@@ -668,11 +677,11 @@ type TripResponse struct {
 	TargaMotrice   string           `json:"targa_motrice"`
 	TargaRimorchio string           `json:"targa_rimorchio"`
 	AutistaID      string           `json:"autista_id"`
-	AutistaNome    string           `json:"autista_nome"`
+	Autista        *DriverResponse  `json:"autista"`
 	VettoreID      string           `json:"vettore_id"`
-	VettoreNome    string           `json:"vettore_nome"`
+	Vettore        *CarrierResponse `json:"vettore"`
 	GarageID       string           `json:"garage_id"`
-	GarageNome     string           `json:"garage_nome"`
+	Garage         *GarageResponse  `json:"garage"`
 	Segmenti       []TripSegmentDTO `json:"segmenti"`
 	KmTotali       float64          `json:"km_totali"`
 	CostoStimato   float64          `json:"costo_stimato"`
@@ -700,14 +709,13 @@ type OKResult struct {
 	OK bool `json:"ok"`
 }
 
-type PriceListItemDTO struct {
+// PriceListItemRequestDTO is the write-side shape of a price list rule —
+// only reference ids, the server resolves/validates the rest via Preload.
+type PriceListItemRequestDTO struct {
 	ItemID                    *uuid.UUID `json:"item_id,omitempty"`
 	ProdottoID                string     `json:"prodotto_id"`
-	ProdottoNome              string     `json:"prodotto_nome"`
 	DestinazioneCaricoID      string     `json:"destinazione_carico_id"`
-	DestinazioneCaricoNome    string     `json:"destinazione_carico_nome"`
 	DestinazioneScaricoID     string     `json:"destinazione_scarico_id"`
-	DestinazioneScaricoNome   string     `json:"destinazione_scarico_nome"`
 	Tariffa                   float64    `json:"tariffa"`
 	TipoTariffa               string     `json:"tipo_tariffa"`
 	RangePesoMin              float64    `json:"range_peso_min"`
@@ -718,28 +726,45 @@ type PriceListItemDTO struct {
 	PercAdeguamentoCarburante float64    `json:"perc_adeguamento_carburante"`
 }
 
+// PriceListItemResponseDTO is the read-side shape — Prodotto/DestinazioneCarico/
+// DestinazioneScarico are the full nested rows (nil when the rule applies to
+// "any", e.g. a blanket weight-based rate with no destination filter).
+type PriceListItemResponseDTO struct {
+	ItemID                    uuid.UUID            `json:"item_id"`
+	Prodotto                  *ProductResponse     `json:"prodotto"`
+	DestinazioneCarico        *DestinationResponse `json:"destinazione_carico"`
+	DestinazioneScarico       *DestinationResponse `json:"destinazione_scarico"`
+	Tariffa                   float64              `json:"tariffa"`
+	TipoTariffa               string               `json:"tipo_tariffa"`
+	RangePesoMin              float64              `json:"range_peso_min"`
+	RangePesoMax              float64              `json:"range_peso_max"`
+	UnitaPeso                 string               `json:"unita_peso"`
+	MinimoTassabile           float64              `json:"minimo_tassabile"`
+	TipoTrasporto             string               `json:"tipo_trasporto"`
+	PercAdeguamentoCarburante float64              `json:"perc_adeguamento_carburante"`
+}
+
 // PriceListRequest mirrors PriceListCreate — used for both create and the
 // (non-duplicating) branch of update.
 type PriceListRequest struct {
-	ClienteID   string             `json:"cliente_id" validate:"required"`
-	ClienteNome string             `json:"cliente_nome"`
-	DataInizio  string             `json:"data_inizio"`
-	DataFine    string             `json:"data_fine"`
-	Items       []PriceListItemDTO `json:"items"`
-	Note        string             `json:"note"`
+	ClienteID  string                    `json:"cliente_id" validate:"required"`
+	DataInizio string                    `json:"data_inizio"`
+	DataFine   string                    `json:"data_fine"`
+	Items      []PriceListItemRequestDTO `json:"items"`
+	Note       string                    `json:"note"`
 }
 
 type PriceListResponse struct {
-	ID          uuid.UUID          `json:"id"`
-	ClienteID   string             `json:"cliente_id"`
-	ClienteNome string             `json:"cliente_nome"`
-	DataInizio  string             `json:"data_inizio"`
-	DataFine    string             `json:"data_fine"`
-	Items       []PriceListItemDTO `json:"items"`
-	Note        string             `json:"note"`
-	InUso       bool               `json:"in_uso"`
-	Active      bool               `json:"active"`
-	CreatedAt   time.Time          `json:"created_at"`
+	ID         uuid.UUID                  `json:"id"`
+	ClienteID  string                     `json:"cliente_id"`
+	Cliente    *CustomerResponse          `json:"cliente"`
+	DataInizio string                     `json:"data_inizio"`
+	DataFine   string                     `json:"data_fine"`
+	Items      []PriceListItemResponseDTO `json:"items"`
+	Note       string                     `json:"note"`
+	InUso      bool                       `json:"in_uso"`
+	Active     bool                       `json:"active"`
+	CreatedAt  time.Time                  `json:"created_at"`
 }
 
 // PriceListUpdateResult mirrors update_pricelist's response — `duplicated`
@@ -795,7 +820,6 @@ type InvoiceLineDTO struct {
 // excludes them from the create-able fields.
 type InvoiceRequest struct {
 	ClienteID           string                   `json:"cliente_id" validate:"required"`
-	ClienteNome         string                   `json:"cliente_nome"`
 	DataFattura         string                   `json:"data_fattura"`
 	DataScadenza        string                   `json:"data_scadenza"`
 	CondizioniPagamento string                   `json:"condizioni_pagamento"`
@@ -810,7 +834,7 @@ type InvoiceResponse struct {
 	ID                  uuid.UUID                `json:"id"`
 	Numero              string                   `json:"numero"`
 	ClienteID           string                   `json:"cliente_id"`
-	ClienteNome         string                   `json:"cliente_nome"`
+	Cliente             *CustomerResponse        `json:"cliente"`
 	DataFattura         string                   `json:"data_fattura"`
 	DataScadenza        string                   `json:"data_scadenza"`
 	CondizioniPagamento string                   `json:"condizioni_pagamento"`
@@ -928,34 +952,35 @@ type MapNamedPoint struct {
 }
 
 type MapRoute struct {
-	ID              uuid.UUID  `json:"id"`
-	Progressivo     string     `json:"progressivo"`
-	ClienteNome     string     `json:"cliente_nome"`
-	Stato           string     `json:"stato"`
-	Tipologia       string     `json:"tipologia"`
-	TargaMotrice    string     `json:"targa_motrice"`
-	AutistaNome     string     `json:"autista_nome"`
-	DataRitiro      string     `json:"data_ritiro"`
-	DataConsegna    string     `json:"data_consegna"`
-	Tariffa         float64    `json:"tariffa"`
-	Carico          MapPoint   `json:"carico"`
-	Scarico         MapPoint   `json:"scarico"`
-	CurrentPosition MapPoint   `json:"current_position"`
-	Progress        float64    `json:"progress"`
-	RoadPoints      []MapPoint `json:"road_points"`
-	DistanceKm      float64    `json:"distance_km"`
-	DurationHours   float64    `json:"duration_hours"`
-	RemainingKm     float64    `json:"remaining_km"`
-	EtaHours        float64    `json:"eta_hours"`
-	GpsLive         bool       `json:"gps_live"`
-	GpsSpeedKmh     float64    `json:"gps_speed_kmh"`
-	GpsHeading      float64    `json:"gps_heading"`
-	GpsTrackerUrl   string     `json:"gps_tracker_url"`
-	GpsLastUpdate   string     `json:"gps_last_update"`
-	GpsSource       string     `json:"gps_source"`
-	LastTempCelsius *float64   `json:"last_temp_celsius"`
-	LastTempAlert   bool       `json:"last_temp_alert"`
-	Garage          MapPoint   `json:"garage"`
+	ID              uuid.UUID         `json:"id"`
+	Progressivo     string            `json:"progressivo"`
+	Cliente         *CustomerResponse `json:"cliente"`
+	Stato           string            `json:"stato"`
+	Tipologia       string            `json:"tipologia"`
+	TargaMotrice    string            `json:"targa_motrice"`
+	Autista         *DriverResponse   `json:"autista"`
+	DataRitiro      string            `json:"data_ritiro"`
+	DataConsegna    string            `json:"data_consegna"`
+	Tariffa         float64           `json:"tariffa"`
+	Carico          MapPoint          `json:"carico"`
+	Scarico         MapPoint          `json:"scarico"`
+	CurrentPosition MapPoint          `json:"current_position"`
+	Progress        float64           `json:"progress"`
+	RoadPoints      []MapPoint        `json:"road_points"`
+	DistanceKm      float64           `json:"distance_km"`
+	DurationHours   float64           `json:"duration_hours"`
+	RemainingKm     float64           `json:"remaining_km"`
+	EtaHours        float64           `json:"eta_hours"`
+	GpsLive         bool              `json:"gps_live"`
+	GpsSpeedKmh     float64           `json:"gps_speed_kmh"`
+	GpsHeading      float64           `json:"gps_heading"`
+	GpsTrackerUrl   string            `json:"gps_tracker_url"`
+	GpsLastUpdate   string            `json:"gps_last_update"`
+	GpsSource       string            `json:"gps_source"`
+	LastTempCelsius *float64          `json:"last_temp_celsius"`
+	LastTempAlert   bool              `json:"last_temp_alert"`
+	Garage          *MapNamedPoint    `json:"garage"`
+	WashStation     *MapNamedPoint    `json:"wash_station"`
 }
 
 type MapStats struct {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-pdf/fpdf"
+	"github.com/google/uuid"
 
 	"fratelli-feccia/internal/models"
 )
@@ -25,7 +26,6 @@ func BuildInstructionsPDF(
 	orders []models.Order,
 	segments []models.TripSegment,
 	driver *models.Driver,
-	customersByID map[string]models.Customer,
 ) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(15, 18, 15)
@@ -53,7 +53,7 @@ func BuildInstructionsPDF(
 	pdf.AddPage()
 
 	drawTripHeader(pdf, trip, driver)
-	drawOrdersBlock(pdf, orders, customersByID)
+	drawOrdersBlock(pdf, orders)
 	drawSegmentsBlock(pdf, segments)
 	drawSignatureBlock(pdf)
 
@@ -69,7 +69,10 @@ func drawTripHeader(pdf *fpdf.Fpdf, trip models.Trip, driver *models.Driver) {
 	pdf.CellFormat(0, 5, "AUTISTA E MEZZO", "", 1, "L", false, 0, "")
 	pdf.SetFont("Helvetica", "", 9)
 
-	autistaNome := trip.AutistaNome
+	autistaNome := ""
+	if trip.Autista != nil {
+		autistaNome = strings.TrimSpace(trip.Autista.Nome + " " + trip.Autista.Cognome)
+	}
 	if autistaNome == "" && driver != nil {
 		autistaNome = strings.TrimSpace(driver.Cognome + " " + driver.Nome)
 	}
@@ -83,36 +86,51 @@ func drawTripHeader(pdf *fpdf.Fpdf, trip models.Trip, driver *models.Driver) {
 		"Targa motrice: %s   Targa rimorchio: %s",
 		orDash(trip.TargaMotrice), orDash(trip.TargaRimorchio))), "", 1, "L", false, 0, "")
 
+	garageNome := ""
+	if trip.Garage != nil {
+		garageNome = trip.Garage.Nome
+	}
 	pdf.CellFormat(0, 4, safe(fmt.Sprintf(
 		"Garage: %s   Partenza: %s   Arrivo prev.: %s",
-		orDash(trip.GarageNome), fmtDate(trip.DataPartenza), fmtDate(trip.DataArrivo))), "", 1, "L", false, 0, "")
+		orDash(garageNome), fmtDate(trip.DataPartenza), fmtDate(trip.DataArrivo))), "", 1, "L", false, 0, "")
 
-	if trip.VettoreNome != "" {
-		pdf.CellFormat(0, 4, safe("Vettore: "+trip.VettoreNome), "", 1, "L", false, 0, "")
+	if trip.Vettore != nil && trip.Vettore.RagioneSociale != "" {
+		pdf.CellFormat(0, 4, safe("Vettore: "+trip.Vettore.RagioneSociale), "", 1, "L", false, 0, "")
 	}
 	pdf.CellFormat(0, 4, safe("Km totali stimati: "+fmtG(trip.KmTotali)), "", 1, "L", false, 0, "")
 	pdf.Ln(3)
 }
 
-func drawOrdersBlock(pdf *fpdf.Fpdf, orders []models.Order, customersByID map[string]models.Customer) {
+func drawOrdersBlock(pdf *fpdf.Fpdf, orders []models.Order) {
 	pdf.SetFont("Helvetica", "B", 10)
 	pdf.CellFormat(0, 5, "ORDINI ASSEGNATI", "", 1, "L", false, 0, "")
 	pdf.Ln(1)
 
 	for idx, o := range orders {
-		cliente := customersByID[o.ClienteID]
+		cliente := o.Cliente
+		clienteNome := ""
+		if cliente.ID != uuid.Nil {
+			clienteNome = cliente.RagioneSociale
+		}
+		caricoNome, scaricoNome := "", ""
+		if o.DestinazioneCarico != nil {
+			caricoNome = o.DestinazioneCarico.Nome
+		}
+		if o.DestinazioneScarico != nil {
+			scaricoNome = o.DestinazioneScarico.Nome
+		}
 
 		pdf.SetFillColor(240, 243, 247)
 		pdf.SetFont("Helvetica", "B", 9)
-		pdf.CellFormat(0, 6, safe(fmt.Sprintf("%d. %s - rif. %s", idx+1, orDash(o.ClienteNome), orDash(o.RifOrdineCliente))), "", 1, "L", true, 0, "")
+		pdf.CellFormat(0, 6, safe(fmt.Sprintf("%d. %s - rif. %s", idx+1, orDash(clienteNome), orDash(o.RifOrdineCliente))), "", 1, "L", true, 0, "")
 
 		pdf.SetFont("Helvetica", "", 9)
 		pdf.CellFormat(0, 4, safe(fmt.Sprintf(
 			"Carico: %s   Data: %s   Orario: %s",
-			orDash(o.DestinazioneCaricoNome), fmtDate(o.DataRitiro), fmtTimeWindow(o.OraRitiroDa, o.OraRitiroA))), "", 1, "L", false, 0, "")
+			orDash(caricoNome), fmtDate(o.DataRitiro), fmtTimeWindow(o.OraRitiroDa, o.OraRitiroA))), "", 1, "L", false, 0, "")
 		pdf.CellFormat(0, 4, safe(fmt.Sprintf(
 			"Scarico: %s   Data: %s   Orario: %s",
-			orDash(o.DestinazioneScaricoNome), fmtDate(o.DataConsegna), fmtTimeWindow(o.OraConsegnaDa, o.OraConsegnaA))), "", 1, "L", false, 0, "")
+			orDash(scaricoNome), fmtDate(o.DataConsegna), fmtTimeWindow(o.OraConsegnaDa, o.OraConsegnaA))), "", 1, "L", false, 0, "")
 
 		if len(o.Items) > 0 {
 			var totPeso, totQta float64
@@ -128,9 +146,9 @@ func drawOrdersBlock(pdf *fpdf.Fpdf, orders []models.Order, customersByID map[st
 			}
 			parts := make([]string, len(shown))
 			for i, it := range shown {
-				desc := it.ProdottoDescrizione
+				desc := it.Prodotto.Descrizione
 				if desc == "" {
-					desc = it.ProdottoCodice
+					desc = it.Prodotto.Codice
 				}
 				if desc == "" {
 					desc = "merce"

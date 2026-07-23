@@ -311,7 +311,7 @@ export default function MapPage() {
                   >
                     <Tooltip direction="top">
                       <strong>Carico:</strong> {route.carico.nome}<br />
-                      {route.progressivo} — {route.cliente_nome}
+                      {route.progressivo} — {route.cliente?.ragione_sociale}
                     </Tooltip>
                   </CircleMarker>
 
@@ -325,6 +325,22 @@ export default function MapPage() {
                       <strong>Scarico:</strong> {route.scarico.nome}
                     </Tooltip>
                   </CircleMarker>
+
+                  {/* Punto di partenza / lavaggio assegnati all'ordine — mostrati solo
+                      per la rotta selezionata, per non affollare la vista di default
+                      (i garage/lavaggi attivi sono già tutti visibili come marker globali). */}
+                  {isSelected && route.garage && (
+                    <Marker position={[route.garage.lat, route.garage.lng]} icon={garageIcon}>
+                      <Popup><strong>{route.garage.nome}</strong><br />Punto di partenza — {route.progressivo}</Popup>
+                      <Tooltip direction="top" offset={[0, -20]}>Partenza: {route.garage.nome}</Tooltip>
+                    </Marker>
+                  )}
+                  {isSelected && route.wash_station && (
+                    <Marker position={[route.wash_station.lat, route.wash_station.lng]} icon={washIcon}>
+                      <Popup><strong>{route.wash_station.nome}</strong><br />Punto di lavaggio (dopo lo scarico) — {route.progressivo}</Popup>
+                      <Tooltip direction="top" offset={[0, -16]}>Lavaggio: {route.wash_station.nome}</Tooltip>
+                    </Marker>
+                  )}
 
                   {/* Posizione attuale del mezzo (solo per VIAGGIO) */}
                   {isActive && route.current_position && (
@@ -356,10 +372,10 @@ export default function MapPage() {
                               {route.last_temp_alert ? ' (fuori soglia)' : ''}
                             </p>
                           )}
-                          <p style={POPUP_STYLES.subtitle}>{route.autista_nome || 'N/A'}</p>
+                          <p style={POPUP_STYLES.subtitle}>{route.autista ? `${route.autista.nome} ${route.autista.cognome}` : 'N/A'}</p>
                           <hr style={POPUP_STYLES.hr} />
                           <p style={POPUP_STYLES.route}><strong>{route.carico.nome}</strong> → <strong>{route.scarico.nome}</strong></p>
-                          <p style={POPUP_STYLES.detail}>{route.cliente_nome} • {route.progressivo}</p>
+                          <p style={POPUP_STYLES.detail}>{route.cliente?.ragione_sociale} • {route.progressivo}</p>
                           {route.distance_km > 0 && <p style={POPUP_STYLES.detail}>{route.distance_km} km totali • {route.duration_hours}h stimate</p>}
                           {route.gps_live && route.gps_speed_kmh > 0 && (
                             <p style={POPUP_STYLES.gpsInfo}>Velocità: {Math.round(route.gps_speed_kmh)} km/h</p>
@@ -417,8 +433,8 @@ export default function MapPage() {
                           <Truck className="h-2.5 w-2.5" /> {route.targa_motrice}
                         </span>
                       )}
-                      {route.autista_nome && (
-                        <span className="text-[10px] text-muted-foreground truncate">{route.autista_nome}</span>
+                      {route.autista && (
+                        <span className="text-[10px] text-muted-foreground truncate">{route.autista.nome} {route.autista.cognome}</span>
                       )}
                     </div>
                     {route.distance_km > 0 && (
@@ -433,7 +449,7 @@ export default function MapPage() {
                     </div>
                     <div className="flex justify-between mt-1">
                       <span className="text-[10px] text-muted-foreground">
-                        {route.remaining_km > 0 ? `${route.remaining_km} km rimasti` : route.cliente_nome}
+                        {route.remaining_km > 0 ? `${route.remaining_km} km rimasti` : route.cliente?.ragione_sociale}
                         {route.eta_hours > 0 ? ` • ETA ~${route.eta_hours}h` : ''}
                         {route.gps_live && route.gps_speed_kmh > 0 ? ` • ${Math.round(route.gps_speed_kmh)} km/h` : ''}
                       </span>
@@ -454,10 +470,12 @@ export default function MapPage() {
               </div>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Ordine:</span><span className="font-mono">{selectedRoute.progressivo}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="truncate ml-2">{selectedRoute.cliente_nome}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="truncate ml-2">{selectedRoute.cliente?.ragione_sociale}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Tratta:</span><span className="truncate ml-2">{selectedRoute.carico?.nome} → {selectedRoute.scarico?.nome}</span></div>
+                {selectedRoute.garage && <div className="flex justify-between"><span className="text-muted-foreground">Partenza:</span><span className="truncate ml-2">{selectedRoute.garage.nome}</span></div>}
+                {selectedRoute.wash_station && <div className="flex justify-between"><span className="text-muted-foreground">Lavaggio:</span><span className="truncate ml-2">{selectedRoute.wash_station.nome}</span></div>}
                 <div className="flex justify-between"><span className="text-muted-foreground">Mezzo:</span><span className="font-mono">{selectedRoute.targa_motrice || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedRoute.autista_nome || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedRoute.autista ? `${selectedRoute.autista.nome} ${selectedRoute.autista.cognome}` : '—'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Distanza:</span><span className="tabular-nums">{selectedRoute.distance_km} km • {selectedRoute.duration_hours}h</span></div>
                 {selectedRoute.remaining_km > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Rimanenti:</span><span className="tabular-nums font-medium">{selectedRoute.remaining_km} km • ETA ~{selectedRoute.eta_hours}h</span></div>}
                 {selectedRoute.gps_live && <div className="flex justify-between"><span className="text-muted-foreground">GPS:</span><span className="text-cyan-600 font-medium">{Math.round(selectedRoute.gps_speed_kmh)} km/h — LIVE</span></div>}

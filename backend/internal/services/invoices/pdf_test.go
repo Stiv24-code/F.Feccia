@@ -19,7 +19,7 @@ func TestGetPDF_GeneratesOnTheFlyWhenNotArchived(t *testing.T) {
 		t.Fatal(err)
 	}
 	inv := models.Invoice{
-		ID: uuid.New(), Numero: "O/F-26/0001", ClienteID: customer.ID.String(), ClienteNome: customer.RagioneSociale,
+		ID: uuid.New(), Numero: "O/F-26/0001", ClienteID: customer.ID,
 		Stato: "PROFORMA", CostiAccessori: []byte("[]"),
 		Righe: []models.InvoiceLine{{ID: uuid.New(), Descrizione: "Trasporto", Totale: 100, IvaCodice: "N8"}},
 	}
@@ -51,7 +51,7 @@ func TestGetPDFPresignedURL_404WhenNotArchived(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewInvoiceService(db, nil)
 
-	inv := models.Invoice{ID: uuid.New(), ClienteID: "c1", Stato: "PROFORMA", CostiAccessori: []byte("[]")}
+	inv := models.Invoice{ID: uuid.New(), ClienteID: uuid.New(), Stato: "PROFORMA", CostiAccessori: []byte("[]")}
 	if err := db.Create(&inv).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestGetPDFPresignedURL_404WhenS3Disabled(t *testing.T) {
 	svc := NewInvoiceService(db, nil)
 
 	key := "invoices/2026/x.pdf"
-	inv := models.Invoice{ID: uuid.New(), ClienteID: "c1", Stato: "DEFINITIVA", CostiAccessori: []byte("[]"), PdfS3Key: &key}
+	inv := models.Invoice{ID: uuid.New(), ClienteID: uuid.New(), Stato: "DEFINITIVA", CostiAccessori: []byte("[]"), PdfS3Key: &key}
 	if err := db.Create(&inv).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestFinalize_PdfArchivedFalseWhenS3Disabled(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewInvoiceService(db, nil)
 
-	inv := models.Invoice{ID: uuid.New(), ClienteID: "c1", Stato: "PROFORMA", CostiAccessori: []byte("[]")}
+	inv := models.Invoice{ID: uuid.New(), ClienteID: uuid.New(), Stato: "PROFORMA", CostiAccessori: []byte("[]")}
 	if err := db.Create(&inv).Error; err != nil {
 		t.Fatal(err)
 	}

@@ -49,38 +49,67 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
+// PreloadAssociations loads every belongs-to reference an Order can
+// carry (Cliente, le due Destinazioni, Garage, Autista, Vettore, WashStation,
+// Items.Prodotto) — the single choke point ToResponse relies on to build the
+// nested Response DTOs, reused by every load site instead of repeating the
+// same 8-preload chain at each one.
+func PreloadAssociations(q *gorm.DB) *gorm.DB {
+	return q.
+		Preload("Items.Prodotto").
+		Preload("Cliente").
+		Preload("DestinazioneCarico").
+		Preload("DestinazioneScarico").
+		Preload("Garage").
+		Preload("Autista").
+		Preload("Vettore").
+		Preload("WashStation")
+}
+
+func (s *OrderService) reload(ctx context.Context, id uuid.UUID) (*models.Order, error) {
+	var order models.Order
+	if err := PreloadAssociations(s.db.WithContext(ctx)).First(&order, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+
 func (s *OrderService) List(ctx context.Context, f ListFilters) ([]dto.OrderResponse, error) {
 	limit := f.Limit
 	if limit <= 0 {
 		limit = defaultListLimit
 	}
 
-	query := s.db.WithContext(ctx).Model(&models.Order{}).Preload("Items")
+	query := PreloadAssociations(s.db.WithContext(ctx).Model(&models.Order{}))
 	if f.Stato != "" {
-		query = query.Where("stato = ?", f.Stato)
+		query = query.Where("orders.stato = ?", f.Stato)
 	}
 	if f.ClienteID != "" {
-		query = query.Where("cliente_id = ?", f.ClienteID)
+		query = query.Where("orders.cliente_id = ?", f.ClienteID)
 	}
 	if f.Tipologia != "" {
-		query = query.Where("tipologia = ?", f.Tipologia)
+		query = query.Where("orders.tipologia = ?", f.Tipologia)
 	}
 	if f.DataDa != "" {
-		query = query.Where("data_ritiro >= ?", f.DataDa)
+		query = query.Where("orders.data_ritiro >= ?", f.DataDa)
 	}
 	if f.DataA != "" {
-		query = query.Where("data_ritiro <= ?", f.DataA)
+		query = query.Where("orders.data_ritiro <= ?", f.DataA)
 	}
 	if f.Search != "" {
 		term := "%" + strings.ToLower(escapeLike(f.Search)) + "%"
-		query = query.Where(
-			"LOWER(cliente_nome) LIKE ? OR LOWER(progressivo) LIKE ? OR LOWER(rif_ordine_cliente) LIKE ? OR LOWER(destinazione_carico_nome) LIKE ? OR LOWER(destinazione_scarico_nome) LIKE ?",
-			term, term, term, term, term,
-		)
+		query = query.
+			Joins("LEFT JOIN customers ON customers.id = orders.cliente_id").
+			Joins("LEFT JOIN destinations dest_carico ON dest_carico.id = orders.destinazione_carico_id").
+			Joins("LEFT JOIN destinations dest_scarico ON dest_scarico.id = orders.destinazione_scarico_id").
+			Where(
+				"LOWER(customers.ragione_sociale) LIKE ? OR LOWER(orders.progressivo) LIKE ? OR LOWER(orders.rif_ordine_cliente) LIKE ? OR LOWER(dest_carico.nome) LIKE ? OR LOWER(dest_scarico.nome) LIKE ?",
+				term, term, term, term, term,
+			)
 	}
 
 	var orders []models.Order
-	if err := query.Order("created_at DESC").Limit(limit).Find(&orders).Error; err != nil {
+	if err := query.Order("orders.created_at DESC").Limit(limit).Find(&orders).Error; err != nil {
 		return nil, err
 	}
 
@@ -98,51 +127,69 @@ func (s *OrderService) Create(ctx context.Context, req dto.OrderRequest) (*dto.O
 	}
 	progressivo := fmt.Sprintf("%s/%04d", time.Now().Format("06"), seq)
 
+	clienteID, err := utils.ParseUUID(req.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	caricoID, err := utils.ParseOptionalUUID(req.DestinazioneCaricoID)
+	if err != nil {
+		return nil, err
+	}
+	scaricoID, err := utils.ParseOptionalUUID(req.DestinazioneScaricoID)
+	if err != nil {
+		return nil, err
+	}
+	items, err := toOrderItems(req.Items)
+	if err != nil {
+		return nil, err
+	}
+
 	order := models.Order{
-		ID:                      uuid.New(),
-		Progressivo:             progressivo,
-		ClienteID:               req.ClienteID,
-		ClienteNome:             req.ClienteNome,
-		DestinazioneCaricoID:    req.DestinazioneCaricoID,
-		DestinazioneCaricoNome:  req.DestinazioneCaricoNome,
-		DestinazioneScaricoID:   req.DestinazioneScaricoID,
-		DestinazioneScaricoNome: req.DestinazioneScaricoNome,
-		DataRitiro:              req.DataRitiro,
-		OraRitiroDa:             req.OraRitiroDa,
-		OraRitiroA:              req.OraRitiroA,
-		DataConsegna:            req.DataConsegna,
-		OraConsegnaDa:           req.OraConsegnaDa,
-		OraConsegnaA:            req.OraConsegnaA,
-		Tariffa:                 req.Tariffa,
-		TipoTariffa:             defaultString(req.TipoTariffa, "forfait"),
-		Tipologia:               defaultString(req.Tipologia, "nazionale"),
-		CategoriaTrasporto:      req.CategoriaTrasporto,
-		RifOrdineCliente:        req.RifOrdineCliente,
-		AndataRitorno:           req.AndataRitorno,
-		Note:                    req.Note,
-		Items:                   toOrderItems(req.Items),
-		ServiziAccessori:        marshalJSON(req.ServiziAccessori),
-		CostiAccessori:          marshalJSON(req.CostiAccessori),
-		Stato:                   "PIANIFICABILE",
+		ID:                    uuid.New(),
+		Progressivo:           progressivo,
+		ClienteID:             clienteID,
+		DestinazioneCaricoID:  caricoID,
+		DestinazioneScaricoID: scaricoID,
+		DataRitiro:            req.DataRitiro,
+		OraRitiroDa:           req.OraRitiroDa,
+		OraRitiroA:            req.OraRitiroA,
+		DataConsegna:          req.DataConsegna,
+		OraConsegnaDa:         req.OraConsegnaDa,
+		OraConsegnaA:          req.OraConsegnaA,
+		Tariffa:               req.Tariffa,
+		TipoTariffa:           defaultString(req.TipoTariffa, "forfait"),
+		Tipologia:             defaultString(req.Tipologia, "nazionale"),
+		CategoriaTrasporto:    req.CategoriaTrasporto,
+		RifOrdineCliente:      req.RifOrdineCliente,
+		AndataRitorno:         req.AndataRitorno,
+		Note:                  req.Note,
+		Items:                 items,
+		ServiziAccessori:      marshalJSON(req.ServiziAccessori),
+		CostiAccessori:        marshalJSON(req.CostiAccessori),
+		Stato:                 models.OrderStatoPianificabile,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&order).Error; err != nil {
 		return nil, err
 	}
 
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
 func (s *OrderService) GetByID(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
-	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	order, err := s.reload(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	resp := ToResponse(order)
+	resp := ToResponse(*order)
 	return &resp, nil
 }
 
@@ -156,12 +203,26 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 		return nil, err
 	}
 
-	order.ClienteID = req.ClienteID
-	order.ClienteNome = req.ClienteNome
-	order.DestinazioneCaricoID = req.DestinazioneCaricoID
-	order.DestinazioneCaricoNome = req.DestinazioneCaricoNome
-	order.DestinazioneScaricoID = req.DestinazioneScaricoID
-	order.DestinazioneScaricoNome = req.DestinazioneScaricoNome
+	clienteID, err := utils.ParseUUID(req.ClienteID)
+	if err != nil {
+		return nil, err
+	}
+	caricoID, err := utils.ParseOptionalUUID(req.DestinazioneCaricoID)
+	if err != nil {
+		return nil, err
+	}
+	scaricoID, err := utils.ParseOptionalUUID(req.DestinazioneScaricoID)
+	if err != nil {
+		return nil, err
+	}
+	items, err := toOrderItems(req.Items)
+	if err != nil {
+		return nil, err
+	}
+
+	order.ClienteID = clienteID
+	order.DestinazioneCaricoID = caricoID
+	order.DestinazioneScaricoID = scaricoID
 	order.DataRitiro = req.DataRitiro
 	order.OraRitiroDa = req.OraRitiroDa
 	order.OraRitiroA = req.OraRitiroA
@@ -178,18 +239,22 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	order.ServiziAccessori = marshalJSON(req.ServiziAccessori)
 	order.CostiAccessori = marshalJSON(req.CostiAccessori)
 
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("order_id = ?", order.ID).Delete(&models.OrderItem{}).Error; err != nil {
 			return err
 		}
-		order.Items = toOrderItems(req.Items)
+		order.Items = items
 		return tx.Save(&order).Error
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
@@ -199,25 +264,46 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 // trips.TripService.Create/AddOrder).
 func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAssignRequest) (*dto.OrderResponse, error) {
 	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	if order.Stato != "PIANIFICABILE" {
+	if order.Stato != models.OrderStatoPianificabile {
 		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere assegnato", order.Stato))
 	}
 
+	garageID, err := utils.ParseOptionalUUID(req.GarageID)
+	if err != nil {
+		return nil, err
+	}
+	autistaID, err := utils.ParseOptionalUUID(req.AutistaID)
+	if err != nil {
+		return nil, err
+	}
+	vettoreID, err := utils.ParseOptionalUUID(req.VettoreID)
+	if err != nil {
+		return nil, err
+	}
+	washStationID, err := utils.ParseOptionalUUID(req.WashStationID)
+	if err != nil {
+		return nil, err
+	}
+
+	order.GarageID = garageID
 	order.TargaMotrice = req.TargaMotrice
 	order.TargaRimorchio = req.TargaRimorchio
-	order.AutistaID = req.AutistaID
-	order.AutistaNome = req.AutistaNome
-	order.VettoreID = req.VettoreID
-	order.VettoreNome = req.VettoreNome
-	order.Stato = "PIANIFICATO"
+	order.AutistaID = autistaID
+	order.VettoreID = vettoreID
+	order.WashStationID = washStationID
+	order.Stato = models.OrderStatoPianificato
 
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
@@ -227,39 +313,47 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 // otherwise the order and its trip would go out of sync.
 func (s *OrderService) Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
 	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	if order.ViaggioID != "" {
+	if order.ViaggioID != nil {
 		return nil, utils.NewAPIError(400, "L'ordine fa parte di un viaggio: avvialo dal modulo Viaggi")
 	}
-	if order.Stato != "PIANIFICATO" {
+	if order.Stato != models.OrderStatoPianificato {
 		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere avviato. Deve essere in stato PIANIFICATO.", order.Stato))
 	}
 
-	order.Stato = "VIAGGIO"
+	order.Stato = models.OrderStatoViaggio
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
 // Close mirrors PATCH /orders/{id}/close: only valid from VIAGGIO, moves to CHIUSO.
 func (s *OrderService) Close(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
 	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	if order.Stato != "VIAGGIO" {
+	if order.Stato != models.OrderStatoViaggio {
 		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere chiuso. Deve essere in stato VIAGGIO.", order.Stato))
 	}
 
-	order.Stato = "CHIUSO"
+	order.Stato = models.OrderStatoChiuso
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
@@ -269,21 +363,25 @@ func (s *OrderService) Close(ctx context.Context, id uuid.UUID) (*dto.OrderRespo
 // must happen from the Trip itself (out of scope here).
 func (s *OrderService) Discard(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
 	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	if order.ViaggioID != "" {
+	if order.ViaggioID != nil {
 		return nil, utils.NewAPIError(400, "L'ordine fa parte di un viaggio: non può essere scartato da qui")
 	}
-	if order.Stato != "PIANIFICABILE" && order.Stato != "PIANIFICATO" {
+	if order.Stato != models.OrderStatoPianificabile && order.Stato != models.OrderStatoPianificato {
 		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere scartato", order.Stato))
 	}
 
-	order.Stato = "SCARTATO"
+	order.Stato = models.OrderStatoScartato
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
-	resp := ToResponse(order)
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
 	return &resp, nil
 }
 
@@ -293,7 +391,7 @@ func (s *OrderService) Delete(ctx context.Context, id uuid.UUID) error {
 	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
 		return err
 	}
-	if order.Stato != "PIANIFICABILE" {
+	if order.Stato != models.OrderStatoPianificabile {
 		return utils.NewAPIError(400, "Solo ordini in stato PIANIFICABILE possono essere eliminati")
 	}
 	return s.db.WithContext(ctx).Delete(&order).Error
@@ -302,20 +400,21 @@ func (s *OrderService) Delete(ctx context.Context, id uuid.UUID) error {
 // GetCMRPDF mirrors GET /orders/{id}/cmr/pdf: resolves the consignee
 // (customer) and, if assigned, the vehicle, then renders the CMR waybill.
 func (s *OrderService) GetCMRPDF(ctx context.Context, id uuid.UUID) ([]byte, string, error) {
-	var order models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").First(&order, "id = ?", id).Error; err != nil {
+	order, err := s.reload(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, "", utils.NewAPIError(404, "Ordine non trovato")
 		}
 		return nil, "", err
 	}
 
-	var consignee models.Customer
-	if err := s.db.WithContext(ctx).First(&consignee, "id = ?", order.ClienteID).Error; err != nil {
-		consignee = models.Customer{RagioneSociale: order.ClienteNome}
-		if consignee.RagioneSociale == "" {
-			consignee.RagioneSociale = "-"
-		}
+	// Cliente is Preloaded above; customers are soft-deleted (Active flag),
+	// never hard-deleted, so a missing association here only happens on a
+	// genuine data-integrity gap — fall back to a placeholder rather than a
+	// second lookup (there's no denormalized name snapshot left to recover).
+	consignee := order.Cliente
+	if consignee.ID == uuid.Nil {
+		consignee = models.Customer{RagioneSociale: "-"}
 	}
 
 	var vehicle *models.Vehicle
@@ -326,11 +425,11 @@ func (s *OrderService) GetCMRPDF(ctx context.Context, id uuid.UUID) ([]byte, str
 		}
 	}
 
-	pdfBytes, err := pdfgen.BuildCMRPDF(order, consignee, nil, vehicle)
+	pdfBytes, err := pdfgen.BuildCMRPDF(*order, consignee, nil, vehicle)
 	if err != nil {
 		return nil, "", err
 	}
-	return pdfBytes, pdfgen.MakeCMRFilename(order), nil
+	return pdfBytes, pdfgen.MakeCMRFilename(*order), nil
 }
 
 // ReturnSuggestions ports backend/return_orders.py's find_return_candidates
@@ -343,8 +442,8 @@ func (s *OrderService) ReturnSuggestions(ctx context.Context, id uuid.UUID, maxD
 		return nil, utils.NewAPIError(400, "limit deve essere tra 1 e 100")
 	}
 
-	var orderA models.Order
-	if err := s.db.WithContext(ctx).First(&orderA, "id = ?", id).Error; err != nil {
+	orderA, err := s.reload(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, utils.NewAPIError(404, "Ordine non trovato")
 		}
@@ -352,16 +451,19 @@ func (s *OrderService) ReturnSuggestions(ctx context.Context, id uuid.UUID, maxD
 	}
 
 	source := dto.OrderSourceSummary{
-		ID:                      orderA.ID,
-		Progressivo:             orderA.Progressivo,
-		ClienteNome:             orderA.ClienteNome,
-		DestinazioneScaricoNome: orderA.DestinazioneScaricoNome,
-		DataConsegna:            orderA.DataConsegna,
+		ID:                  orderA.ID,
+		Progressivo:         orderA.Progressivo,
+		Cliente:             customerResponse(orderA.Cliente),
+		DestinazioneScarico: destinationResponse(orderA.DestinazioneScarico),
+		DataConsegna:        orderA.DataConsegna,
 	}
 
-	scarico := strings.TrimSpace(orderA.DestinazioneScaricoNome)
+	scaricoNome := ""
+	if orderA.DestinazioneScarico != nil {
+		scaricoNome = strings.TrimSpace(orderA.DestinazioneScarico.Nome)
+	}
 	dataConsegna := strings.TrimSpace(orderA.DataConsegna)
-	if scarico == "" || dataConsegna == "" {
+	if scaricoNome == "" || dataConsegna == "" {
 		return &dto.OrderReturnSuggestionsResponse{Count: 0, Candidates: []dto.OrderReturnSuggestion{}, SourceOrder: source}, nil
 	}
 
@@ -371,21 +473,21 @@ func (s *OrderService) ReturnSuggestions(ctx context.Context, id uuid.UUID, maxD
 	}
 
 	var candidates []models.Order
-	term := "%" + strings.ToLower(escapeLike(scarico)) + "%"
-	err := s.db.WithContext(ctx).Preload("Items").
-		Where("id <> ?", id).
-		Where("stato = ?", "PIANIFICABILE").
-		Where("LOWER(destinazione_carico_nome) LIKE ?", term).
-		Where("data_ritiro >= ? AND data_ritiro <= ?", dataConsegna, dateTo).
-		Limit(limit * 3).
-		Find(&candidates).Error
-	if err != nil {
+	term := "%" + strings.ToLower(escapeLike(scaricoNome)) + "%"
+	query := PreloadAssociations(s.db.WithContext(ctx).Model(&models.Order{})).
+		Joins("LEFT JOIN destinations dest_carico ON dest_carico.id = orders.destinazione_carico_id").
+		Where("orders.id <> ?", id).
+		Where("orders.stato = ?", string(models.OrderStatoPianificabile)).
+		Where("LOWER(dest_carico.nome) LIKE ?", term).
+		Where("orders.data_ritiro >= ? AND orders.data_ritiro <= ?", dataConsegna, dateTo).
+		Limit(limit * 3)
+	if err := query.Find(&candidates).Error; err != nil {
 		return nil, err
 	}
 
 	scored := make([]dto.OrderReturnSuggestion, 0, len(candidates))
 	for _, b := range candidates {
-		score, reasons := scoreCandidate(orderA, b)
+		score, reasons := scoreCandidate(*orderA, b)
 		if score <= 0 {
 			continue
 		}
@@ -478,19 +580,21 @@ func defaultString(value, fallback string) string {
 	return value
 }
 
-func toOrderItems(items []dto.OrderItemDTO) []models.OrderItem {
+func toOrderItems(items []dto.OrderItemRequestDTO) ([]models.OrderItem, error) {
 	result := make([]models.OrderItem, len(items))
 	for i, it := range items {
+		prodottoID, err := utils.ParseUUID(it.ProdottoID)
+		if err != nil {
+			return nil, err
+		}
 		result[i] = models.OrderItem{
-			ID:                  uuid.New(),
-			ProdottoID:          it.ProdottoID,
-			ProdottoCodice:      it.ProdottoCodice,
-			ProdottoDescrizione: it.ProdottoDescrizione,
-			Quantita:            it.Quantita,
-			Peso:                it.Peso,
+			ID:         uuid.New(),
+			ProdottoID: prodottoID,
+			Quantita:   it.Quantita,
+			Peso:       it.Peso,
 		}
 	}
-	return result
+	return result, nil
 }
 
 func marshalJSON(v interface{}) datatypes.JSON {
@@ -526,53 +630,142 @@ func unmarshalMaps(raw datatypes.JSON) []map[string]interface{} {
 	return out
 }
 
+// uuidPtrString renders an optional FK for the wire: "" when unset, matching
+// the pre-migration contract the frontend already expects for these fields.
+func uuidPtrString(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return id.String()
+}
+
+func customerResponse(c models.Customer) *dto.CustomerResponse {
+	if c.ID == uuid.Nil {
+		return nil
+	}
+	return &dto.CustomerResponse{
+		ID: c.ID, RagioneSociale: c.RagioneSociale, Indirizzo: c.Indirizzo, Citta: c.Citta,
+		Cap: c.Cap, Provincia: c.Provincia, Nazione: c.Nazione, PartitaIva: c.PartitaIva,
+		CodiceFiscale: c.CodiceFiscale, Telefono: c.Telefono, Email: c.Email, Pec: c.Pec,
+		CondizioniPagamento: c.CondizioniPagamento, Note: c.Note, RichiedeRifOrdine: c.RichiedeRifOrdine,
+		Active: c.Active, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+	}
+}
+
+func destinationResponse(d *models.Destination) *dto.DestinationResponse {
+	if d == nil {
+		return nil
+	}
+	return &dto.DestinationResponse{
+		ID: d.ID, Nome: d.Nome, Indirizzo: d.Indirizzo, Citta: d.Citta, Cap: d.Cap,
+		Provincia: d.Provincia, Nazione: d.Nazione, Lat: d.Lat, Lng: d.Lng,
+		VincoliScarico: d.VincoliScarico, Note: d.Note, Active: d.Active,
+		CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+	}
+}
+
+func garageResponse(g *models.Garage) *dto.GarageResponse {
+	if g == nil {
+		return nil
+	}
+	return &dto.GarageResponse{
+		ID: g.ID, Nome: g.Nome, Indirizzo: g.Indirizzo, Citta: g.Citta, Lat: g.Lat, Lng: g.Lng,
+		Note: g.Note, Active: g.Active, CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
+	}
+}
+
+func washStationResponse(w *models.WashStation) *dto.WashStationResponse {
+	if w == nil {
+		return nil
+	}
+	return &dto.WashStationResponse{
+		ID: w.ID, Nome: w.Nome, Indirizzo: w.Indirizzo, Citta: w.Citta, Lat: w.Lat, Lng: w.Lng,
+		Note: w.Note, Active: w.Active, CreatedAt: w.CreatedAt, UpdatedAt: w.UpdatedAt,
+	}
+}
+
+func driverResponse(d *models.Driver) *dto.DriverResponse {
+	if d == nil {
+		return nil
+	}
+	return &dto.DriverResponse{
+		ID: d.ID, Nome: d.Nome, Cognome: d.Cognome, CodiceFiscale: d.CodiceFiscale,
+		Patente: d.Patente, ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
+		Email: d.Email, Note: d.Note, Active: d.Active, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+	}
+}
+
+func carrierResponse(c *models.Carrier) *dto.CarrierResponse {
+	if c == nil {
+		return nil
+	}
+	return &dto.CarrierResponse{
+		ID: c.ID, RagioneSociale: c.RagioneSociale, PartitaIva: c.PartitaIva, Indirizzo: c.Indirizzo,
+		Citta: c.Citta, Telefono: c.Telefono, Email: c.Email, Note: c.Note, Active: c.Active,
+		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+	}
+}
+
+func productResponse(p *models.Product) *dto.ProductResponse {
+	if p == nil || p.ID == uuid.Nil {
+		return nil
+	}
+	return &dto.ProductResponse{
+		ID: p.ID, Codice: p.Codice, Descrizione: p.Descrizione, UnitaMisura: p.UnitaMisura,
+		Note: p.Note, Active: p.Active, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+	}
+}
+
 func ToResponse(o models.Order) dto.OrderResponse {
-	items := make([]dto.OrderItemDTO, len(o.Items))
+	items := make([]dto.OrderItemResponseDTO, len(o.Items))
 	for i, it := range o.Items {
-		items[i] = dto.OrderItemDTO{
-			ProdottoID:          it.ProdottoID,
-			ProdottoCodice:      it.ProdottoCodice,
-			ProdottoDescrizione: it.ProdottoDescrizione,
-			Quantita:            it.Quantita,
-			Peso:                it.Peso,
+		prod := it.Prodotto
+		items[i] = dto.OrderItemResponseDTO{
+			Prodotto: productResponse(&prod),
+			Quantita: it.Quantita,
+			Peso:     it.Peso,
 		}
 	}
 
 	return dto.OrderResponse{
-		ID:                      o.ID,
-		Progressivo:             o.Progressivo,
-		ClienteID:               o.ClienteID,
-		ClienteNome:             o.ClienteNome,
-		DestinazioneCaricoID:    o.DestinazioneCaricoID,
-		DestinazioneCaricoNome:  o.DestinazioneCaricoNome,
-		DestinazioneScaricoID:   o.DestinazioneScaricoID,
-		DestinazioneScaricoNome: o.DestinazioneScaricoNome,
-		DataRitiro:              o.DataRitiro,
-		OraRitiroDa:             o.OraRitiroDa,
-		OraRitiroA:              o.OraRitiroA,
-		DataConsegna:            o.DataConsegna,
-		OraConsegnaDa:           o.OraConsegnaDa,
-		OraConsegnaA:            o.OraConsegnaA,
-		Tariffa:                 o.Tariffa,
-		TipoTariffa:             o.TipoTariffa,
-		Tipologia:               o.Tipologia,
-		CategoriaTrasporto:      o.CategoriaTrasporto,
-		RifOrdineCliente:        o.RifOrdineCliente,
-		AndataRitorno:           o.AndataRitorno,
-		Note:                    o.Note,
-		Items:                   items,
-		ServiziAccessori:        unmarshalStrings(o.ServiziAccessori),
-		CostiAccessori:          unmarshalMaps(o.CostiAccessori),
-		Stato:                   o.Stato,
-		TargaMotrice:            o.TargaMotrice,
-		TargaRimorchio:          o.TargaRimorchio,
-		AutistaID:               o.AutistaID,
-		AutistaNome:             o.AutistaNome,
-		VettoreID:               o.VettoreID,
-		VettoreNome:             o.VettoreNome,
-		ViaggioID:               o.ViaggioID,
-		FatturaID:               o.FatturaID,
-		CreatedAt:               o.CreatedAt,
-		UpdatedAt:               o.UpdatedAt,
+		ID:                    o.ID,
+		Progressivo:           o.Progressivo,
+		ClienteID:             o.ClienteID.String(),
+		Cliente:               customerResponse(o.Cliente),
+		DestinazioneCaricoID:  uuidPtrString(o.DestinazioneCaricoID),
+		DestinazioneCarico:    destinationResponse(o.DestinazioneCarico),
+		DestinazioneScaricoID: uuidPtrString(o.DestinazioneScaricoID),
+		DestinazioneScarico:   destinationResponse(o.DestinazioneScarico),
+		DataRitiro:            o.DataRitiro,
+		OraRitiroDa:           o.OraRitiroDa,
+		OraRitiroA:            o.OraRitiroA,
+		DataConsegna:          o.DataConsegna,
+		OraConsegnaDa:         o.OraConsegnaDa,
+		OraConsegnaA:          o.OraConsegnaA,
+		Tariffa:               o.Tariffa,
+		TipoTariffa:           o.TipoTariffa,
+		Tipologia:             o.Tipologia,
+		CategoriaTrasporto:    o.CategoriaTrasporto,
+		RifOrdineCliente:      o.RifOrdineCliente,
+		AndataRitorno:         o.AndataRitorno,
+		Note:                  o.Note,
+		Items:                 items,
+		ServiziAccessori:      unmarshalStrings(o.ServiziAccessori),
+		CostiAccessori:        unmarshalMaps(o.CostiAccessori),
+		Stato:                 string(o.Stato),
+		GarageID:              uuidPtrString(o.GarageID),
+		Garage:                garageResponse(o.Garage),
+		TargaMotrice:          o.TargaMotrice,
+		TargaRimorchio:        o.TargaRimorchio,
+		AutistaID:             uuidPtrString(o.AutistaID),
+		Autista:               driverResponse(o.Autista),
+		VettoreID:             uuidPtrString(o.VettoreID),
+		Vettore:               carrierResponse(o.Vettore),
+		WashStationID:         uuidPtrString(o.WashStationID),
+		WashStation:           washStationResponse(o.WashStation),
+		ViaggioID:             uuidPtrString(o.ViaggioID),
+		FatturaID:             uuidPtrString(o.FatturaID),
+		CreatedAt:             o.CreatedAt,
+		UpdatedAt:             o.UpdatedAt,
 	}
 }

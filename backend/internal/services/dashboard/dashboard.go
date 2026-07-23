@@ -34,7 +34,7 @@ func (s *DashboardService) Stats(ctx context.Context) (*dto.DashboardStatsRespon
 	db.Model(&models.Order{}).Where("stato = ?", "PIANIFICABILE").Count(&pianificabili)
 	db.Model(&models.Order{}).Where("stato = ?", "VIAGGIO").Count(&inViaggio)
 	db.Model(&models.Order{}).Where("stato = ?", "CHIUSO").Count(&chiusi)
-	db.Model(&models.Order{}).Where("fattura_id <> ''").Count(&fatturati)
+	db.Model(&models.Order{}).Where("fattura_id IS NOT NULL").Count(&fatturati)
 
 	var totalCustomers, totalVehicles, totalDrivers int64
 	db.Model(&models.Customer{}).Where("active = ?", true).Count(&totalCustomers)
@@ -84,11 +84,11 @@ func (s *DashboardService) CustomerDashboard(ctx context.Context, customerID uui
 	var kpi dto.CustomerDashboardKPI
 	if err := db.Model(&models.Order{}).Where("cliente_id = ?", clienteID).
 		Select(`COUNT(*) AS ordini_totali,
-			COALESCE(SUM(CASE WHEN fattura_id <> '' THEN 1 ELSE 0 END), 0) AS ordini_fatturati,
+			COALESCE(SUM(CASE WHEN fattura_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS ordini_fatturati,
 			COALESCE(SUM(CASE WHEN stato = 'CHIUSO' THEN 1 ELSE 0 END), 0) AS ordini_chiusi,
 			COALESCE(SUM(CASE WHEN stato = 'VIAGGIO' THEN 1 ELSE 0 END), 0) AS ordini_in_viaggio,
 			COALESCE(SUM(CASE WHEN stato = 'PIANIFICABILE' THEN 1 ELSE 0 END), 0) AS ordini_pianificabili,
-			COALESCE(SUM(CASE WHEN fattura_id <> '' THEN tariffa ELSE 0 END), 0) AS fatturato_netto,
+			COALESCE(SUM(CASE WHEN fattura_id IS NOT NULL THEN tariffa ELSE 0 END), 0) AS fatturato_netto,
 			COALESCE(AVG(tariffa), 0) AS tariffa_media`).
 		Scan(&kpi).Error; err != nil {
 		return nil, err
@@ -112,9 +112,11 @@ func (s *DashboardService) CustomerDashboard(ctx context.Context, customerID uui
 	}
 
 	var topDest []dto.CustomerDashboardDestination
-	if err := db.Model(&models.Order{}).Where("cliente_id = ? AND destinazione_scarico_nome <> ''", clienteID).
-		Select("destinazione_scarico_nome AS nome, COUNT(*) AS ordini, COALESCE(SUM(tariffa), 0) AS fatturato").
-		Group("destinazione_scarico_nome").
+	if err := db.Model(&models.Order{}).
+		Joins("JOIN destinations ON destinations.id = orders.destinazione_scarico_id").
+		Where("orders.cliente_id = ?", clienteID).
+		Select("destinations.nome AS nome, COUNT(*) AS ordini, COALESCE(SUM(orders.tariffa), 0) AS fatturato").
+		Group("destinations.nome").
 		Order("ordini DESC").Limit(5).Scan(&topDest).Error; err != nil {
 		return nil, err
 	}
@@ -160,7 +162,7 @@ func (s *DashboardService) CustomerDashboard(ctx context.Context, customerID uui
 // RecentOrders mirrors GET /dashboard/recent-orders (last 10, newest first).
 func (s *DashboardService) RecentOrders(ctx context.Context) ([]dto.OrderResponse, error) {
 	var recent []models.Order
-	if err := s.db.WithContext(ctx).Preload("Items").Order("created_at DESC").Limit(10).Find(&recent).Error; err != nil {
+	if err := orders.PreloadAssociations(s.db.WithContext(ctx)).Order("created_at DESC").Limit(10).Find(&recent).Error; err != nil {
 		return nil, err
 	}
 	result := make([]dto.OrderResponse, len(recent))

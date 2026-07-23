@@ -37,7 +37,7 @@ func TestVehicleAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 	}
 
 	busy := models.Order{
-		ID: uuid.New(), ClienteID: "c1", Stato: "VIAGGIO", TargaMotrice: "AB123CD",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD",
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -73,7 +73,7 @@ func TestVehicleAvailability_TrailerPlateAlsoMarkedBusy(t *testing.T) {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: "c1", Stato: "VIAGGIO", TargaMotrice: "AB123CD", TargaRimorchio: "TR001AA",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD", TargaRimorchio: "TR001AA",
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -99,7 +99,7 @@ func TestVehicleAvailability_NonOverlappingRangeStaysAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: "c1", Stato: "VIAGGIO", TargaMotrice: "AB123CD",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD",
 		DataRitiro: "2026-01-01", DataConsegna: "2026-01-02",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -125,7 +125,7 @@ func TestDriverAvailability_UnavailableTakesPriorityOverBusy(t *testing.T) {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: "c1", Stato: "VIAGGIO", AutistaID: driver.ID.String(),
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", AutistaID: &driver.ID,
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -160,7 +160,7 @@ func TestDriverAvailability_BusyWhenNoUnavailabilityRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: "c1", Stato: "VIAGGIO", AutistaID: driver.ID.String(),
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", AutistaID: &driver.ID,
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}

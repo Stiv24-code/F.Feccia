@@ -102,7 +102,7 @@ export default function DashboardPage() {
                   {orders.slice(0, 8).map((o) => (
                     <TableRow key={o.id} className="hover:bg-muted/60">
                       <TableCell className="text-xs py-2 font-mono">{o.progressivo}</TableCell>
-                      <TableCell className="text-xs py-2 max-w-[140px] truncate">{o.cliente_nome}</TableCell>
+                      <TableCell className="text-xs py-2 max-w-[140px] truncate">{o.cliente?.ragione_sociale}</TableCell>
                       <TableCell className="py-2"><StatusBadge stato={o.stato} /></TableCell>
                     </TableRow>
                   ))}

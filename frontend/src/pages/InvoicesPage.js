@@ -53,11 +53,10 @@ export default function InvoicesPage() {
     try {
       const selectedOrders = closedOrders.filter(o => selectedOrderIds.includes(o.id));
       const clienteId = (selectedClienteId && selectedClienteId !== 'all') ? selectedClienteId : (selectedOrders[0]?.cliente_id || '');
-      const clienteNome = customers.find(c => c.id === clienteId)?.ragione_sociale || '';
       const righe = selectedOrders.map(o => ({
         ordine_id: o.id,
-        descrizione: `${o.destinazione_carico_nome} - ${o.destinazione_scarico_nome}`,
-        prodotto: o.items?.[0]?.prodotto_descrizione || '',
+        descrizione: `${o.destinazione_carico?.nome} - ${o.destinazione_scarico?.nome}`,
+        prodotto: o.items?.[0]?.prodotto?.descrizione || '',
         peso: o.items?.[0]?.peso || 0,
         quantita: 1,
         tariffa: o.tariffa,
@@ -67,7 +66,6 @@ export default function InvoicesPage() {
       const totale = righe.reduce((sum, r) => sum + r.totale, 0);
       await createInvoice({
         cliente_id: clienteId,
-        cliente_nome: clienteNome,
         data_fattura: new Date().toISOString().split('T')[0],
         data_scadenza: '',
         condizioni_pagamento: '',
@@ -175,7 +173,7 @@ export default function InvoicesPage() {
               ) : (tab === 'proforma' ? proforma : definitive).map(inv => (
                 <TableRow key={inv.id} className="hover:bg-muted/60">
                   <TableCell className="py-2 font-mono font-medium">{inv.numero}</TableCell>
-                  <TableCell className="py-2">{inv.cliente_nome}</TableCell>
+                  <TableCell className="py-2">{inv.cliente?.ragione_sociale}</TableCell>
                   <TableCell className="py-2 whitespace-nowrap">{inv.data_fattura}</TableCell>
                   <TableCell className="py-2 text-right tabular-nums font-medium">€ {formatEuro(inv.totale)}</TableCell>
                   <TableCell className="py-2"><StatusBadge stato={inv.stato} /></TableCell>
@@ -222,7 +220,7 @@ export default function InvoicesPage() {
                   <label key={o.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer text-sm">
                     <Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={() => toggleOrder(o.id)} />
                     <span className="font-mono text-xs">{o.progressivo}</span>
-                    <span className="truncate flex-1">{o.destinazione_carico_nome} → {o.destinazione_scarico_nome}</span>
+                    <span className="truncate flex-1">{o.destinazione_carico?.nome} → {o.destinazione_scarico?.nome}</span>
                     <span className="tabular-nums">€ {formatEuro(o.tariffa)}</span>
                   </label>
                 ))}
@@ -247,7 +245,7 @@ export default function InvoicesPage() {
           <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Fattura {selectedInvoice?.numero}</DialogTitle></DialogHeader>
           {selectedInvoice && (
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedInvoice.cliente_nome}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedInvoice.cliente?.ragione_sociale}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data:</span><span>{selectedInvoice.data_fattura}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedInvoice.stato} /></div>
               {selectedInvoice.righe?.length > 0 && (

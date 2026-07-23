@@ -70,14 +70,14 @@ func (s *AvailabilityService) DriverAvailability(ctx context.Context, dataDa, da
 
 	var busyOrders []models.Order
 	if err := s.db.WithContext(ctx).
-		Where("stato = ? AND autista_id <> ? AND data_ritiro <= ? AND data_consegna >= ?", "VIAGGIO", "", dataA, dataDa).
+		Where("stato = ? AND autista_id IS NOT NULL AND data_ritiro <= ? AND data_consegna >= ?", "VIAGGIO", dataA, dataDa).
 		Find(&busyOrders).Error; err != nil {
 		return nil, err
 	}
 	busyDriverIDs := make(map[string]bool, len(busyOrders))
 	for _, o := range busyOrders {
-		if o.AutistaID != "" {
-			busyDriverIDs[o.AutistaID] = true
+		if o.AutistaID != nil {
+			busyDriverIDs[o.AutistaID.String()] = true
 		}
 	}
 
