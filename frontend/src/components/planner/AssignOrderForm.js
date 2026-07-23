@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LocationCombobox from '@/components/shared/LocationCombobox';
 import { toast } from 'sonner';
 import { Loader2, Warehouse, Droplets } from 'lucide-react';
 import { logger } from '@/lib/logger';
@@ -92,27 +93,29 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Punto di partenza</Label>
-            <Select value={form.garage_id} onValueChange={setGarage}>
-              <SelectTrigger className="border-dashed">
-                <span className="flex items-center gap-2 overflow-hidden">
-                  <Warehouse className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder="Seleziona punto di partenza..." />
-                </span>
-              </SelectTrigger>
-              <SelectContent>{garages.map(g => <SelectItem key={g.id} value={g.id}>{g.nome}</SelectItem>)}</SelectContent>
-            </Select>
+            <LocationCombobox
+              value={form.garage_id}
+              onChange={setGarage}
+              options={garages}
+              placeholder="Seleziona punto di partenza..."
+              searchPlaceholder="Cerca garage..."
+              icon={Warehouse}
+              iconBg="#1c2534"
+              iconColor="#fff"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Punto di lavaggio — dopo lo scarico</Label>
-            <Select value={form.wash_station_id} onValueChange={setWashStation}>
-              <SelectTrigger className="border-dashed">
-                <span className="flex items-center gap-2 overflow-hidden">
-                  <Droplets className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder="Seleziona punto di lavaggio..." />
-                </span>
-              </SelectTrigger>
-              <SelectContent>{washStations.map(w => <SelectItem key={w.id} value={w.id}>{w.nome}</SelectItem>)}</SelectContent>
-            </Select>
+            <LocationCombobox
+              value={form.wash_station_id}
+              onChange={setWashStation}
+              options={washStations}
+              placeholder="Seleziona punto di lavaggio..."
+              searchPlaceholder="Cerca stazione o tipo lavaggio..."
+              icon={Droplets}
+              iconBg="#e6f4f2"
+              iconColor="#0d9488"
+            />
           </div>
         </div>
       </div>
