@@ -476,6 +476,7 @@ type GeocodeResultDTO struct {
 	Citta     string  `json:"citta"`
 	Cap       string  `json:"cap"`
 	Provincia string  `json:"provincia"`
+	Nazione   string  `json:"nazione"`
 	Lat       float64 `json:"lat"`
 	Lng       float64 `json:"lng"`
 }

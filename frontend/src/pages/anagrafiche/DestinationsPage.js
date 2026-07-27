@@ -90,15 +90,16 @@ export default function DestinationsPage() {
               value={form.indirizzo}
               onChange={(v) => setForm(f => ({...f, indirizzo: v}))}
               onSelect={(r) => {
-                setForm(f => ({...f, indirizzo: r.indirizzo, citta: r.citta || f.citta, cap: r.cap || f.cap, provincia: r.provincia || f.provincia, lat: r.lat, lng: r.lng}));
+                setForm(f => ({...f, indirizzo: r.indirizzo, citta: r.citta || f.citta, cap: r.cap || f.cap, provincia: r.provincia || f.provincia, nazione: r.nazione || f.nazione, lat: r.lat, lng: r.lng}));
                 setFlySignal(s => s + 1);
               }}
             />
           </div>
-          <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
-          <div className="space-y-1.5"><Label>CAP</Label><Input value={form.cap} onChange={e => setForm({...form, cap: e.target.value})} /></div>
-          <div className="space-y-1.5"><Label>Provincia</Label><Input value={form.provincia} onChange={e => setForm({...form, provincia: e.target.value})} /></div>
-          <div className="space-y-1.5"><Label>Nazione</Label><Input value={form.nazione} onChange={e => setForm({...form, nazione: e.target.value})} /></div>
+          {/* Sola lettura: valorizzati dalla ricerca su Indirizzo (geocoding ORS), non editabili a mano — coerenza garantita con l'indirizzo scelto. */}
+          <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} readOnly className="bg-muted/50" /></div>
+          <div className="space-y-1.5"><Label>CAP</Label><Input value={form.cap} readOnly className="bg-muted/50" /></div>
+          <div className="space-y-1.5"><Label>Provincia</Label><Input value={form.provincia} readOnly className="bg-muted/50" /></div>
+          <div className="space-y-1.5"><Label>Nazione</Label><Input value={form.nazione} readOnly className="bg-muted/50" /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
             <MapPicker

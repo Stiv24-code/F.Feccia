@@ -403,6 +403,7 @@ export interface DtoGeocodeResultDTO {
   label?: string;
   lat?: number;
   lng?: number;
+  nazione?: string;
   provincia?: string;
 }
 

@@ -6529,6 +6529,9 @@ const docTemplate = `{
                 "lng": {
                     "type": "number"
                 },
+                "nazione": {
+                    "type": "string"
+                },
                 "provincia": {
                     "type": "string"
                 }

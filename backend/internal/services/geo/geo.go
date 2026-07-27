@@ -242,6 +242,7 @@ type GeocodeResult struct {
 	Locality  string
 	Postcode  string
 	ProvinceA string
+	Country   string
 	Lat       float64
 	Lng       float64
 }
@@ -288,6 +289,7 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 				Locality   string `json:"locality"`
 				Postalcode string `json:"postalcode"`
 				RegionA    string `json:"region_a"`
+				Country    string `json:"country"`
 			} `json:"properties"`
 			Geometry struct {
 				Coordinates [2]float64 `json:"coordinates"`
@@ -305,6 +307,7 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 			Locality:  f.Properties.Locality,
 			Postcode:  f.Properties.Postalcode,
 			ProvinceA: f.Properties.RegionA,
+			Country:   f.Properties.Country,
 			Lng:       f.Geometry.Coordinates[0],
 			Lat:       f.Geometry.Coordinates[1],
 		})

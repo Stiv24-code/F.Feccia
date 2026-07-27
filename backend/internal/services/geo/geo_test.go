@@ -229,7 +229,7 @@ func TestGeocodeSearch_ParsesFeatures(t *testing.T) {
 				{
 					"properties": map[string]interface{}{
 						"label": "Piazza del Duomo, Milan, MI, Italy", "locality": "Milan",
-						"postalcode": "20122", "region_a": "MI",
+						"postalcode": "20122", "region_a": "MI", "country": "Italy",
 					},
 					"geometry": map[string]interface{}{"coordinates": [2]float64{9.19, 45.46}},
 				},
@@ -247,8 +247,8 @@ func TestGeocodeSearch_ParsesFeatures(t *testing.T) {
 	if results[0].Label != "Piazza del Duomo, Milan, MI, Italy" || results[0].Locality != "Milan" {
 		t.Fatalf("unexpected result: %+v", results[0])
 	}
-	if results[0].Postcode != "20122" || results[0].ProvinceA != "MI" {
-		t.Fatalf("expected postcode/province to be parsed, got %+v", results[0])
+	if results[0].Postcode != "20122" || results[0].ProvinceA != "MI" || results[0].Country != "Italy" {
+		t.Fatalf("expected postcode/province/country to be parsed, got %+v", results[0])
 	}
 	if results[0].Lat != 45.46 || results[0].Lng != 9.19 {
 		t.Fatalf("expected coordinates flipped [lng,lat]->(lat,lng), got lat=%v lng=%v", results[0].Lat, results[0].Lng)

@@ -79,7 +79,7 @@ export default function GaragesPage() {
               }}
             />
           </div>
-          <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
+          <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} readOnly className="bg-muted/50" /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
             <MapPicker
