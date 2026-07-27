@@ -90,6 +90,8 @@ type Order struct {
 	Vettore               *Carrier       `gorm:"foreignKey:VettoreID;references:ID" json:"-"`
 	WashStationID         *uuid.UUID     `gorm:"type:uuid" json:"wash_station_id"`
 	WashStation           *WashStation   `gorm:"foreignKey:WashStationID;references:ID" json:"-"`
+	RouteID               *uuid.UUID     `gorm:"type:uuid" json:"route_id"`
+	Route                 *OrderRoute    `gorm:"foreignKey:RouteID;references:ID" json:"-"`
 	ViaggioID             *uuid.UUID     `gorm:"type:uuid" json:"viaggio_id"`
 	FatturaID             *uuid.UUID     `gorm:"type:uuid" json:"fattura_id"`
 

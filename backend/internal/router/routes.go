@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg config.S3Config) {
+func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg config.S3Config, routingCfg config.RoutingConfig) {
 	s3Client, err := s3invoices.NewClient(context.Background(), s3Cfg)
 	if err != nil {
 		// Non-fatal: mirrors Python's own resilience posture (S3 archival is
@@ -25,7 +25,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 		s3Client, _ = s3invoices.NewClient(context.Background(), config.S3Config{})
 	}
 
-	svc := services.NewService(db, jwtCfg, s3Client)
+	svc := services.NewService(db, jwtCfg, s3Client, routingCfg.ORSApiKey, routingCfg.ORSBaseURL)
 	handlers := app_handlers.NewHandler(svc, audit.NewLogger(db), jwtCfg)
 
 	api := app.Group("/api/v1")

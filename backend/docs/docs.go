@@ -3396,6 +3396,115 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/orders/{id}/route": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Recompute and persist an order's route for an edited waypoint sequence",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Ordered waypoint sequence",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderRouteUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{id}/route-alternatives": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Ephemeral — nothing is persisted, the manager picks one and it travels in the Assign/UpdateRoute call.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Compute up to 3 truck-aware route alternatives for an order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional garage/wash_station points",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderRouteAlternativesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderRouteAlternativesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/orders/{id}/start": {
             "patch": {
                 "security": [
@@ -6780,6 +6889,13 @@ const docTemplate = `{
                 "garage_id": {
                     "type": "string"
                 },
+                "route_waypoints": {
+                    "description": "RouteWaypoints: la sequenza scelta dal manager tra le alternative\nproposte (POST /orders/{id}/route-alternatives). Opzionale — se\nassente l'ordine viene comunque assegnato, semplicemente senza un\nOrderRoute calcolato. Il server ricalcola sempre la geometria via ORS,\nnon si fida di quella eventualmente mandata dal client.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteWaypointDTO"
+                    }
+                },
                 "targa_motrice": {
                     "type": "string"
                 },
@@ -6985,6 +7101,12 @@ const docTemplate = `{
                 "rif_ordine_cliente": {
                     "type": "string"
                 },
+                "route": {
+                    "$ref": "#/definitions/dto.RouteResponseDTO"
+                },
+                "route_id": {
+                    "type": "string"
+                },
                 "servizi_accessori": {
                     "type": "array",
                     "items": {
@@ -7067,6 +7189,43 @@ const docTemplate = `{
                 },
                 "source_order": {
                     "$ref": "#/definitions/dto.OrderSourceSummary"
+                }
+            }
+        },
+        "dto.OrderRouteAlternativesRequest": {
+            "type": "object",
+            "properties": {
+                "garage_id": {
+                    "type": "string"
+                },
+                "wash_station_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.OrderRouteAlternativesResponse": {
+            "type": "object",
+            "properties": {
+                "alternatives": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteAlternativeDTO"
+                    }
+                }
+            }
+        },
+        "dto.OrderRouteUpdateRequest": {
+            "type": "object",
+            "required": [
+                "waypoints"
+            ],
+            "properties": {
+                "waypoints": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteWaypointDTO"
+                    }
                 }
             }
         },
@@ -7392,6 +7551,106 @@ const docTemplate = `{
                         "planner",
                         "operatore"
                     ]
+                }
+            }
+        },
+        "dto.RouteAlternativeDTO": {
+            "type": "object",
+            "properties": {
+                "distance_km": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float64"
+                        }
+                    }
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteWaypointResponseDTO"
+                    }
+                }
+            }
+        },
+        "dto.RouteResponseDTO": {
+            "type": "object",
+            "properties": {
+                "distance_km": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "edited_manually": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float64"
+                        }
+                    }
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.RouteWaypointResponseDTO"
+                    }
+                }
+            }
+        },
+        "dto.RouteWaypointDTO": {
+            "type": "object",
+            "required": [
+                "ref_id",
+                "tipo"
+            ],
+            "properties": {
+                "ref_id": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string",
+                    "enum": [
+                        "garage",
+                        "destinazione",
+                        "wash_station"
+                    ]
+                }
+            }
+        },
+        "dto.RouteWaypointResponseDTO": {
+            "type": "object",
+            "properties": {
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "ref_id": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
                 }
             }
         },

@@ -150,6 +150,62 @@ func (h *OrderHandler) AssignOrder(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, item)
 }
 
+// @Summary Compute up to 3 truck-aware route alternatives for an order
+// @Description Ephemeral — nothing is persisted, the manager picks one and it travels in the Assign/UpdateRoute call.
+// @Tags Orders
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Param body body dto.OrderRouteAlternativesRequest true "Optional garage/wash_station points"
+// @Success 200 {object} dto.OrderRouteAlternativesResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/orders/{id}/route-alternatives [post]
+func (h *OrderHandler) RouteAlternatives(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	var req dto.OrderRouteAlternativesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	alternatives, err := h.Service.RouteAlternatives(utils.RequestContext(c), id, req.GarageID, req.WashStationID)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, dto.OrderRouteAlternativesResponse{Alternatives: alternatives})
+}
+
+// @Summary Recompute and persist an order's route for an edited waypoint sequence
+// @Tags Orders
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Param body body dto.OrderRouteUpdateRequest true "Ordered waypoint sequence"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/orders/{id}/route [patch]
+func (h *OrderHandler) UpdateRoute(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	var req dto.OrderRouteUpdateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+	item, err := h.Service.UpdateRoute(utils.RequestContext(c), id, req.Waypoints)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, item)
+}
+
 // @Summary Start order (PIANIFICATO -> VIAGGIO)
 // @Tags Orders
 // @Security BearerAuth

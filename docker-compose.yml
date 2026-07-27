@@ -79,6 +79,14 @@ services:
       # completo (internal/seeddemo), non solo un admin nudo — vedi
       # internal/app/seed.go. Da NON impostare così in produzione.
       IS_LOCAL: "true"
+      # Opzionale: senza chiave il routing (percorsi ordine, segmenti
+      # viaggio, poligonale mappa) degrada a nil, nessun errore — vedi
+      # internal/services/geo.GeoService.
+      ORS_API_KEY: ${ORS_API_KEY:-}
+      # api.openrouteservice.org e api.heigit.org sono lo stesso backend, ma
+      # non sempre ugualmente raggiungibili da ogni rete/host — override qui
+      # se dal tuo ambiente solo uno dei due domini risolve/passa il traffico.
+      ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
     ports:
       - "${GO_BACKEND_PORT:-8081}:8080"
     healthcheck:

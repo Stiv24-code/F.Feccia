@@ -15,7 +15,7 @@ func geoPtr(v float64) *float64 { return &v }
 
 func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	customer := models.Customer{ID: uuid.New(), RagioneSociale: "Cliente Reale Srl", Active: true}
 	if err := db.Create(&customer).Error; err != nil {
@@ -59,7 +59,7 @@ func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 
 func TestGetCMRPDF_FallsBackWhenCustomerMissing(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	order := models.Order{
 		ID: uuid.New(), ClienteID: uuid.New(),
@@ -80,7 +80,7 @@ func TestGetCMRPDF_FallsBackWhenCustomerMissing(t *testing.T) {
 
 func TestGetCMRPDF_NotFoundReturns404(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	_, _, err := svc.GetCMRPDF(context.Background(), uuid.New())
 	apiErr, ok := err.(utils.APIError)

@@ -176,6 +176,12 @@ export const createOrder = (data) => api.post('/orders', data);
 export const getOrder = (id) => api.get(`/orders/${id}`);
 export const updateOrder = (id, data) => api.put(`/orders/${id}`, data);
 export const assignOrder = (id, data) => api.patch(`/orders/${id}/assign`, data);
+// Percorso stradale truck-aware (OpenRouteService) — fino a 3 alternative
+// effimere (nessuna scrittura su DB) da mostrare al manager in fase di
+// assegnazione, poi ricalcolo/persistenza su modifica manuale dei waypoint.
+export const getOrderRouteAlternatives = (id, { garageId, washStationId } = {}) =>
+  api.post(`/orders/${id}/route-alternatives`, { garage_id: garageId || '', wash_station_id: washStationId || '' });
+export const updateOrderRoute = (id, waypoints) => api.patch(`/orders/${id}/route`, { waypoints });
 export const startOrder = (id) => api.patch(`/orders/${id}/start`);
 export const closeOrder = (id) => api.patch(`/orders/${id}/close`);
 export const discardOrder = (id) => api.patch(`/orders/${id}/discard`);

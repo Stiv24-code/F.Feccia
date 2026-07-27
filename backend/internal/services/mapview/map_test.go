@@ -26,16 +26,16 @@ func newTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func fakeOSRM(t *testing.T) *httptest.Server {
+func fakeORS(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "Ok",
-			"routes": []map[string]interface{}{
+			"features": []map[string]interface{}{
 				{
-					"distance": 100000.0,
-					"duration": 7200.0,
+					"properties": map[string]interface{}{
+						"summary": map[string]interface{}{"distance": 100000.0, "duration": 7200.0},
+					},
 					"geometry": map[string]interface{}{
 						"coordinates": [][2]float64{{9.19, 45.46}, {9.35, 45.39}, {9.50, 45.31}},
 					},
@@ -76,12 +76,12 @@ func createOrder(t *testing.T, db *gorm.DB, stato string, caricoID, scaricoID *u
 }
 
 func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 
 	db := newTestDB(t)
-	svc := NewMapService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewMapService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
@@ -102,7 +102,7 @@ func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
 		t.Fatalf("expected progress 0.6 for VIAGGIO without GPS, got %v", r.Progress)
 	}
 	if r.DistanceKm != 100 {
-		t.Fatalf("expected distance_km 100 from OSRM stub, got %v", r.DistanceKm)
+		t.Fatalf("expected distance_km 100 from ORS stub, got %v", r.DistanceKm)
 	}
 	if resp.Stats.InViaggio != 1 || resp.Stats.GpsLive != 0 {
 		t.Fatalf("unexpected stats: %+v", resp.Stats)
@@ -110,12 +110,12 @@ func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
 }
 
 func TestMapService_Trips_UsesLiveGPSWhenActiveAndInViaggio(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 
 	db := newTestDB(t)
-	svc := NewMapService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewMapService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
@@ -149,7 +149,7 @@ func TestMapService_Trips_UsesLiveGPSWhenActiveAndInViaggio(t *testing.T) {
 
 func TestMapService_Trips_SkipsOrderWithUnresolvableDestination(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewMapService(db)
+	svc := NewMapService(db, "test-key", "")
 
 	createOrder(t, db, "PIANIFICABILE", nil, nil, "")
 
@@ -162,15 +162,15 @@ func TestMapService_Trips_SkipsOrderWithUnresolvableDestination(t *testing.T) {
 	}
 }
 
-func TestMapService_Trips_DegradesToStraightLineOnOSRMFailure(t *testing.T) {
-	osrm := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestMapService_Trips_DegradesToStraightLineOnORSFailure(t *testing.T) {
+	ors := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
-	defer osrm.Close()
+	defer ors.Close()
 
 	db := newTestDB(t)
-	svc := NewMapService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewMapService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
@@ -191,16 +191,16 @@ func TestMapService_Trips_DegradesToStraightLineOnOSRMFailure(t *testing.T) {
 		t.Fatalf("expected progress 1.0 for CHIUSO, got %v", r.Progress)
 	}
 	if r.DistanceKm != 0 {
-		t.Fatalf("expected distance_km 0 when OSRM fails, got %v", r.DistanceKm)
+		t.Fatalf("expected distance_km 0 when ORS fails, got %v", r.DistanceKm)
 	}
 }
 
 func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewMapService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewMapService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.1900, true)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)

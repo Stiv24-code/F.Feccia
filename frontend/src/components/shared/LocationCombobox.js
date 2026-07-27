@@ -33,7 +33,10 @@ export default function LocationCombobox({ value, onChange, options, placeholder
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      {/* z-[1000]: Leaflet's own panes (marker/tooltip/popup) go up to
+          z-index 700 — the shadcn default (z-50) leaves the dropdown
+          rendering behind the route map whenever one is on the same page. */}
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[1000]" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>

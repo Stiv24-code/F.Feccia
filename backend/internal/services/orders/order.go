@@ -18,16 +18,19 @@ import (
 	"fratelli-feccia/pkg/database"
 	"fratelli-feccia/pkg/pdfgen"
 	"fratelli-feccia/pkg/utils"
+
+	"fratelli-feccia/internal/services/geo"
 )
 
 const defaultListLimit = 500
 
 type OrderService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	geo *geo.GeoService
 }
 
-func NewOrderService(db *gorm.DB) *OrderService {
-	return &OrderService{db: db}
+func NewOrderService(db *gorm.DB, orsApiKey, orsBaseURL string) *OrderService {
+	return &OrderService{db: db, geo: geo.NewGeoService(db, orsApiKey, orsBaseURL)}
 }
 
 // ListFilters mirrors the query params of GET /orders in backend/routers/orders.py.
@@ -63,7 +66,8 @@ func PreloadAssociations(q *gorm.DB) *gorm.DB {
 		Preload("Garage").
 		Preload("Autista").
 		Preload("Vettore").
-		Preload("WashStation")
+		Preload("WashStation").
+		Preload("Route")
 }
 
 func (s *OrderService) reload(ctx context.Context, id uuid.UUID) (*models.Order, error) {
@@ -299,6 +303,30 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	if err := s.db.WithContext(ctx).Save(&order).Error; err != nil {
 		return nil, err
 	}
+
+	// Il manager ha già scelto una delle alternative proposte in form: la
+	// calcoliamo qui (mai fidandoci della geometria del client) così che
+	// l'ordine abbia già un percorso pronto nel momento esatto in cui passa
+	// a PIANIFICATO. Se manca (form saltato) o il routing non è disponibile,
+	// l'assegnazione resta comunque valida — solo senza route calcolata.
+	if len(req.RouteWaypoints) >= 2 {
+		resolved := make([]routeWaypoint, len(req.RouteWaypoints))
+		namedPoints := make([]geo.NamedPoint, len(req.RouteWaypoints))
+		for i, w := range req.RouteWaypoints {
+			wp, err := s.resolveWaypoint(ctx, w.Tipo, w.RefID)
+			if err != nil {
+				return nil, err
+			}
+			resolved[i] = wp
+			namedPoints[i] = geo.NamedPoint{Name: wp.Nome, Lat: wp.Lat, Lng: wp.Lng}
+		}
+		if route := s.geo.GetRoadRouteMultiWaypoint(ctx, namedPoints); route != nil {
+			if err := s.upsertOrderRoute(ctx, &order, resolved, route, false); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	reloaded, err := s.reload(ctx, order.ID)
 	if err != nil {
 		return nil, err
@@ -763,6 +791,8 @@ func ToResponse(o models.Order) dto.OrderResponse {
 		Vettore:               carrierResponse(o.Vettore),
 		WashStationID:         uuidPtrString(o.WashStationID),
 		WashStation:           washStationResponse(o.WashStation),
+		RouteID:               uuidPtrString(o.RouteID),
+		Route:                 routeResponse(o.Route),
 		ViaggioID:             uuidPtrString(o.ViaggioID),
 		FatturaID:             uuidPtrString(o.FatturaID),
 		CreatedAt:             o.CreatedAt,

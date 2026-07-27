@@ -543,6 +543,14 @@ export interface DtoOKResult {
 export interface DtoOrderAssignRequest {
   autista_id?: string;
   garage_id?: string;
+  /**
+   * RouteWaypoints: la sequenza scelta dal manager tra le alternative
+   * proposte (POST /orders/{id}/route-alternatives). Opzionale — se
+   * assente l'ordine viene comunque assegnato, semplicemente senza un
+   * OrderRoute calcolato. Il server ricalcola sempre la geometria via ORS,
+   * non si fida di quella eventualmente mandata dal client.
+   */
+  route_waypoints?: DtoRouteWaypointDTO[];
   targa_motrice?: string;
   targa_rimorchio?: string;
   vettore_id?: string;
@@ -610,6 +618,8 @@ export interface DtoOrderResponse {
   ora_ritiro_da?: string;
   progressivo?: string;
   rif_ordine_cliente?: string;
+  route?: DtoRouteResponseDTO;
+  route_id?: string;
   servizi_accessori?: string[];
   stato?: "PIANIFICABILE" | "PIANIFICATO" | "VIAGGIO" | "CHIUSO" | "SCARTATO";
   targa_motrice?: string;
@@ -635,6 +645,20 @@ export interface DtoOrderReturnSuggestionsResponse {
   candidates?: DtoOrderReturnSuggestion[];
   count?: number;
   source_order?: DtoOrderSourceSummary;
+}
+
+export interface DtoOrderRouteAlternativesRequest {
+  garage_id?: string;
+  wash_station_id?: string;
+}
+
+export interface DtoOrderRouteAlternativesResponse {
+  alternatives?: DtoRouteAlternativeDTO[];
+}
+
+export interface DtoOrderRouteUpdateRequest {
+  /** @minItems 2 */
+  waypoints: DtoRouteWaypointDTO[];
 }
 
 export interface DtoOrderSourceSummary {
@@ -755,6 +779,35 @@ export interface DtoRegisterRequest {
   /** @minLength 12 */
   password: string;
   role: "admin" | "amministrazione" | "planner" | "operatore";
+}
+
+export interface DtoRouteAlternativeDTO {
+  distance_km?: number;
+  duration_min?: number;
+  points?: number[][];
+  waypoints?: DtoRouteWaypointResponseDTO[];
+}
+
+export interface DtoRouteResponseDTO {
+  distance_km?: number;
+  duration_min?: number;
+  edited_manually?: boolean;
+  id?: string;
+  points?: number[][];
+  waypoints?: DtoRouteWaypointResponseDTO[];
+}
+
+export interface DtoRouteWaypointDTO {
+  ref_id: string;
+  tipo: "garage" | "destinazione" | "wash_station";
+}
+
+export interface DtoRouteWaypointResponseDTO {
+  lat?: number;
+  lng?: number;
+  nome?: string;
+  ref_id?: string;
+  tipo?: string;
 }
 
 export interface DtoTariffLookupResult {

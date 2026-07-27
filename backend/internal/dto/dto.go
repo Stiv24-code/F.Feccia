@@ -423,6 +423,61 @@ type OrderAssignRequest struct {
 	AutistaID      string `json:"autista_id"`
 	VettoreID      string `json:"vettore_id"`
 	WashStationID  string `json:"wash_station_id"`
+	// RouteWaypoints: la sequenza scelta dal manager tra le alternative
+	// proposte (POST /orders/{id}/route-alternatives). Opzionale — se
+	// assente l'ordine viene comunque assegnato, semplicemente senza un
+	// OrderRoute calcolato. Il server ricalcola sempre la geometria via ORS,
+	// non si fida di quella eventualmente mandata dal client.
+	RouteWaypoints []RouteWaypointDTO `json:"route_waypoints,omitempty"`
+}
+
+// RouteWaypointDTO identifica un punto per riferimento — usato in richiesta
+// (assign, update-route) dove il client manda solo tipo+id, mai coordinate.
+type RouteWaypointDTO struct {
+	Tipo  string `json:"tipo" enums:"garage,destinazione,wash_station" validate:"required"`
+	RefID string `json:"ref_id" validate:"required"`
+}
+
+// RouteWaypointResponseDTO è lo stesso waypoint risolto (nome+coordinate),
+// per disegnare i marker sulla mappa senza un secondo giro di lookup lato client.
+type RouteWaypointResponseDTO struct {
+	Tipo  string  `json:"tipo"`
+	RefID string  `json:"ref_id"`
+	Nome  string  `json:"nome"`
+	Lat   float64 `json:"lat"`
+	Lng   float64 `json:"lng"`
+}
+
+type RouteResponseDTO struct {
+	ID             uuid.UUID                  `json:"id"`
+	Waypoints      []RouteWaypointResponseDTO `json:"waypoints"`
+	Points         [][2]float64               `json:"points"`
+	DistanceKm     float64                    `json:"distance_km"`
+	DurationMin    int                        `json:"duration_min"`
+	EditedManually bool                       `json:"edited_manually"`
+}
+
+// RouteAlternativeDTO è una delle fino a 3 proposte effimere di
+// POST /orders/{id}/route-alternatives — mai scritta su DB finché il manager
+// non la sceglie (a quel punto diventa un RouteResponseDTO persistito).
+type RouteAlternativeDTO struct {
+	Waypoints   []RouteWaypointResponseDTO `json:"waypoints"`
+	Points      [][2]float64               `json:"points"`
+	DistanceKm  float64                    `json:"distance_km"`
+	DurationMin int                        `json:"duration_min"`
+}
+
+type OrderRouteAlternativesRequest struct {
+	GarageID      string `json:"garage_id"`
+	WashStationID string `json:"wash_station_id"`
+}
+
+type OrderRouteAlternativesResponse struct {
+	Alternatives []RouteAlternativeDTO `json:"alternatives"`
+}
+
+type OrderRouteUpdateRequest struct {
+	Waypoints []RouteWaypointDTO `json:"waypoints" validate:"required,min=2"`
 }
 
 type OrderResponse struct {
@@ -461,6 +516,8 @@ type OrderResponse struct {
 	Vettore               *CarrierResponse         `json:"vettore"`
 	WashStationID         string                   `json:"wash_station_id"`
 	WashStation           *WashStationResponse     `json:"wash_station"`
+	RouteID               string                   `json:"route_id"`
+	Route                 *RouteResponseDTO        `json:"route"`
 	ViaggioID             string                   `json:"viaggio_id"`
 	FatturaID             string                   `json:"fattura_id"`
 	CreatedAt             time.Time                `json:"created_at"`

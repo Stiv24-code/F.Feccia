@@ -28,18 +28,18 @@ func newTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-// fakeOSRM stubs the OSRM demo server so tests never hit the real network.
-// Always returns a fixed 100km/2h route.
-func fakeOSRM(t *testing.T) *httptest.Server {
+// fakeORS stubs the OpenRouteService API so tests never hit the real
+// network. Always returns a fixed 100km/2h route.
+func fakeORS(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"code": "Ok",
-			"routes": []map[string]interface{}{
+			"features": []map[string]interface{}{
 				{
-					"distance": 100000.0,
-					"duration": 7200.0,
+					"properties": map[string]interface{}{
+						"summary": map[string]interface{}{"distance": 100000.0, "duration": 7200.0},
+					},
 					"geometry": map[string]interface{}{
 						"coordinates": [][2]float64{{9.19, 45.46}, {9.50, 45.31}},
 					},
@@ -49,11 +49,11 @@ func fakeOSRM(t *testing.T) *httptest.Server {
 	}))
 }
 
-func newTestService(t *testing.T, osrmURL string) *TripService {
+func newTestService(t *testing.T, orsURL string) *TripService {
 	t.Helper()
-	svc := NewTripService(newTestDB(t))
-	if osrmURL != "" {
-		svc.geo.OsrmBaseURL = osrmURL
+	svc := NewTripService(newTestDB(t), "test-key", "")
+	if orsURL != "" {
+		svc.geo.ORSBaseURL = orsURL
 	}
 	return svc
 }
@@ -86,12 +86,12 @@ func createOrder(t *testing.T, db *gorm.DB, carico, scarico, dataRitiro string) 
 }
 
 func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 
@@ -120,12 +120,12 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 }
 
 func TestTripService_Create_SkipsOrdersNotPianificabile(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	db.Model(&models.Order{}).Where("id = ?", order.ID).Update("stato", "CHIUSO")
@@ -142,11 +142,11 @@ func TestTripService_Create_SkipsOrdersNotPianificabile(t *testing.T) {
 }
 
 func TestTripService_GetByID_IncludesLinkedOrders(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{order.ID.String()}})
@@ -175,11 +175,11 @@ func TestTripService_GetByID_NotFoundReturnsNilNil(t *testing.T) {
 }
 
 func TestTripService_Complete_RequiresInCorso(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{order.ID.String()}})
@@ -194,11 +194,11 @@ func TestTripService_Complete_RequiresInCorso(t *testing.T) {
 }
 
 func TestTripService_StartThenComplete_FullLifecycle(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{order.ID.String()}})
@@ -247,11 +247,11 @@ func TestTripService_StartThenComplete_FullLifecycle(t *testing.T) {
 }
 
 func TestTripService_AddOrder_ValidatesStateAndRecomputes(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	first := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{first.ID.String()}})
@@ -288,11 +288,11 @@ func TestTripService_AddOrder_ValidatesStateAndRecomputes(t *testing.T) {
 }
 
 func TestTripService_AddOrder_ToInCorsoTripGoesStraightToViaggio(t *testing.T) {
-	osrm := fakeOSRM(t)
-	defer osrm.Close()
+	ors := fakeORS(t)
+	defer ors.Close()
 	db := newTestDB(t)
-	svc := NewTripService(db)
-	svc.geo.OsrmBaseURL = osrm.URL
+	svc := NewTripService(db, "test-key", "")
+	svc.geo.ORSBaseURL = ors.URL
 
 	first := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 	trip, err := svc.Create(context.Background(), dto.TripRequest{OrdiniIds: []string{first.ID.String()}})

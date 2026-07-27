@@ -1383,6 +1383,21 @@ func (mr *MockOrderMockRecorder) ReturnSuggestions(ctx, id, maxDaysGap, limit in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnSuggestions", reflect.TypeOf((*MockOrder)(nil).ReturnSuggestions), ctx, id, maxDaysGap, limit)
 }
 
+// RouteAlternatives mocks base method.
+func (m *MockOrder) RouteAlternatives(ctx context.Context, id uuid.UUID, garageID, washStationID string) ([]dto.RouteAlternativeDTO, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RouteAlternatives", ctx, id, garageID, washStationID)
+	ret0, _ := ret[0].([]dto.RouteAlternativeDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RouteAlternatives indicates an expected call of RouteAlternatives.
+func (mr *MockOrderMockRecorder) RouteAlternatives(ctx, id, garageID, washStationID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteAlternatives", reflect.TypeOf((*MockOrder)(nil).RouteAlternatives), ctx, id, garageID, washStationID)
+}
+
 // Start mocks base method.
 func (m *MockOrder) Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
 	m.ctrl.T.Helper()
@@ -1411,6 +1426,21 @@ func (m *MockOrder) Update(ctx context.Context, id uuid.UUID, req dto.OrderReque
 func (mr *MockOrderMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockOrder)(nil).Update), ctx, id, req)
+}
+
+// UpdateRoute mocks base method.
+func (m *MockOrder) UpdateRoute(ctx context.Context, id uuid.UUID, waypoints []dto.RouteWaypointDTO) (*dto.OrderResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRoute", ctx, id, waypoints)
+	ret0, _ := ret[0].(*dto.OrderResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateRoute indicates an expected call of UpdateRoute.
+func (mr *MockOrderMockRecorder) UpdateRoute(ctx, id, waypoints interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRoute", reflect.TypeOf((*MockOrder)(nil).UpdateRoute), ctx, id, waypoints)
 }
 
 // MockVehicle is a mock of Vehicle interface.

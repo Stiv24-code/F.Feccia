@@ -79,7 +79,7 @@ func baseRequest(t *testing.T, db *gorm.DB) dto.OrderRequest {
 func TestOrderService_Create_AssignsProgressivoAndDefaults(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	resp, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -102,7 +102,7 @@ func TestOrderService_Create_AssignsProgressivoAndDefaults(t *testing.T) {
 func TestOrderService_Create_ProgressivoIncrements(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	first, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -120,7 +120,7 @@ func TestOrderService_Create_ProgressivoIncrements(t *testing.T) {
 func TestOrderService_Update_ReplacesItemsAndDoesNotTouchState(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	created, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -155,7 +155,7 @@ func TestOrderService_Update_ReplacesItemsAndDoesNotTouchState(t *testing.T) {
 func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -216,7 +216,7 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -237,7 +237,7 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	// From PIANIFICABILE.
 	a, err := svc.Create(ctx, baseRequest(t, db))
@@ -290,7 +290,7 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 func TestOrderService_Delete_OnlyWhenPianificabile(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	order, err := svc.Create(ctx, baseRequest(t, db))
 	if err != nil {
@@ -312,7 +312,7 @@ func TestOrderService_Delete_OnlyWhenPianificabile(t *testing.T) {
 func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	a := baseRequest(t, db)
 	a.ClienteID = seedCustomer(t, db, "Acme").String()
@@ -343,7 +343,7 @@ func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 func TestOrderService_ReturnSuggestions_ScoresAndFilters(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, "", "")
 
 	romaID := seedDestination(t, db, "Roma")
 
@@ -390,7 +390,7 @@ func TestOrderService_ReturnSuggestions_ScoresAndFilters(t *testing.T) {
 
 func TestOrderService_ReturnSuggestions_InvalidParams(t *testing.T) {
 	ctx := context.Background()
-	svc := NewOrderService(newTestDB(t))
+	svc := NewOrderService(newTestDB(t), "", "")
 
 	_, err := svc.ReturnSuggestions(ctx, uuid.New(), 15, 20)
 	assertAPIError(t, err, 400)

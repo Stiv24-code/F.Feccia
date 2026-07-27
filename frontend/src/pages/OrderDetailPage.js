@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getOrder, startOrder, closeOrder, discardOrder } from '@/lib/api';
+import { getOrder, startOrder, closeOrder, discardOrder, updateOrderRoute } from '@/lib/api';
+import { useGetDestinationsQuery } from '@/store/api/appApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,8 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import OrderRouteMap from '@/components/shared/OrderRouteMap';
 import AssignOrderForm from '@/components/planner/AssignOrderForm';
+import LocationCombobox from '@/components/shared/LocationCombobox';
 import { toast } from 'sonner';
-import { ArrowLeft, PlayCircle, CheckCircle, Ban, Warehouse, Droplets } from 'lucide-react';
+import { ArrowLeft, PlayCircle, CheckCircle, Ban, Warehouse, Droplets, MapPin, X, RefreshCw } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 // Distanza in linea d'aria (non un percorso stradale reale — non abbiamo
@@ -29,6 +31,9 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+  const [addingWaypointId, setAddingWaypointId] = useState('');
+  const { data: destinations = [] } = useGetDestinationsQuery();
 
   const fetchOrder = useCallback(() => {
     setLoading(true);
@@ -38,7 +43,32 @@ export default function OrderDetailPage() {
 
   const carico = order?.destinazione_carico;
   const scarico = order?.destinazione_scarico;
-  const distanceKm = useMemo(() => haversineKm(carico, scarico), [carico, scarico]);
+  const haversineDistanceKm = useMemo(() => haversineKm(carico, scarico), [carico, scarico]);
+  const distanceKm = order?.route?.distance_km ?? haversineDistanceKm;
+
+  const recomputeRoute = async (waypoints) => {
+    setRecalculating(true);
+    try {
+      await updateOrderRoute(order.id, waypoints.map(w => ({ tipo: w.tipo, ref_id: w.ref_id })));
+      toast.success('Percorso ricalcolato');
+      fetchOrder();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Errore ricalcolo percorso'); }
+    finally { setRecalculating(false); }
+  };
+
+  const handleAddWaypoint = (destId) => {
+    const dest = destinations.find(d => d.id === destId);
+    if (!dest || !order.route) return;
+    const waypoints = [...order.route.waypoints, { tipo: 'destinazione', ref_id: dest.id }];
+    setAddingWaypointId('');
+    recomputeRoute(waypoints);
+  };
+
+  const handleRemoveWaypoint = (idx) => {
+    if (!order.route) return;
+    const waypoints = order.route.waypoints.filter((_, i) => i !== idx);
+    recomputeRoute(waypoints);
+  };
 
   const handleStart = async () => {
     if (!window.confirm(`Avviare il viaggio per l'ordine ${order.progressivo}?`)) return;
@@ -120,7 +150,7 @@ export default function OrderDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">{order.destinazione_carico?.nome} → {order.destinazione_scarico?.nome}</p>
           </div>
 
-          <OrderRouteMap carico={carico} scarico={scarico} garage={order.garage} washStation={order.wash_station} height={280} />
+          <OrderRouteMap carico={carico} scarico={scarico} garage={order.garage} washStation={order.wash_station} routePoints={order.route?.points} height={280} />
 
           {/* Itinerario: 2 punti (carico/scarico) — nessun percorso stradale calcolato per il singolo ordine */}
           <div>
@@ -192,6 +222,44 @@ export default function OrderDetailPage() {
           )}
         </Card>
       </div>
+
+      {order.route && (
+        <Card className="rounded-xl border shadow-sm p-5 space-y-3" data-testid="order-detail-route-editor">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Modifica percorso</p>
+            <span className="text-xs text-muted-foreground">{order.route.distance_km} km · {Math.floor(order.route.duration_min / 60)}h{order.route.duration_min % 60}m</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {order.route.waypoints.map((w, idx) => (
+              <span key={`${w.tipo}-${w.ref_id}-${idx}`} className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 pl-2.5 pr-1.5 py-1 text-xs">
+                <MapPin className="h-3 w-3 text-muted-foreground" /> {w.nome}
+                {order.route.waypoints.length > 2 && (
+                  <button type="button" onClick={() => handleRemoveWaypoint(idx)} className="rounded-full hover:bg-muted p-0.5" title="Rimuovi punto">
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="w-64">
+              <LocationCombobox
+                value={addingWaypointId}
+                onChange={handleAddWaypoint}
+                options={destinations}
+                placeholder="Aggiungi punto intermedio..."
+                searchPlaceholder="Cerca destinazione..."
+                icon={MapPin}
+                iconBg="#eef2ff"
+                iconColor="#4338ca"
+              />
+            </div>
+            <Button variant="outline" size="sm" disabled={recalculating} onClick={() => recomputeRoute(order.route.waypoints)}>
+              {recalculating ? <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-2" />} Ricalcola
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {order.stato === 'PIANIFICABILE' ? (
         <Card className="rounded-xl border shadow-sm p-5" data-testid="order-detail-assign-form">

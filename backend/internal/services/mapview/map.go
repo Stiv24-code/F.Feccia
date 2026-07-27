@@ -24,8 +24,8 @@ type MapService struct {
 	geo *geo.GeoService
 }
 
-func NewMapService(db *gorm.DB) *MapService {
-	return &MapService{db: db, geo: geo.NewGeoService(db)}
+func NewMapService(db *gorm.DB, orsApiKey, orsBaseURL string) *MapService {
+	return &MapService{db: db, geo: geo.NewGeoService(db, orsApiKey, orsBaseURL)}
 }
 
 // Trips mirrors GET /map/trips.

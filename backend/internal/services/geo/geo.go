@@ -1,9 +1,11 @@
-// Package geo ports backend/services.py's OSRM + coordinate-lookup helpers
-// (used by both trips' segment computation and the live map). Shared here
-// rather than duplicated so both packages hit the same route cache.
+// Package geo provides truck-aware route computation (OpenRouteService
+// driving-hgv profile) plus the coordinate-lookup helpers ported from
+// backend/services.py. Shared here rather than duplicated so trip segments,
+// the live map, and order routes all hit the same route cache.
 package geo
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -99,17 +101,24 @@ func ComputeVehiclePosition(roadPoints [][2]float64, carico, scarico NamedPoint,
 
 type GeoService struct {
 	db *gorm.DB
-	// OsrmBaseURL/HTTPClient are exported so tests can point them at a
-	// local httptest.Server instead of the real OSRM demo server.
-	OsrmBaseURL string
-	HTTPClient  *http.Client
+	// ORSApiKey/ORSBaseURL are exported so tests can point them at a local
+	// httptest.Server instead of the real OpenRouteService API. Empty
+	// ORSApiKey disables routing entirely (GetRoadRoute* degrade to nil),
+	// same posture as pkg/s3invoices when its bucket config is empty.
+	ORSApiKey  string
+	ORSBaseURL string
+	HTTPClient *http.Client
 }
 
-func NewGeoService(db *gorm.DB) *GeoService {
+func NewGeoService(db *gorm.DB, orsApiKey, orsBaseURL string) *GeoService {
+	if orsBaseURL == "" {
+		orsBaseURL = "https://api.openrouteservice.org"
+	}
 	return &GeoService{
-		db:          db,
-		OsrmBaseURL: "https://router.project-osrm.org",
-		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
+		db:         db,
+		ORSApiKey:  orsApiKey,
+		ORSBaseURL: orsBaseURL,
+		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -160,9 +169,9 @@ type RouteResult struct {
 }
 
 // GetRoadRoute mirrors get_road_route: Postgres-backed cache keyed by
-// rounded coordinates, then a best-effort OSRM call. Any failure (timeout,
-// non-200, malformed response) degrades to nil — never an error — exactly
-// like the Python original swallowing all exceptions.
+// rounded coordinates, then a best-effort ORS call. Any failure (no API key,
+// timeout, non-200, malformed response) degrades to nil — never an error —
+// same posture the OSRM-based version this replaces had.
 func (s *GeoService) GetRoadRoute(ctx context.Context, fromLat, fromLng, toLat, toLng float64) *RouteResult {
 	cacheKey := fmt.Sprintf("%.3f,%.3f_%.3f,%.3f", fromLat, fromLng, toLat, toLng)
 
@@ -173,41 +182,145 @@ func (s *GeoService) GetRoadRoute(ctx context.Context, fromLat, fromLng, toLat, 
 		return &RouteResult{Points: points, DistanceKm: cached.DistanceKm, DurationHours: cached.DurationHours, NumPoints: cached.NumPoints}
 	}
 
-	url := fmt.Sprintf("%s/route/v1/driving/%f,%f;%f,%f?overview=full&geometries=geojson",
-		s.OsrmBaseURL, fromLng, fromLat, toLng, toLat)
+	results := s.callORS(ctx, [][2]float64{{fromLng, fromLat}, {toLng, toLat}}, 0)
+	if len(results) == 0 {
+		return nil
+	}
+	result := results[0]
 
-	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
+	pointsJSON, _ := json.Marshal(result.Points)
+	cacheRow := models.RouteCache{
+		Key: cacheKey, Points: pointsJSON, DistanceKm: result.DistanceKm,
+		DurationHours: result.DurationHours, NumPoints: result.NumPoints,
+	}
+	s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"points", "distance_km", "duration_hours", "num_points"}),
+	}).Create(&cacheRow)
+
+	return &result
+}
+
+// GetRoadRouteAlternatives requests up to count alternative routes between
+// two points (no cache — used only at order-assignment time, not in the
+// high-frequency map/segment recompute loops). ORS's alternative_routes only
+// supports a plain 2-coordinate request (no via-points), which is exactly
+// what this takes.
+//
+// ORS additionally refuses alternative_routes outright (HTTP error) once the
+// route's approximate distance exceeds 100km — a real limit on their side,
+// not a bug here. Since this app routes international/long-haul freight,
+// most real orders exceed that, so on any failure this falls back to a
+// single plain route (no alternative_routes) rather than showing nothing.
+func (s *GeoService) GetRoadRouteAlternatives(ctx context.Context, fromLat, fromLng, toLat, toLng float64, count int) []RouteResult {
+	coords := [][2]float64{{fromLng, fromLat}, {toLng, toLat}}
+	if results := s.callORS(ctx, coords, count); len(results) > 0 {
+		return results
+	}
+	return s.callORS(ctx, coords, 0)
+}
+
+// GetRoadRouteMultiWaypoint routes through an arbitrary ordered sequence of
+// points (garage/destination/wash-station via-points a manager added by
+// hand) as a single ORS request. No cache: manual edits are infrequent and
+// the waypoint sequence is unique per call.
+func (s *GeoService) GetRoadRouteMultiWaypoint(ctx context.Context, points []NamedPoint) *RouteResult {
+	coords := make([][2]float64, len(points))
+	for i, p := range points {
+		coords[i] = [2]float64{p.Lng, p.Lat}
+	}
+	results := s.callORS(ctx, coords, 0)
+	if len(results) == 0 {
+		return nil
+	}
+	return &results[0]
+}
+
+// callORS POSTs to ORS's /v2/directions/driving-hgv/geojson and returns up
+// to max(1, altCount) routes. altCount > 0 requests alternative_routes (ORS
+// caps target_count at 3, and — per ORS docs — only honors it for a plain
+// 2-coordinate request). Any failure (no key configured, timeout, non-200,
+// malformed body) degrades to an empty slice, never an error, mirroring the
+// Python original's blanket exception-swallowing.
+func (s *GeoService) callORS(ctx context.Context, coords [][2]float64, altCount int) []RouteResult {
+	if s.ORSApiKey == "" || len(coords) < 2 {
+		return nil
+	}
+
+	body := map[string]any{"coordinates": coords, "instructions": false, "geometry_simplify": true}
+	if altCount > 0 {
+		if altCount > 3 {
+			altCount = 3
+		}
+		body["alternative_routes"] = map[string]any{
+			"target_count":  altCount,
+			"weight_factor": 1.6,
+			"share_factor":  0.6,
+		}
+	}
+	payload, err := json.Marshal(body)
 	if err != nil {
 		return nil
 	}
+
+	url := fmt.Sprintf("%s/v2/directions/driving-hgv/geojson", s.ORSBaseURL)
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Authorization", s.ORSApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
-		slog.Warn("osrm_routing_failed", "error", err.Error(), "cache_key", cacheKey)
+		slog.Warn("ors_routing_failed", "error", err.Error())
 		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		slog.Warn("ors_routing_failed", "status", resp.StatusCode)
 		return nil
 	}
 
-	var body struct {
-		Code   string `json:"code"`
-		Routes []struct {
-			Distance float64 `json:"distance"`
-			Duration float64 `json:"duration"`
+	var geoJSON struct {
+		Features []struct {
+			Properties struct {
+				Summary struct {
+					Distance float64 `json:"distance"`
+					Duration float64 `json:"duration"`
+				} `json:"summary"`
+			} `json:"properties"`
 			Geometry struct {
 				Coordinates [][2]float64 `json:"coordinates"`
 			} `json:"geometry"`
-		} `json:"routes"`
+		} `json:"features"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.Code != "Ok" || len(body.Routes) == 0 {
+	if err := json.NewDecoder(resp.Body).Decode(&geoJSON); err != nil || len(geoJSON.Features) == 0 {
 		return nil
 	}
 
-	route := body.Routes[0]
-	raw := route.Geometry.Coordinates
+	results := make([]RouteResult, 0, len(geoJSON.Features))
+	for _, f := range geoJSON.Features {
+		results = append(results, RouteResult{
+			Points:        simplifyAndFlip(f.Geometry.Coordinates),
+			DistanceKm:    roundTo1(f.Properties.Summary.Distance / 1000),
+			DurationHours: roundTo1(f.Properties.Summary.Duration / 3600),
+			NumPoints:     len(f.Geometry.Coordinates),
+		})
+	}
+	// NumPoints above is set from the raw geometry before simplification;
+	// fix up to reflect what's actually returned.
+	for i := range results {
+		results[i].NumPoints = len(results[i].Points)
+	}
+	return results
+}
+
+// simplifyAndFlip downsamples a raw [lng,lat] coordinate list to ~80 points
+// (always keeping the last point) and converts to [lat,lng] for Leaflet.
+func simplifyAndFlip(raw [][2]float64) [][2]float64 {
 	step := len(raw) / 80
 	if step < 1 {
 		step = 1
@@ -223,25 +336,7 @@ func (s *GeoService) GetRoadRoute(ctx context.Context, fromLat, fromLng, toLat, 
 	for i, c := range simplified {
 		points[i] = [2]float64{c[1], c[0]} // [lng,lat] -> [lat,lng]
 	}
-
-	result := RouteResult{
-		Points:        points,
-		DistanceKm:    roundTo1(route.Distance / 1000),
-		DurationHours: roundTo1(route.Duration / 3600),
-		NumPoints:     len(points),
-	}
-
-	pointsJSON, _ := json.Marshal(result.Points)
-	cacheRow := models.RouteCache{
-		Key: cacheKey, Points: pointsJSON, DistanceKm: result.DistanceKm,
-		DurationHours: result.DurationHours, NumPoints: result.NumPoints,
-	}
-	s.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "key"}},
-		DoUpdates: clause.AssignmentColumns([]string{"points", "distance_km", "duration_hours", "num_points"}),
-	}).Create(&cacheRow)
-
-	return &result
+	return points
 }
 
 func roundTo1(v float64) float64 {

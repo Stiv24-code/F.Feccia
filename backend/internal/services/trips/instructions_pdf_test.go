@@ -13,7 +13,7 @@ import (
 
 func TestGetInstructionsPDF_ResolvesOrdersCustomersAndDriver(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewTripService(db)
+	svc := NewTripService(db, "test-key", "")
 
 	driver := models.Driver{ID: uuid.New(), Nome: "Mario", Cognome: "Rossi", Telefono: "3331234567", Active: true}
 	if err := db.Create(&driver).Error; err != nil {
@@ -58,7 +58,7 @@ func TestGetInstructionsPDF_ResolvesOrdersCustomersAndDriver(t *testing.T) {
 
 func TestGetInstructionsPDF_NotFoundReturns404(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewTripService(db)
+	svc := NewTripService(db, "test-key", "")
 
 	_, _, err := svc.GetInstructionsPDF(context.Background(), uuid.New())
 	apiErr, ok := err.(utils.APIError)
@@ -69,7 +69,7 @@ func TestGetInstructionsPDF_NotFoundReturns404(t *testing.T) {
 
 func TestGetInstructionsPDF_HandlesTripWithNoOrdersOrDriver(t *testing.T) {
 	db := newTestDB(t)
-	svc := NewTripService(db)
+	svc := NewTripService(db, "test-key", "")
 
 	trip := models.Trip{ID: uuid.New(), DataPartenza: "2026-01-10"}
 	if err := db.Create(&trip).Error; err != nil {

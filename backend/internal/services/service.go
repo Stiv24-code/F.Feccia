@@ -144,6 +144,8 @@ type Order interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	ReturnSuggestions(ctx context.Context, id uuid.UUID, maxDaysGap, limit int) (*dto.OrderReturnSuggestionsResponse, error)
 	GetCMRPDF(ctx context.Context, id uuid.UUID) ([]byte, string, error)
+	RouteAlternatives(ctx context.Context, id uuid.UUID, garageID, washStationID string) ([]dto.RouteAlternativeDTO, error)
+	UpdateRoute(ctx context.Context, id uuid.UUID, waypoints []dto.RouteWaypointDTO) (*dto.OrderResponse, error)
 }
 
 type Vehicle interface {
@@ -321,7 +323,7 @@ type Service struct {
 	ExportGroup
 }
 
-func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client) *Service {
+func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string) *Service {
 	return &Service{
 		Admin: Admin{
 			Admin: admin.NewAdminService(db, jwtConf),
@@ -360,13 +362,13 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 			DriverUnavailability: driverunavailability.NewDriverUnavailabilityService(db),
 		},
 		Orders: Orders{
-			Order: orders.NewOrderService(db),
+			Order: orders.NewOrderService(db, orsApiKey, orsBaseURL),
 		},
 		Vehicles: Vehicles{
 			Vehicle: vehicles.NewVehicleService(db),
 		},
 		Trips: Trips{
-			Trip: trips.NewTripService(db),
+			Trip: trips.NewTripService(db, orsApiKey, orsBaseURL),
 		},
 		PriceLists: PriceLists{
 			PriceList: pricelists.NewPriceListService(db),
@@ -378,7 +380,7 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 			Dashboard: dashboard.NewDashboardService(db),
 		},
 		MapGroup: MapGroup{
-			Map: mapview.NewMapService(db),
+			Map: mapview.NewMapService(db, orsApiKey, orsBaseURL),
 		},
 		AvailabilityGroup: AvailabilityGroup{
 			Availability: availability.NewAvailabilityService(db),

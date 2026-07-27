@@ -31,17 +31,19 @@ const FitPoints = ({ points }) => {
 
 const hasCoords = (p) => p?.lat != null && p?.lng != null;
 
-// Mappa minimale: la linea tratteggiata collega solo carico → scarico (nessun
-// percorso stradale reale calcolato per il singolo ordine); garage e punto di
-// lavaggio, quando assegnati, compaiono come marker aggiuntivi (inclusi nel
-// fit dei bounds) ma non fanno parte della linea — non sappiamo in che ordine
-// il mezzo li tocchi realmente.
-export default function OrderRouteMap({ carico, scarico, garage, washStation, height = 220 }) {
+// Mappa minimale: senza un percorso reale calcolato, la linea tratteggiata
+// collega solo carico → scarico; garage e punto di lavaggio, quando
+// assegnati, compaiono come marker aggiuntivi (inclusi nel fit dei bounds)
+// ma non fanno parte della linea — non sappiamo in che ordine il mezzo li
+// tocchi realmente. Quando è disponibile un percorso calcolato (routePoints,
+// da OrderRoute/RouteAlternative — vera geometria stradale truck-aware via
+// ORS) si disegna quello al suo posto, una polilinea piena invece che tratteggiata.
+export default function OrderRouteMap({ carico, scarico, garage, washStation, routePoints: roadPoints, height = 220 }) {
   const routePoints = [];
   if (hasCoords(carico)) routePoints.push([carico.lat, carico.lng]);
   if (hasCoords(scarico)) routePoints.push([scarico.lat, scarico.lng]);
 
-  const allPoints = [...routePoints];
+  const allPoints = roadPoints?.length ? [...roadPoints] : [...routePoints];
   if (hasCoords(garage)) allPoints.push([garage.lat, garage.lng]);
   if (hasCoords(washStation)) allPoints.push([washStation.lat, washStation.lng]);
 
@@ -55,14 +57,16 @@ export default function OrderRouteMap({ carico, scarico, garage, washStation, he
 
   return (
     <div className="rounded-lg overflow-hidden border" style={{ height }} data-testid="order-route-map">
-      <MapContainer center={allPoints[0]} zoom={6} style={{ height: '100%', width: '100%' }} zoomControl={false} scrollWheelZoom={false}>
+      <MapContainer center={allPoints[0]} zoom={6} style={{ height: '100%', width: '100%' }} zoomControl={true} scrollWheelZoom={true}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
         />
         <FitPoints points={allPoints} />
-        {routePoints.length === 2 && (
+        {roadPoints?.length > 1 ? (
+          <Polyline positions={roadPoints} pathOptions={{ color: '#2a6fdb', weight: 4, opacity: 0.9 }} />
+        ) : routePoints.length === 2 && (
           <Polyline positions={routePoints} pathOptions={{ color: '#2a6fdb', weight: 3, dashArray: '6 4', opacity: 0.85 }} />
         )}
         {hasCoords(carico) && (

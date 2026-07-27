@@ -52,6 +52,9 @@ import {
   DtoOrderRequest,
   DtoOrderResponse,
   DtoOrderReturnSuggestionsResponse,
+  DtoOrderRouteAlternativesRequest,
+  DtoOrderRouteAlternativesResponse,
+  DtoOrderRouteUpdateRequest,
   DtoPatchUserRequest,
   DtoPriceListItemAddResult,
   DtoPriceListItemDeleteResult,
@@ -1633,6 +1636,55 @@ export class Api<SecurityDataType = unknown> {
       method: "GET",
       query: query,
       secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Orders
+   * @name V1OrdersRoutePartialUpdate
+   * @summary Recompute and persist an order's route for an edited waypoint sequence
+   * @request PATCH:/api/v1/orders/{id}/route
+   * @secure
+   */
+  v1OrdersRoutePartialUpdate = (
+    id: string,
+    body: DtoOrderRouteUpdateRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/orders/${id}/route`,
+      method: "PATCH",
+      body: body,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Ephemeral — nothing is persisted, the manager picks one and it travels in the Assign/UpdateRoute call.
+   *
+   * @tags Orders
+   * @name V1OrdersRouteAlternativesCreate
+   * @summary Compute up to 3 truck-aware route alternatives for an order
+   * @request POST:/api/v1/orders/{id}/route-alternatives
+   * @secure
+   */
+  v1OrdersRouteAlternativesCreate = (
+    id: string,
+    body: DtoOrderRouteAlternativesRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<
+      DtoOrderRouteAlternativesResponse,
+      Record<string, string>
+    >({
+      path: `/api/v1/orders/${id}/route-alternatives`,
+      method: "POST",
+      body: body,
+      secure: true,
+      type: ContentType.Json,
       format: "json",
       ...params,
     });

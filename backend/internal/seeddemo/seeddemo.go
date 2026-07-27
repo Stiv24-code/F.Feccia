@@ -380,6 +380,77 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d ordini\n", len(orders))
 
+	// ─────────── ORDINI TEST: PERCORSI CORTI (<100KM), DA PIANIFICARE ───────────
+	// Coppie carico/scarico reali (dall'export Visirun) a distanza nota <100km —
+	// per testare le 3 alternative di percorso in AssignOrderForm: ORS rifiuta
+	// alternative_routes oltre i 100km (vedi geo.GetRoadRouteAlternatives), e la
+	// grande maggioranza degli ordini "normali" sopra è long-haul internazionale,
+	// quindi non le esercita. Tutti PIANIFICABILE: pronti per essere assegnati a
+	// mano dal tester, non assegnati automaticamente come gli ordini sopra.
+	shortRoutePairs := []struct{ carico, scarico string }{
+		{"3 B Latte Brignano Gera d'Adda", "Barry Verbania"},
+		{"A&A CHOCOLATERIE LOKEREN", "REFRESCO FRANCE S.A. LE QUESNOY"},
+		{"A&A Fratelli Parodi Campomorone", "FATTORIE OSELLA"},
+		{"A-ware Dairy Trade B. V. Saturnus 21 8448 CC Heerenveen", "Bunge Loders Croklaan Wormerveer"},
+		{"AarhusKarlshamn B.V", "DOHLER OOSTERHOUT"},
+		{"Acetaia Monari Federzoni 1912 Solara", "Greenoleo Cremona"},
+		{"ADEA BUSTO ARSIZIO", "OLFOOD BORGO SAN GIACOMO"},
+		{"ADM Europoort Rotterdam", "PBI FRUIT JUICE COMPANY N.V. ZEEBRUGGE"},
+		{"AGRICOLA ALIMENTARE-ITALIANA", "Innospec Castiglione delle Stiviere"},
+		{"AGRICOLA GREINS ARRE (PD)", "Philip Morris Crespellano"},
+		{"APHA TRADING CARBONARA SCRIVIA", "Balocco Fossano"},
+		{"AZ.AGR.TROT. EREDE ROSSI SILVIO CASSOLNOVO", "Cavanna Olii Casella"},
+		{"Azienda Agricola Ruffia", "BOTALLA FORMAGGI Mongrando"},
+		{"Azienda Vinicola Carassanese", "CANTINA SOCIALE DI ARI (CH)"},
+		{"Balconi Nerviano", "La Suissa Arquata Scrivia"},
+		{"Barilla Castiglione delle Stiviere", "CEREAL DOCKS CAMISANO"},
+		{"Barry Callebaut Wieze Lebbeke", "Delicia Tilburg"},
+		{"BELGOMILK SCHOTEN", "Cargill Izegem"},
+		{"Bimbo QSR Bomporto", "PESA PER WALCOR"},
+		{"Biochem - Lohne", "MOLKEREI ELSDORF-ROTENBURG eG"},
+		{"BIOLICA SAN GENESIO (PV)", "Ferrero Genova"},
+		{"Biscottificio Baroni Albaredo d' Adige", "Montenegro SPA San Lazzaro di Savena"},
+		{"Biscottificio Gandola Rudiano (BS)", "Cantine Riunite - Campegine"},
+		{"Borgo Imperiale Motta Baluffi", "PELLEGRINI SPA RONCA'"},
+		{"C.T. Logistics Serra Riccò", "Cleys Ozzero"},
+	}
+	destByNome := make(map[string]*models.Destination, len(destinations))
+	for i := range destinations {
+		destByNome[destinations[i].Nome] = &destinations[i]
+	}
+	shortRouteOrders := make([]models.Order, 0, len(shortRoutePairs))
+	for i, pair := range shortRoutePairs {
+		carico, okC := destByNome[pair.carico]
+		scarico, okS := destByNome[pair.scarico]
+		if !okC || !okS {
+			continue
+		}
+		cust := pick(customers)
+		prod := pick(products)
+		ritiro := today.AddDate(0, 0, randRange(-5, 20))
+		consegna := ritiro.AddDate(0, 0, randRange(1, 2))
+		shortRouteOrders = append(shortRouteOrders, models.Order{
+			ID: uuid.New(), Progressivo: fmt.Sprintf("%s/T%03d", today.Format("06"), i+1),
+			ClienteID:             cust.ID,
+			DestinazioneCaricoID:  &carico.ID,
+			DestinazioneScaricoID: &scarico.ID,
+			DataRitiro:            ritiro.Format("2006-01-02"), OraRitiroDa: pick(oraRitiroDa), OraRitiroA: pick(oraRitiroA),
+			DataConsegna: consegna.Format("2006-01-02"), OraConsegnaDa: pick(oraConsegnaDa), OraConsegnaA: pick(oraConsegnaA),
+			Tariffa: pick(tariffe), TipoTariffa: pick(tipoTariffe), Tipologia: "nazionale",
+			CategoriaTrasporto: pick(categorieTrasporto),
+			Items: []models.OrderItem{
+				{ID: uuid.New(), ProdottoID: prod.ID, Quantita: 1, Peso: float64(randRange(8000, 25000))},
+			},
+			ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"), Stato: models.OrderStatoPianificabile,
+		})
+	}
+	if len(shortRouteOrders) > 0 {
+		if err := db.Create(&shortRouteOrders).Error; err != nil {
+			return fmt.Errorf("ordini test percorsi corti: %w", err)
+		}
+	}
+	fmt.Printf("✓ %d ordini test percorsi corti (<100km, PIANIFICABILE)\n", len(shortRouteOrders))
+
 	// ─────────────────────────── VIAGGI ───────────────────────────
 	var viaggioOrders []models.Order
 	for _, o := range orders {

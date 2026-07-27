@@ -1,14 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
-import { assignOrder, getVehicles, getDrivers, getCarriers, getVehicleAvailability, getDriverAvailability } from '@/lib/api';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { assignOrder, getVehicles, getDrivers, getCarriers, getVehicleAvailability, getDriverAvailability, getOrderRouteAlternatives } from '@/lib/api';
 import { useGetGaragesQuery, useGetWashStationsQuery } from '@/store/api/appApi';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LocationCombobox from '@/components/shared/LocationCombobox';
+import OrderRouteMap from '@/components/shared/OrderRouteMap';
 import { toast } from 'sonner';
-import { Loader2, Warehouse, Droplets } from 'lucide-react';
+import { Loader2, Warehouse, Droplets, Check, Route } from 'lucide-react';
 import { logger } from '@/lib/logger';
+
+// Trova l'n-esimo waypoint di un certo tipo in una route alternativa — ordine
+// garantito dal backend (garage?, carico, scarico, wash_station?), quindi
+// idx=1 sul tipo "destinazione" è sempre lo scarico.
+const waypointByTipo = (waypoints, tipo, idx = 0) => (waypoints || []).filter(w => w.tipo === tipo)[idx];
 
 const EMPTY_FORM = {
   garage_id: '',
@@ -37,6 +43,9 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
   const [carriers, setCarriers] = useState([]);
   const [availVehicles, setAvailVehicles] = useState([]);
   const [availDrivers, setAvailDrivers] = useState([]);
+  const [routeAlternatives, setRouteAlternatives] = useState([]);
+  const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   const { data: garages = [] } = useGetGaragesQuery();
   const { data: washStations = [] } = useGetWashStationsQuery();
@@ -47,6 +56,8 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
     setTransportMode('proprio');
     setAvailVehicles([]);
     setAvailDrivers([]);
+    setRouteAlternatives([]);
+    setSelectedRouteIdx(0);
     Promise.all([getVehicles(), getDrivers(), getCarriers()]).then(([v, d, c]) => {
       setVehicles(v.data); setDrivers(d.data); setCarriers(c.data);
     }).catch(err => logger.error('Errore caricamento lookup assegna:', err));
@@ -58,6 +69,27 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
       }).catch(err => logger.error('Disponibilità fetch error:', err));
     }
   }, [order]);
+
+  // Ricalcola le alternative ogni volta che cambia garage/punto di lavaggio
+  // (carico/scarico sono fissi, vengono dall'ordine) — la prima resta
+  // preselezionata di default così un percorso è sempre pronto anche se il
+  // manager non interagisce con le card. fetchRouteAlternatives è estratta
+  // per essere riutilizzabile anche dal bottone "Riprova" — ORS ogni tanto
+  // fallisce in modo transitorio (timeout, rate limit del piano gratuito) e
+  // senza un modo per ritentare l'unica opzione sarebbe toccare di nuovo
+  // garage/lavaggio solo per ri-triggerare l'effect.
+  const fetchRouteAlternatives = useCallback((orderId, garageId, washStationId) => {
+    setRouteLoading(true);
+    getOrderRouteAlternatives(orderId, { garageId, washStationId })
+      .then(r => { setRouteAlternatives(r.data.alternatives || []); setSelectedRouteIdx(0); })
+      .catch(err => { logger.error('Errore calcolo percorso:', err); setRouteAlternatives([]); })
+      .finally(() => setRouteLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!order?.id) return;
+    fetchRouteAlternatives(order.id, form.garage_id, form.wash_station_id);
+  }, [order?.id, form.garage_id, form.wash_station_id, fetchRouteAlternatives]);
 
   const setGarage = (id) => setForm(f => ({ ...f, garage_id: id }));
   const setWashStation = (id) => setForm(f => ({ ...f, wash_station_id: id }));
@@ -80,7 +112,11 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
   const handleAssign = async () => {
     setSaving(true);
     try {
-      await assignOrder(order.id, form);
+      const selectedRoute = routeAlternatives[selectedRouteIdx];
+      const payload = selectedRoute
+        ? { ...form, route_waypoints: selectedRoute.waypoints.map(w => ({ tipo: w.tipo, ref_id: w.ref_id })) }
+        : form;
+      await assignOrder(order.id, payload);
       toast.success(`Ordine ${order.progressivo} assegnato`);
       if (onAssigned) onAssigned();
     } catch (e) { toast.error(e.response?.data?.detail || 'Errore'); } finally { setSaving(false); }
@@ -119,6 +155,60 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
             />
           </div>
         </div>
+      </div>
+
+      <div>
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-3 flex items-center gap-1.5">
+          <Route className="h-3 w-3" /> Percorso
+        </p>
+        {routeLoading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Calcolo percorso in corso...
+          </div>
+        ) : routeAlternatives.length === 0 ? (
+          <div className="flex items-center justify-between gap-2 py-2">
+            <p className="text-xs text-muted-foreground">Percorso non disponibile (routing non configurato, coordinate mancanti, o errore momentaneo del servizio).</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => fetchRouteAlternatives(order.id, form.garage_id, form.wash_station_id)}>
+              Riprova
+            </Button>
+          </div>
+        ) : (
+          <>
+            {routeAlternatives.length === 1 && routeAlternatives[0].distance_km > 100 && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Percorso oltre i 100 km: OpenRouteService non calcola percorsi alternativi multipli oltre questa soglia, mostrato l&apos;unico percorso disponibile.
+              </p>
+            )}
+            <div className={`grid grid-cols-1 gap-3 ${routeAlternatives.length > 1 ? 'md:grid-cols-2' : ''}`} data-testid="route-alternatives">
+            {routeAlternatives.map((alt, idx) => {
+              const carico = waypointByTipo(alt.waypoints, 'destinazione', 0);
+              const scarico = waypointByTipo(alt.waypoints, 'destinazione', 1);
+              const garage = waypointByTipo(alt.waypoints, 'garage');
+              const wash = waypointByTipo(alt.waypoints, 'wash_station');
+              const selected = idx === selectedRouteIdx;
+              return (
+                // div, non <button>: la mappa ora ha zoom control interattivi
+                // (bottoni Leaflet) — annidare bottoni dentro un <button> è
+                // HTML non valido e rompe i loro click.
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedRouteIdx(idx)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedRouteIdx(idx); } }}
+                  className={`text-left rounded-lg border p-2 space-y-2 transition-colors cursor-pointer ${selected ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-muted/40'}`}
+                >
+                  <OrderRouteMap carico={carico} scarico={scarico} garage={garage} washStation={wash} routePoints={alt.points} height={260} />
+                  <div className="flex items-center justify-between px-1 pb-1">
+                    <span className="text-xs font-semibold">{alt.distance_km} km · {Math.floor(alt.duration_min / 60)}h{alt.duration_min % 60}m</span>
+                    {selected && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          </>
+        )}
       </div>
 
       <div>

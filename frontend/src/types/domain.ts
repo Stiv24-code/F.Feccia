@@ -182,10 +182,36 @@ export interface Order {
   vettore?: Carrier;
   wash_station_id?: string;
   wash_station?: WashStation;
+  route_id?: string;
+  route?: OrderRoute;
   viaggio_id?: string;
   fattura_id?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface RouteWaypoint {
+  tipo: 'garage' | 'destinazione' | 'wash_station';
+  ref_id: string;
+  nome?: string;
+  lat?: number;
+  lng?: number;
+}
+
+export interface OrderRoute {
+  id: string;
+  waypoints?: RouteWaypoint[];
+  points?: [number, number][];
+  distance_km?: number;
+  duration_min?: number;
+  edited_manually?: boolean;
+}
+
+export interface RouteAlternative {
+  waypoints?: RouteWaypoint[];
+  points?: [number, number][];
+  distance_km?: number;
+  duration_min?: number;
 }
 
 export type TripStato = 'IN_CORSO' | 'COMPLETATO';

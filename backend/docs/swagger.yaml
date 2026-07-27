@@ -982,6 +982,16 @@ definitions:
         type: string
       garage_id:
         type: string
+      route_waypoints:
+        description: |-
+          RouteWaypoints: la sequenza scelta dal manager tra le alternative
+          proposte (POST /orders/{id}/route-alternatives). Opzionale — se
+          assente l'ordine viene comunque assegnato, semplicemente senza un
+          OrderRoute calcolato. Il server ricalcola sempre la geometria via ORS,
+          non si fida di quella eventualmente mandata dal client.
+        items:
+          $ref: '#/definitions/dto.RouteWaypointDTO'
+        type: array
       targa_motrice:
         type: string
       targa_rimorchio:
@@ -1118,6 +1128,10 @@ definitions:
         type: string
       rif_ordine_cliente:
         type: string
+      route:
+        $ref: '#/definitions/dto.RouteResponseDTO'
+      route_id:
+        type: string
       servizi_accessori:
         items:
           type: string
@@ -1174,6 +1188,30 @@ definitions:
         type: integer
       source_order:
         $ref: '#/definitions/dto.OrderSourceSummary'
+    type: object
+  dto.OrderRouteAlternativesRequest:
+    properties:
+      garage_id:
+        type: string
+      wash_station_id:
+        type: string
+    type: object
+  dto.OrderRouteAlternativesResponse:
+    properties:
+      alternatives:
+        items:
+          $ref: '#/definitions/dto.RouteAlternativeDTO'
+        type: array
+    type: object
+  dto.OrderRouteUpdateRequest:
+    properties:
+      waypoints:
+        items:
+          $ref: '#/definitions/dto.RouteWaypointDTO'
+        minItems: 2
+        type: array
+    required:
+    - waypoints
     type: object
   dto.OrderSourceSummary:
     properties:
@@ -1389,6 +1427,73 @@ definitions:
     - name
     - password
     - role
+    type: object
+  dto.RouteAlternativeDTO:
+    properties:
+      distance_km:
+        type: number
+      duration_min:
+        type: integer
+      points:
+        items:
+          items:
+            format: float64
+            type: number
+          type: array
+        type: array
+      waypoints:
+        items:
+          $ref: '#/definitions/dto.RouteWaypointResponseDTO'
+        type: array
+    type: object
+  dto.RouteResponseDTO:
+    properties:
+      distance_km:
+        type: number
+      duration_min:
+        type: integer
+      edited_manually:
+        type: boolean
+      id:
+        type: string
+      points:
+        items:
+          items:
+            format: float64
+            type: number
+          type: array
+        type: array
+      waypoints:
+        items:
+          $ref: '#/definitions/dto.RouteWaypointResponseDTO'
+        type: array
+    type: object
+  dto.RouteWaypointDTO:
+    properties:
+      ref_id:
+        type: string
+      tipo:
+        enum:
+        - garage
+        - destinazione
+        - wash_station
+        type: string
+    required:
+    - ref_id
+    - tipo
+    type: object
+  dto.RouteWaypointResponseDTO:
+    properties:
+      lat:
+        type: number
+      lng:
+        type: number
+      nome:
+        type: string
+      ref_id:
+        type: string
+      tipo:
+        type: string
     type: object
   dto.TariffLookupResult:
     properties:
@@ -4033,6 +4138,76 @@ paths:
       security:
       - BearerAuth: []
       summary: Return-trip order suggestions
+      tags:
+      - Orders
+  /api/v1/orders/{id}/route:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ordered waypoint sequence
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRouteUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Recompute and persist an order's route for an edited waypoint sequence
+      tags:
+      - Orders
+  /api/v1/orders/{id}/route-alternatives:
+    post:
+      consumes:
+      - application/json
+      description: Ephemeral — nothing is persisted, the manager picks one and it
+        travels in the Assign/UpdateRoute call.
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Optional garage/wash_station points
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRouteAlternativesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderRouteAlternativesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Compute up to 3 truck-aware route alternatives for an order
       tags:
       - Orders
   /api/v1/orders/{id}/start:

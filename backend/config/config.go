@@ -12,6 +12,20 @@ type Config struct {
 	Security SecurityConfig `json:"security"`
 	Swagger  SwaggerConfig  `json:"swagger"`
 	S3       S3Config       `json:"s3"`
+	Routing  RoutingConfig  `json:"routing"`
+}
+
+// RoutingConfig holds the OpenRouteService settings used for truck-aware
+// (driving-hgv) route computation — internal/services/geo.GeoService. Empty
+// key means routing is disabled: GetRoadRoute degrades to nil, same as an
+// unreachable routing backend, mirroring S3Config's "disabled if bucket
+// empty" pattern. BaseURL is configurable because api.openrouteservice.org
+// and api.heigit.org are the same backend but not always equally reachable
+// from every network (seen in practice: one resolves/routes, the other
+// doesn't, depending on the host's DNS/egress).
+type RoutingConfig struct {
+	ORSApiKey  string `json:"-"`
+	ORSBaseURL string `json:"ors_base_url"`
 }
 
 // S3Config mirrors backend/config.py's aws_region/s3_invoices_* settings.
@@ -83,6 +97,10 @@ func Load() *Config {
 			InvoicesBucket:         getEnv("S3_INVOICES_BUCKET", ""),
 			InvoicesRetentionYears: getEnvInt("S3_INVOICES_RETENTION_YEARS", 10),
 			PresignedTTLSeconds:    getEnvInt("S3_PRESIGNED_TTL_SECONDS", 900),
+		},
+		Routing: RoutingConfig{
+			ORSApiKey:  getEnv("ORS_API_KEY", ""),
+			ORSBaseURL: getEnv("ORS_BASE_URL", "https://api.openrouteservice.org"),
 		},
 	}
 

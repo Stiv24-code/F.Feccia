@@ -106,6 +106,7 @@ func Migrate(db *gorm.DB) error {
 		&models.AccountingEntry{},
 		&models.DriverUnavailability{},
 		&Counter{},
+		&models.OrderRoute{},
 		&models.Order{},
 		&models.OrderItem{},
 		&models.Vehicle{},

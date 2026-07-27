@@ -29,8 +29,8 @@ type TripService struct {
 	geo *geo.GeoService
 }
 
-func NewTripService(db *gorm.DB) *TripService {
-	return &TripService{db: db, geo: geo.NewGeoService(db)}
+func NewTripService(db *gorm.DB, orsApiKey, orsBaseURL string) *TripService {
+	return &TripService{db: db, geo: geo.NewGeoService(db, orsApiKey, orsBaseURL)}
 }
 
 // preloadTripAssociations loads every belongs-to reference a Trip can carry
