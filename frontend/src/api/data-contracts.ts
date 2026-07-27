@@ -493,7 +493,7 @@ export interface DtoMapRoute {
   distance_km?: number;
   duration_hours?: number;
   eta_hours?: number;
-  garage?: DtoMapPoint;
+  garage?: DtoMapNamedPoint;
   gps_heading?: number;
   gps_last_update?: string;
   gps_live?: boolean;
@@ -512,6 +512,7 @@ export interface DtoMapRoute {
   targa_motrice?: string;
   tariffa?: number;
   tipologia?: string;
+  wash_station?: DtoMapNamedPoint;
 }
 
 export interface DtoMapStats {
@@ -1000,6 +1001,7 @@ export interface DtoWashStationRequest {
   lng: number;
   nome: string;
   note?: string;
+  tipo?: string;
 }
 
 export interface DtoWashStationResponse {
@@ -1012,6 +1014,7 @@ export interface DtoWashStationResponse {
   lng?: number;
   nome?: string;
   note?: string;
+  tipo?: string;
   updated_at?: string;
 }
 

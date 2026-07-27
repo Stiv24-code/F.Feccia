@@ -41,6 +41,7 @@ func (s *WashStationService) Create(ctx context.Context, req dto.WashStationRequ
 	w := models.WashStation{
 		ID:        uuid.New(),
 		Nome:      req.Nome,
+		Tipo:      req.Tipo,
 		Indirizzo: req.Indirizzo,
 		Citta:     req.Citta,
 		Lat:       req.Lat,
@@ -64,6 +65,7 @@ func (s *WashStationService) Update(ctx context.Context, id uuid.UUID, req dto.W
 	}
 
 	w.Nome = req.Nome
+	w.Tipo = req.Tipo
 	w.Indirizzo = req.Indirizzo
 	w.Citta = req.Citta
 	w.Lat = req.Lat
@@ -90,6 +92,7 @@ func toResponse(w models.WashStation) dto.WashStationResponse {
 	return dto.WashStationResponse{
 		ID:        w.ID,
 		Nome:      w.Nome,
+		Tipo:      w.Tipo,
 		Indirizzo: w.Indirizzo,
 		Citta:     w.Citta,
 		Lat:       w.Lat,

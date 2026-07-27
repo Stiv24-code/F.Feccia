@@ -6636,7 +6636,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "garage": {
-                    "$ref": "#/definitions/dto.MapPoint"
+                    "$ref": "#/definitions/dto.MapNamedPoint"
                 },
                 "gps_heading": {
                     "type": "number"
@@ -6694,6 +6694,9 @@ const docTemplate = `{
                 },
                 "tipologia": {
                     "type": "string"
+                },
+                "wash_station": {
+                    "$ref": "#/definitions/dto.MapNamedPoint"
                 }
             }
         },
@@ -8086,6 +8089,9 @@ const docTemplate = `{
                 },
                 "note": {
                     "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
                 }
             }
         },
@@ -8117,6 +8123,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "note": {
+                    "type": "string"
+                },
+                "tipo": {
                     "type": "string"
                 },
                 "updated_at": {

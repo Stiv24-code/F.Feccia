@@ -83,36 +83,11 @@ func Seed(db *gorm.DB) error {
 	fmt.Printf("✓ %d clienti\n", len(customers))
 
 	// ─────────────────────────── DESTINAZIONI ───────────────────────────
-	destinations := []models.Destination{
-		{Nome: "Laives (BZ)", Citta: "Laives", Provincia: "BZ", Nazione: "Italia", Lat: geoPtr(46.4283), Lng: geoPtr(11.3394)},
-		{Nome: "Calvörde (DE)", Citta: "Calvörde", Nazione: "Germania", Lat: geoPtr(52.3833), Lng: geoPtr(11.3000)},
-		{Nome: "Bruxelles (BE)", Citta: "Bruxelles", Nazione: "Belgio", Lat: geoPtr(50.8503), Lng: geoPtr(4.3517)},
-		{Nome: "Zurigo (CH)", Citta: "Zurigo", Nazione: "Svizzera", Lat: geoPtr(47.3769), Lng: geoPtr(8.5417)},
-		{Nome: "Milano (MI)", Citta: "Milano", Provincia: "MI", Nazione: "Italia", Lat: geoPtr(45.4642), Lng: geoPtr(9.1900)},
-		{Nome: "Lodi (LO)", Citta: "Lodi", Provincia: "LO", Nazione: "Italia", Lat: geoPtr(45.3138), Lng: geoPtr(9.5032)},
-		{Nome: "Cuneo (CN)", Citta: "Cuneo", Provincia: "CN", Nazione: "Italia", Lat: geoPtr(44.3845), Lng: geoPtr(7.5427)},
-		{Nome: "Oosterhout (NL)", Citta: "Oosterhout", Nazione: "Paesi Bassi", Lat: geoPtr(51.6439), Lng: geoPtr(4.8600)},
-		{Nome: "Saint Denis de l'Hôtel (FR)", Citta: "Saint Denis de l'Hôtel", Nazione: "Francia", Lat: geoPtr(47.9167), Lng: geoPtr(2.1333)},
-		{Nome: "Rinteln (DE)", Citta: "Rinteln", Nazione: "Germania", Lat: geoPtr(52.1867), Lng: geoPtr(9.0794)},
-		{Nome: "Zeebrugge (BE)", Citta: "Zeebrugge", Nazione: "Belgio", Lat: geoPtr(51.3333), Lng: geoPtr(3.1833)},
-		{Nome: "Pevestorf (DE)", Citta: "Pevestorf", Nazione: "Germania", Lat: geoPtr(53.0500), Lng: geoPtr(11.4333)},
-		{Nome: "Parma (PR)", Citta: "Parma", Provincia: "PR", Nazione: "Italia", Lat: geoPtr(44.8015), Lng: geoPtr(10.3279)},
-		{Nome: "Bologna (BO)", Citta: "Bologna", Provincia: "BO", Nazione: "Italia", Lat: geoPtr(44.4949), Lng: geoPtr(11.3426)},
-		{Nome: "Roma (RM)", Citta: "Roma", Provincia: "RM", Nazione: "Italia", Lat: geoPtr(41.9028), Lng: geoPtr(12.4964)},
-		{Nome: "Torino (TO)", Citta: "Torino", Provincia: "TO", Nazione: "Italia", Lat: geoPtr(45.0703), Lng: geoPtr(7.6869)},
-		{Nome: "Verona (VR)", Citta: "Verona", Provincia: "VR", Nazione: "Italia", Lat: geoPtr(45.4384), Lng: geoPtr(10.9916)},
-		{Nome: "Amburgo (DE)", Citta: "Amburgo", Nazione: "Germania", Lat: geoPtr(53.5511), Lng: geoPtr(9.9937)},
-		{Nome: "Monaco di Baviera (DE)", Citta: "Monaco di Baviera", Nazione: "Germania", Lat: geoPtr(48.1351), Lng: geoPtr(11.5820)},
-		{Nome: "Lione (FR)", Citta: "Lione", Nazione: "Francia", Lat: geoPtr(45.7640), Lng: geoPtr(4.8357)},
-		{Nome: "Barcellona (ES)", Citta: "Barcellona", Nazione: "Spagna", Lat: geoPtr(41.3874), Lng: geoPtr(2.1686)},
-		{Nome: "Rotterdam (NL)", Citta: "Rotterdam", Nazione: "Paesi Bassi", Lat: geoPtr(51.9244), Lng: geoPtr(4.4777)},
-		{Nome: "Vienna (AT)", Citta: "Vienna", Nazione: "Austria", Lat: geoPtr(48.2082), Lng: geoPtr(16.3738)},
-		{Nome: "Innsbruck (AT)", Citta: "Innsbruck", Nazione: "Austria", Lat: geoPtr(47.2692), Lng: geoPtr(11.4041)},
-		{Nome: "Marsiglia (FR)", Citta: "Marsiglia", Nazione: "Francia", Lat: geoPtr(43.2965), Lng: geoPtr(5.3698)},
-	}
-	for i := range destinations {
-		destinations[i].ID = uuid.New()
-		destinations[i].Active = true
+	// Caricate da un export reale Visirun (POI Carico-Scarico) invece di una
+	// manciata di città curate a mano — vedi poi_data.go.
+	destinations, err := loadDestinationsPOI()
+	if err != nil {
+		return fmt.Errorf("destinazioni: %w", err)
 	}
 	if err := db.Create(&destinations).Error; err != nil {
 		return fmt.Errorf("destinazioni: %w", err)
@@ -226,12 +201,10 @@ func Seed(db *gorm.DB) error {
 		return fmt.Errorf("garage: %w", err)
 	}
 
-	washStations := []models.WashStation{
-		{ID: uuid.New(), Nome: "Autolavaggio Cisterne Lodi Sud", Indirizzo: "Via dell'Artigianato 8", Citta: "Lodi", Lat: geoPtr(45.2989), Lng: geoPtr(9.4897), Note: "Vicino alla sede", Active: true},
-		{ID: uuid.New(), Nome: "Lavaggio Cisterne Verona", Indirizzo: "Via del Commercio 12", Citta: "Verona", Lat: geoPtr(45.4000), Lng: geoPtr(10.9500), Note: "Vicino all'hub interporto", Active: true},
-		{ID: uuid.New(), Nome: "Waschanlage München", Indirizzo: "Industriestrasse 5", Citta: "Monaco di Baviera", Lat: geoPtr(48.1500), Lng: geoPtr(11.5500), Note: "Per rotte DE/AT", Active: true},
-		{ID: uuid.New(), Nome: "Station de Lavage Lyon", Indirizzo: "Rue de l'Industrie 20", Citta: "Lione", Lat: geoPtr(45.7500), Lng: geoPtr(4.8500), Note: "Per rotte FR", Active: true},
-		{ID: uuid.New(), Nome: "Waschstation Zürich", Indirizzo: "Industriestrasse 33", Citta: "Zurigo", Lat: geoPtr(47.3800), Lng: geoPtr(8.5400), Note: "Per rotte CH", Active: true},
+	// Caricati dallo stesso export Visirun (POI Lavaggio) — vedi poi_data.go.
+	washStations, err := loadWashStationsPOI()
+	if err != nil {
+		return fmt.Errorf("stazioni lavaggio: %w", err)
 	}
 	if err := db.Create(&washStations).Error; err != nil {
 		return fmt.Errorf("stazioni lavaggio: %w", err)
@@ -268,10 +241,13 @@ func Seed(db *gorm.DB) error {
 	// matches Python's net effect exactly.
 
 	// ─────────────────────────── LISTINI ───────────────────────────
-	laivesID := &destinations[0].ID
-	bruxellesID := &destinations[2].ID
-	zurigoID := &destinations[3].ID
-	parmaID := &destinations[12].ID
+	// Con le destinazioni ora caricate dall'export Visirun (ordine non più
+	// legato a città specifiche note), le regole prendono semplicemente le
+	// prime N destinazioni distinte invece di indici con nome (laivesID ecc.).
+	caricoA := &destinations[0].ID
+	scaricoA := &destinations[1].ID
+	scaricoB := &destinations[2].ID
+	caricoB := &destinations[3].ID
 	melaID := &products[0].ID
 	pastaID := &products[3].ID
 	cioccoID := &products[10].ID
@@ -281,17 +257,17 @@ func Seed(db *gorm.DB) error {
 			ID: uuid.New(), ClienteID: customers[0].ID,
 			DataInizio: "2025-01-01", DataFine: "2025-12-31", Note: "Listino annuale 2025", InUso: true, Active: true,
 			Items: []models.PriceListItem{
-				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: laivesID, DestinazioneScaricoID: bruxellesID, Tariffa: 2150, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
-				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: laivesID, DestinazioneScaricoID: zurigoID, Tariffa: 1800, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
-				{ID: uuid.New(), DestinazioneCaricoID: laivesID, Tariffa: 2.5, TipoTariffa: "euro_kg", RangePesoMin: 10000, RangePesoMax: 26000, UnitaPeso: "Kg", MinimoTassabile: 15000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.5},
+				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: caricoA, DestinazioneScaricoID: scaricoA, Tariffa: 2150, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
+				{ID: uuid.New(), ProdottoID: melaID, DestinazioneCaricoID: caricoA, DestinazioneScaricoID: scaricoB, Tariffa: 1800, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 4.18},
+				{ID: uuid.New(), DestinazioneCaricoID: caricoA, Tariffa: 2.5, TipoTariffa: "euro_kg", RangePesoMin: 10000, RangePesoMax: 26000, UnitaPeso: "Kg", MinimoTassabile: 15000, TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.5},
 			},
 		},
 		{
 			ID: uuid.New(), ClienteID: customers[3].ID,
 			DataInizio: "2025-01-01", DataFine: "2025-12-31", Note: "Listino Barilla 2025", InUso: true, Active: true,
 			Items: []models.PriceListItem{
-				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: parmaID, DestinazioneScaricoID: bruxellesID, Tariffa: 2400, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
-				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: parmaID, Tariffa: 1950, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
+				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: caricoB, DestinazioneScaricoID: scaricoA, Tariffa: 2400, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
+				{ID: uuid.New(), ProdottoID: pastaID, DestinazioneCaricoID: caricoB, Tariffa: 1950, TipoTariffa: "forfait", UnitaPeso: "Kg", TipoTrasporto: "stradale", PercAdeguamentoCarburante: 3.8},
 			},
 		},
 		{

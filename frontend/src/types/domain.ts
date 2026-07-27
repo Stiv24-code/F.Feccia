@@ -74,6 +74,7 @@ export interface Garage {
 export interface WashStation {
   id: string;
   nome: string;
+  tipo?: string;
   indirizzo?: string;
   citta?: string;
   lat?: number | null;

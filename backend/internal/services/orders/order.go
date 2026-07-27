@@ -679,7 +679,7 @@ func washStationResponse(w *models.WashStation) *dto.WashStationResponse {
 		return nil
 	}
 	return &dto.WashStationResponse{
-		ID: w.ID, Nome: w.Nome, Indirizzo: w.Indirizzo, Citta: w.Citta, Lat: w.Lat, Lng: w.Lng,
+		ID: w.ID, Nome: w.Nome, Tipo: w.Tipo, Indirizzo: w.Indirizzo, Citta: w.Citta, Lat: w.Lat, Lng: w.Lng,
 		Note: w.Note, Active: w.Active, CreatedAt: w.CreatedAt, UpdatedAt: w.UpdatedAt,
 	}
 }

@@ -888,7 +888,7 @@ definitions:
       eta_hours:
         type: number
       garage:
-        $ref: '#/definitions/dto.MapPoint'
+        $ref: '#/definitions/dto.MapNamedPoint'
       gps_heading:
         type: number
       gps_last_update:
@@ -927,6 +927,8 @@ definitions:
         type: number
       tipologia:
         type: string
+      wash_station:
+        $ref: '#/definitions/dto.MapNamedPoint'
     type: object
   dto.MapStats:
     properties:
@@ -1844,6 +1846,8 @@ definitions:
         type: string
       note:
         type: string
+      tipo:
+        type: string
     required:
     - lat
     - lng
@@ -1868,6 +1872,8 @@ definitions:
       nome:
         type: string
       note:
+        type: string
+      tipo:
         type: string
       updated_at:
         type: string

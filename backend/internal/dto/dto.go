@@ -184,6 +184,7 @@ type GarageResponse struct {
 
 type WashStationRequest struct {
 	Nome      string   `json:"nome" validate:"required"`
+	Tipo      string   `json:"tipo"`
 	Indirizzo string   `json:"indirizzo"`
 	Citta     string   `json:"citta"`
 	Lat       *float64 `json:"lat" validate:"required"`
@@ -195,6 +196,7 @@ type WashStationRequest struct {
 type WashStationResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Nome      string    `json:"nome"`
+	Tipo      string    `json:"tipo"`
 	Indirizzo string    `json:"indirizzo"`
 	Citta     string    `json:"citta"`
 	Lat       *float64  `json:"lat"`

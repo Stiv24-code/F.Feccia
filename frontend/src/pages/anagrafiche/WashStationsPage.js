@@ -17,7 +17,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
-const emptyForm = { nome: '', indirizzo: '', citta: '', lat: null, lng: null, note: '', active: true };
+const emptyForm = { nome: '', tipo: '', indirizzo: '', citta: '', lat: null, lng: null, note: '', active: true };
 
 export default function WashStationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -31,7 +31,7 @@ export default function WashStationsPage() {
   const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
-  const openEdit = (item) => { setForm({ nome: item.nome, indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
+  const openEdit = (item) => { setForm({ nome: item.nome, tipo: item.tipo || '', indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
     if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
@@ -46,7 +46,7 @@ export default function WashStationsPage() {
     try { await deleteWashStation(id).unwrap(); toast.success('Eliminato'); } catch(e) { toast.error('Errore'); }
   };
 
-  const columns = [{ key: 'nome', label: 'Nome' }, { key: 'citta', label: 'Città' }, { key: 'stato', label: 'Stato' }, { key: 'actions', label: '', className: 'w-20' }];
+  const columns = [{ key: 'nome', label: 'Nome' }, { key: 'tipo', label: 'Tipo' }, { key: 'citta', label: 'Città' }, { key: 'stato', label: 'Stato' }, { key: 'actions', label: '', className: 'w-20' }];
 
   return (
     <div data-testid="wash-stations-page">
@@ -54,6 +54,7 @@ export default function WashStationsPage() {
         renderRow={(item) => (
           <TableRow key={item.id} className={`hover:bg-muted/60 ${!item.active ? 'opacity-60' : ''}`}>
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>
+            <TableCell className="py-2 text-muted-foreground">{item.tipo || '—'}</TableCell>
             <TableCell className="py-2">{item.citta}</TableCell>
             <TableCell className="py-2">{item.active ? <Badge className="bg-emerald-100 text-emerald-800 text-[10px]">Attivo</Badge> : <Badge variant="outline" className="text-[10px]">Inattivo</Badge>}</TableCell>
             <TableCell className="py-2"><div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(item.id)}><Trash2 className="h-3 w-3" /></Button></div></TableCell>
@@ -63,6 +64,7 @@ export default function WashStationsPage() {
       <FormDialog open={dialogOpen} onClose={setDialogOpen} title={editId ? 'Modifica Punto di Lavaggio' : 'Nuovo Punto di Lavaggio'} onSubmit={handleSave} loading={saving}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} required /></div>
+          <div className="md:col-span-2 space-y-1.5"><Label>Tipo di lavaggio</Label><Input value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} placeholder="Es. Lavaggio alimentare EFTCO" /></div>
           <div className="space-y-1.5"><Label>Indirizzo</Label><Input value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} /></div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
           <div className="md:col-span-2 space-y-1.5">

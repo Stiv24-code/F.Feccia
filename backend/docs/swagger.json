@@ -6634,7 +6634,7 @@
                     "type": "number"
                 },
                 "garage": {
-                    "$ref": "#/definitions/dto.MapPoint"
+                    "$ref": "#/definitions/dto.MapNamedPoint"
                 },
                 "gps_heading": {
                     "type": "number"
@@ -6692,6 +6692,9 @@
                 },
                 "tipologia": {
                     "type": "string"
+                },
+                "wash_station": {
+                    "$ref": "#/definitions/dto.MapNamedPoint"
                 }
             }
         },
@@ -8084,6 +8087,9 @@
                 },
                 "note": {
                     "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
                 }
             }
         },
@@ -8115,6 +8121,9 @@
                     "type": "string"
                 },
                 "note": {
+                    "type": "string"
+                },
+                "tipo": {
                     "type": "string"
                 },
                 "updated_at": {

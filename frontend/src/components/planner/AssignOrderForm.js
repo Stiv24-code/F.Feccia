@@ -115,6 +115,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
               icon={Droplets}
               iconBg="#e6f4f2"
               iconColor="#0d9488"
+              getSubtitle={(w) => w.tipo || w.indirizzo}
             />
           </div>
         </div>
