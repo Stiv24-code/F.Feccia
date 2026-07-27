@@ -2180,6 +2180,44 @@ func (mr *MockMapMockRecorder) Trips(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trips", reflect.TypeOf((*MockMap)(nil).Trips), ctx)
 }
 
+// MockGeocode is a mock of Geocode interface.
+type MockGeocode struct {
+	ctrl     *gomock.Controller
+	recorder *MockGeocodeMockRecorder
+}
+
+// MockGeocodeMockRecorder is the mock recorder for MockGeocode.
+type MockGeocodeMockRecorder struct {
+	mock *MockGeocode
+}
+
+// NewMockGeocode creates a new mock instance.
+func NewMockGeocode(ctrl *gomock.Controller) *MockGeocode {
+	mock := &MockGeocode{ctrl: ctrl}
+	mock.recorder = &MockGeocodeMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGeocode) EXPECT() *MockGeocodeMockRecorder {
+	return m.recorder
+}
+
+// Search mocks base method.
+func (m *MockGeocode) Search(ctx context.Context, query string) ([]dto.GeocodeResultDTO, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Search", ctx, query)
+	ret0, _ := ret[0].([]dto.GeocodeResultDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Search indicates an expected call of Search.
+func (mr *MockGeocodeMockRecorder) Search(ctx, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockGeocode)(nil).Search), ctx, query)
+}
+
 // MockAvailability is a mock of Availability interface.
 type MockAvailability struct {
 	ctrl     *gomock.Controller

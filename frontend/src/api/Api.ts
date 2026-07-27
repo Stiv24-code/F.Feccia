@@ -40,6 +40,7 @@ import {
   DtoGPSWebhookPayload,
   DtoGarageRequest,
   DtoGarageResponse,
+  DtoGeocodeResultDTO,
   DtoInvoiceFinalizeResult,
   DtoInvoicePDFURLResult,
   DtoInvoiceRequest,
@@ -1278,6 +1279,30 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/garages/${id}`,
       method: "DELETE",
       secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Geocode
+   * @name V1GeocodeSearchList
+   * @summary Forward-geocode an address (Destination/Garage/WashStation forms)
+   * @request GET:/api/v1/geocode/search
+   * @secure
+   */
+  v1GeocodeSearchList = (
+    query: {
+      /** Free-text address/place to search */
+      q: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoGeocodeResultDTO[], any>({
+      path: `/api/v1/geocode/search`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
       ...params,
     });
   /**

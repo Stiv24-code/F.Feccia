@@ -89,7 +89,11 @@ export default function DestinationsPage() {
           <div className="space-y-1.5"><Label>Nazione</Label><Input value={form.nazione} onChange={e => setForm({...form, nazione: e.target.value})} /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
-            <MapPicker lat={form.lat} lng={form.lng} onChange={(lat, lng) => setForm({...form, lat, lng})} />
+            <MapPicker
+              lat={form.lat} lng={form.lng}
+              onChange={(lat, lng) => setForm({...form, lat, lng})}
+              onAddressSelect={(addr) => setForm(f => ({...f, indirizzo: addr.indirizzo || f.indirizzo, citta: addr.citta || f.citta}))}
+            />
           </div>
           <div className="md:col-span-2 space-y-1.5"><Label>Vincoli Scarico</Label><Textarea value={form.vincoli_scarico} onChange={e => setForm({...form, vincoli_scarico: e.target.value})} rows={2} /></div>
           <div className="md:col-span-2 space-y-1.5"><Label>Note</Label><Textarea value={form.note} onChange={e => setForm({...form, note: e.target.value})} rows={2} /></div>

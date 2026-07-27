@@ -17,6 +17,7 @@ import (
 	"fratelli-feccia/internal/services/driverunavailability"
 	"fratelli-feccia/internal/services/export"
 	"fratelli-feccia/internal/services/garages"
+	"fratelli-feccia/internal/services/geocode"
 	"fratelli-feccia/internal/services/invoices"
 	"fratelli-feccia/internal/services/mapview"
 	"fratelli-feccia/internal/services/masterdata"
@@ -206,6 +207,10 @@ type Map interface {
 	Trips(ctx context.Context) (*dto.MapTripsResponse, error)
 }
 
+type Geocode interface {
+	Search(ctx context.Context, query string) ([]dto.GeocodeResultDTO, error)
+}
+
 type Availability interface {
 	VehicleAvailability(ctx context.Context, dataDa, dataA string) ([]dto.VehicleAvailabilityResponse, error)
 	DriverAvailability(ctx context.Context, dataDa, dataA string) ([]dto.DriverAvailabilityResponse, error)
@@ -299,6 +304,10 @@ type ExportGroup struct {
 	Export Export
 }
 
+type GeocodeGroup struct {
+	Geocode Geocode
+}
+
 type Service struct {
 	Admin
 	Authentication
@@ -321,6 +330,7 @@ type Service struct {
 	MapGroup
 	AvailabilityGroup
 	ExportGroup
+	GeocodeGroup
 }
 
 func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string) *Service {
@@ -387,6 +397,9 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 		},
 		ExportGroup: ExportGroup{
 			Export: export.NewExportService(db),
+		},
+		GeocodeGroup: GeocodeGroup{
+			Geocode: geocode.NewGeocodeService(orsApiKey, orsBaseURL),
 		},
 	}
 }

@@ -708,6 +708,19 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.GeocodeResultDTO:
+    properties:
+      citta:
+        type: string
+      indirizzo:
+        type: string
+      label:
+        type: string
+      lat:
+        type: number
+      lng:
+        type: number
+    type: object
   dto.InvoiceFinalizeResult:
     properties:
       ok:
@@ -3613,6 +3626,28 @@ paths:
       summary: Update garage (full replace)
       tags:
       - Garages
+  /api/v1/geocode/search:
+    get:
+      parameters:
+      - description: Free-text address/place to search
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.GeocodeResultDTO'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Forward-geocode an address (Destination/Garage/WashStation forms)
+      tags:
+      - Geocode
   /api/v1/invoices:
     get:
       parameters:

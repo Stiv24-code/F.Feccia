@@ -396,6 +396,14 @@ export interface DtoGarageResponse {
   updated_at?: string;
 }
 
+export interface DtoGeocodeResultDTO {
+  citta?: string;
+  indirizzo?: string;
+  label?: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface DtoInvoiceFinalizeResult {
   ok?: boolean;
   pdf_archived?: boolean;

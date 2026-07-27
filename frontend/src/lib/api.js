@@ -182,6 +182,9 @@ export const assignOrder = (id, data) => api.patch(`/orders/${id}/assign`, data)
 export const getOrderRouteAlternatives = (id, { garageId, washStationId } = {}) =>
   api.post(`/orders/${id}/route-alternatives`, { garage_id: garageId || '', wash_station_id: washStationId || '' });
 export const updateOrderRoute = (id, waypoints) => api.patch(`/orders/${id}/route`, { waypoints });
+// Ricerca indirizzo per il MapPicker (Destinazioni/Garage/Punti di Lavaggio):
+// text -> fino a 5 candidati con coordinate, l'utente sceglie quello giusto.
+export const geocodeSearch = (query) => api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
 export const startOrder = (id) => api.patch(`/orders/${id}/start`);
 export const closeOrder = (id) => api.patch(`/orders/${id}/close`);
 export const discardOrder = (id) => api.patch(`/orders/${id}/discard`);

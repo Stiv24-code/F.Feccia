@@ -70,7 +70,11 @@ export default function GaragesPage() {
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
-            <MapPicker lat={form.lat} lng={form.lng} onChange={(lat, lng) => setForm({...form, lat, lng})} />
+            <MapPicker
+              lat={form.lat} lng={form.lng}
+              onChange={(lat, lng) => setForm({...form, lat, lng})}
+              onAddressSelect={(addr) => setForm(f => ({...f, indirizzo: addr.indirizzo || f.indirizzo, citta: addr.citta || f.citta}))}
+            />
           </div>
           {editId && (
             <div className="md:col-span-2 flex items-center gap-2">

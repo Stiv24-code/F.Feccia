@@ -12,6 +12,7 @@ import (
 	driverunavailability_handlers "fratelli-feccia/internal/handlers/driverunavailability"
 	export_handlers "fratelli-feccia/internal/handlers/export"
 	garages_handlers "fratelli-feccia/internal/handlers/garages"
+	geocode_handlers "fratelli-feccia/internal/handlers/geocode"
 	invoices_handlers "fratelli-feccia/internal/handlers/invoices"
 	mapview_handlers "fratelli-feccia/internal/handlers/mapview"
 	masterdata_handlers "fratelli-feccia/internal/handlers/masterdata"
@@ -50,6 +51,7 @@ type Handler struct {
 	Map                  *mapview_handlers.MapHandler
 	Availability         *availability_handlers.AvailabilityHandler
 	Export               *export_handlers.ExportHandler
+	Geocode              *geocode_handlers.GeocodeHandler
 }
 
 func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg utils.JWTConfig) *Handler {
@@ -75,5 +77,6 @@ func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg ut
 		Map:                  mapview_handlers.NewMapHandler(services.MapGroup.Map),
 		Availability:         availability_handlers.NewAvailabilityHandler(services.AvailabilityGroup.Availability),
 		Export:               export_handlers.NewExportHandler(services.ExportGroup.Export),
+		Geocode:              geocode_handlers.NewGeocodeHandler(services.GeocodeGroup.Geocode),
 	}
 }

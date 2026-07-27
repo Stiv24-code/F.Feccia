@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -234,6 +235,75 @@ func (s *GeoService) GetRoadRouteMultiWaypoint(ctx context.Context, points []Nam
 		return nil
 	}
 	return &results[0]
+}
+
+type GeocodeResult struct {
+	Label    string
+	Locality string
+	Lat      float64
+	Lng      float64
+}
+
+// GeocodeSearch forward-geocodes free-text (address, place name...) via ORS's
+// Pelias-based /geocode/search — used so anagrafica forms (Destination,
+// Garage, WashStation) can type an address and place the marker instead of
+// only clicking the map. Match quality depends entirely on ORS/OpenStreetMap
+// data coverage for that address (can be street-level in some areas,
+// locality-only in others) — never guaranteed exact, hence returning several
+// candidates for the user to pick from rather than just the first result.
+func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int) []GeocodeResult {
+	if s.ORSApiKey == "" || strings.TrimSpace(query) == "" {
+		return nil
+	}
+	if limit <= 0 || limit > 10 {
+		limit = 5
+	}
+
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	reqURL := fmt.Sprintf("%s/geocode/search?api_key=%s&text=%s&size=%d",
+		s.ORSBaseURL, url.QueryEscape(s.ORSApiKey), url.QueryEscape(query), limit)
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil
+	}
+
+	resp, err := s.HTTPClient.Do(req)
+	if err != nil {
+		slog.Warn("ors_geocode_failed", "error", err.Error())
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		slog.Warn("ors_geocode_failed", "status", resp.StatusCode)
+		return nil
+	}
+
+	var geoJSON struct {
+		Features []struct {
+			Properties struct {
+				Label    string `json:"label"`
+				Locality string `json:"locality"`
+			} `json:"properties"`
+			Geometry struct {
+				Coordinates [2]float64 `json:"coordinates"`
+			} `json:"geometry"`
+		} `json:"features"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&geoJSON); err != nil {
+		return nil
+	}
+
+	results := make([]GeocodeResult, 0, len(geoJSON.Features))
+	for _, f := range geoJSON.Features {
+		results = append(results, GeocodeResult{
+			Label:    f.Properties.Label,
+			Locality: f.Properties.Locality,
+			Lng:      f.Geometry.Coordinates[0],
+			Lat:      f.Geometry.Coordinates[1],
+		})
+	}
+	return results
 }
 
 // callORS POSTs to ORS's /v2/directions/driving-hgv/geojson and returns up

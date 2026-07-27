@@ -219,6 +219,47 @@ func TestGetRoadRouteMultiWaypoint_SendsAllCoordinates(t *testing.T) {
 	}
 }
 
+func TestGeocodeSearch_ParsesFeatures(t *testing.T) {
+	var capturedQuery string
+	ors := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedQuery = r.URL.Query().Get("text")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"features": []map[string]interface{}{
+				{
+					"properties": map[string]interface{}{"label": "Piazza del Duomo, Milan, MI, Italy", "locality": "Milan"},
+					"geometry":   map[string]interface{}{"coordinates": [2]float64{9.19, 45.46}},
+				},
+			},
+		})
+	}))
+	defer ors.Close()
+
+	svc := NewGeoService(newTestDB(t), "test-key", "")
+	svc.ORSBaseURL = ors.URL
+	results := svc.GeocodeSearch(context.Background(), "Piazza Duomo, Milano", 5)
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].Label != "Piazza del Duomo, Milan, MI, Italy" || results[0].Locality != "Milan" {
+		t.Fatalf("unexpected result: %+v", results[0])
+	}
+	if results[0].Lat != 45.46 || results[0].Lng != 9.19 {
+		t.Fatalf("expected coordinates flipped [lng,lat]->(lat,lng), got lat=%v lng=%v", results[0].Lat, results[0].Lng)
+	}
+	if capturedQuery != "Piazza Duomo, Milano" {
+		t.Fatalf("expected query text to be sent as-is, got %q", capturedQuery)
+	}
+}
+
+func TestGeocodeSearch_NoAPIKeyDegradesToNil(t *testing.T) {
+	svc := NewGeoService(newTestDB(t), "", "")
+	results := svc.GeocodeSearch(context.Background(), "Milano", 5)
+	if results != nil {
+		t.Fatalf("expected nil results when no ORS API key is configured, got %+v", results)
+	}
+}
+
 func TestResolveGarage_DefaultsWhenUnresolved(t *testing.T) {
 	svc := NewGeoService(newTestDB(t), "test-key", "")
 	p := svc.ResolveGarage(context.Background(), "", "")

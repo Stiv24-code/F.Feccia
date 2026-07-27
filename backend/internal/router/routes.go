@@ -57,4 +57,5 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerMapRoutes(authAll, handlers)
 	registerAvailabilityRoutes(authAll, handlers)
 	registerExportRoutes(authAll, handlers)
+	registerGeocodeRoutes(authAll, handlers)
 }

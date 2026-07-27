@@ -2550,6 +2550,42 @@
                 }
             }
         },
+        "/api/v1/geocode/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geocode"
+                ],
+                "summary": "Forward-geocode an address (Destination/Garage/WashStation forms)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Free-text address/place to search",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.GeocodeResultDTO"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/invoices": {
             "get": {
                 "security": [
@@ -6467,6 +6503,26 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.GeocodeResultDTO": {
+            "type": "object",
+            "properties": {
+                "citta": {
+                    "type": "string"
+                },
+                "indirizzo": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 }
             }
         },

@@ -467,6 +467,17 @@ type RouteAlternativeDTO struct {
 	DurationMin int                        `json:"duration_min"`
 }
 
+// GeocodeResultDTO is a forward-geocoding candidate — match quality depends
+// on ORS/OpenStreetMap data coverage for the searched address, so several
+// candidates are returned for the user to pick from rather than just one.
+type GeocodeResultDTO struct {
+	Label     string  `json:"label"`
+	Indirizzo string  `json:"indirizzo"`
+	Citta     string  `json:"citta"`
+	Lat       float64 `json:"lat"`
+	Lng       float64 `json:"lng"`
+}
+
 type OrderRouteAlternativesRequest struct {
 	GarageID      string `json:"garage_id"`
 	WashStationID string `json:"wash_station_id"`
