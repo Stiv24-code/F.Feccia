@@ -710,6 +710,8 @@ definitions:
     type: object
   dto.GeocodeResultDTO:
     properties:
+      cap:
+        type: string
       citta:
         type: string
       indirizzo:
@@ -720,6 +722,8 @@ definitions:
         type: number
       lng:
         type: number
+      provincia:
+        type: string
     type: object
   dto.InvoiceFinalizeResult:
     properties:

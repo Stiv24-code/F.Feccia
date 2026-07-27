@@ -238,10 +238,12 @@ func (s *GeoService) GetRoadRouteMultiWaypoint(ctx context.Context, points []Nam
 }
 
 type GeocodeResult struct {
-	Label    string
-	Locality string
-	Lat      float64
-	Lng      float64
+	Label     string
+	Locality  string
+	Postcode  string
+	ProvinceA string
+	Lat       float64
+	Lng       float64
 }
 
 // GeocodeSearch forward-geocodes free-text (address, place name...) via ORS's
@@ -282,8 +284,10 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 	var geoJSON struct {
 		Features []struct {
 			Properties struct {
-				Label    string `json:"label"`
-				Locality string `json:"locality"`
+				Label      string `json:"label"`
+				Locality   string `json:"locality"`
+				Postalcode string `json:"postalcode"`
+				RegionA    string `json:"region_a"`
 			} `json:"properties"`
 			Geometry struct {
 				Coordinates [2]float64 `json:"coordinates"`
@@ -297,10 +301,12 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 	results := make([]GeocodeResult, 0, len(geoJSON.Features))
 	for _, f := range geoJSON.Features {
 		results = append(results, GeocodeResult{
-			Label:    f.Properties.Label,
-			Locality: f.Properties.Locality,
-			Lng:      f.Geometry.Coordinates[0],
-			Lat:      f.Geometry.Coordinates[1],
+			Label:     f.Properties.Label,
+			Locality:  f.Properties.Locality,
+			Postcode:  f.Properties.Postalcode,
+			ProvinceA: f.Properties.RegionA,
+			Lng:       f.Geometry.Coordinates[0],
+			Lat:       f.Geometry.Coordinates[1],
 		})
 	}
 	return results

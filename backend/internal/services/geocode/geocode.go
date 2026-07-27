@@ -28,6 +28,7 @@ func (s *GeocodeService) Search(ctx context.Context, query string) ([]dto.Geocod
 	for i, r := range results {
 		out[i] = dto.GeocodeResultDTO{
 			Label: r.Label, Indirizzo: r.Label, Citta: r.Locality,
+			Cap: r.Postcode, Provincia: r.ProvinceA,
 			Lat: r.Lat, Lng: r.Lng,
 		}
 	}

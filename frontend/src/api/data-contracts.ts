@@ -397,11 +397,13 @@ export interface DtoGarageResponse {
 }
 
 export interface DtoGeocodeResultDTO {
+  cap?: string;
   citta?: string;
   indirizzo?: string;
   label?: string;
   lat?: number;
   lng?: number;
+  provincia?: string;
 }
 
 export interface DtoInvoiceFinalizeResult {

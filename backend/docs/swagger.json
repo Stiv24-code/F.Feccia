@@ -6509,6 +6509,9 @@
         "dto.GeocodeResultDTO": {
             "type": "object",
             "properties": {
+                "cap": {
+                    "type": "string"
+                },
                 "citta": {
                     "type": "string"
                 },
@@ -6523,6 +6526,9 @@
                 },
                 "lng": {
                     "type": "number"
+                },
+                "provincia": {
+                    "type": "string"
                 }
             }
         },

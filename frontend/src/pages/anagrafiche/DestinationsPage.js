@@ -8,6 +8,7 @@ import {
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MapPicker } from '@/components/shared/MapPicker';
+import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +26,7 @@ export default function DestinationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
+  const [flySignal, setFlySignal] = useState(0);
 
   const { data = [], isLoading: loading } = useGetDestinationsQuery({ search, includeInactive: true });
   const [createDestination, { isLoading: creating }] = useCreateDestinationMutation();
@@ -82,7 +84,17 @@ export default function DestinationsPage() {
       <FormDialog open={dialogOpen} onClose={setDialogOpen} title={editId ? 'Modifica Destinazione' : 'Nuova Destinazione'} onSubmit={handleSave} loading={saving}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} required /></div>
-          <div className="space-y-1.5"><Label>Indirizzo</Label><Input value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} /></div>
+          <div className="md:col-span-2 space-y-1.5">
+            <Label>Indirizzo</Label>
+            <AddressSearchInput
+              value={form.indirizzo}
+              onChange={(v) => setForm(f => ({...f, indirizzo: v}))}
+              onSelect={(r) => {
+                setForm(f => ({...f, indirizzo: r.indirizzo, citta: r.citta || f.citta, cap: r.cap || f.cap, provincia: r.provincia || f.provincia, lat: r.lat, lng: r.lng}));
+                setFlySignal(s => s + 1);
+              }}
+            />
+          </div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
           <div className="space-y-1.5"><Label>CAP</Label><Input value={form.cap} onChange={e => setForm({...form, cap: e.target.value})} /></div>
           <div className="space-y-1.5"><Label>Provincia</Label><Input value={form.provincia} onChange={e => setForm({...form, provincia: e.target.value})} /></div>
@@ -92,7 +104,7 @@ export default function DestinationsPage() {
             <MapPicker
               lat={form.lat} lng={form.lng}
               onChange={(lat, lng) => setForm({...form, lat, lng})}
-              onAddressSelect={(addr) => setForm(f => ({...f, indirizzo: addr.indirizzo || f.indirizzo, citta: addr.citta || f.citta}))}
+              flyToSignal={flySignal}
             />
           </div>
           <div className="md:col-span-2 space-y-1.5"><Label>Vincoli Scarico</Label><Textarea value={form.vincoli_scarico} onChange={e => setForm({...form, vincoli_scarico: e.target.value})} rows={2} /></div>

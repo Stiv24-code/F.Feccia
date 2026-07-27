@@ -6511,6 +6511,9 @@ const docTemplate = `{
         "dto.GeocodeResultDTO": {
             "type": "object",
             "properties": {
+                "cap": {
+                    "type": "string"
+                },
                 "citta": {
                     "type": "string"
                 },
@@ -6525,6 +6528,9 @@ const docTemplate = `{
                 },
                 "lng": {
                     "type": "number"
+                },
+                "provincia": {
+                    "type": "string"
                 }
             }
         },

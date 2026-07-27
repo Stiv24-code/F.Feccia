@@ -8,6 +8,7 @@ import {
 import { DataTable } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MapPicker } from '@/components/shared/MapPicker';
+import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ export default function GaragesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
+  const [flySignal, setFlySignal] = useState(0);
 
   // include_inactive: la pagina anagrafica deve poter riattivare un garage
   // disattivato, quindi mostra anche gli inattivi (a differenza di dove
@@ -66,14 +68,24 @@ export default function GaragesPage() {
       <FormDialog open={dialogOpen} onClose={setDialogOpen} title={editId ? 'Modifica Garage' : 'Nuovo Garage'} onSubmit={handleSave} loading={saving}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} required /></div>
-          <div className="space-y-1.5"><Label>Indirizzo</Label><Input value={form.indirizzo} onChange={e => setForm({...form, indirizzo: e.target.value})} /></div>
+          <div className="md:col-span-2 space-y-1.5">
+            <Label>Indirizzo</Label>
+            <AddressSearchInput
+              value={form.indirizzo}
+              onChange={(v) => setForm(f => ({...f, indirizzo: v}))}
+              onSelect={(r) => {
+                setForm(f => ({...f, indirizzo: r.indirizzo, citta: r.citta || f.citta, lat: r.lat, lng: r.lng}));
+                setFlySignal(s => s + 1);
+              }}
+            />
+          </div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} onChange={e => setForm({...form, citta: e.target.value})} /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
             <MapPicker
               lat={form.lat} lng={form.lng}
               onChange={(lat, lng) => setForm({...form, lat, lng})}
-              onAddressSelect={(addr) => setForm(f => ({...f, indirizzo: addr.indirizzo || f.indirizzo, citta: addr.citta || f.citta}))}
+              flyToSignal={flySignal}
             />
           </div>
           {editId && (
