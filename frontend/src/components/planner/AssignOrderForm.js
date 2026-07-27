@@ -109,6 +109,13 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
   const assignDriverList = useMemo(() => availDrivers.length > 0 ? availDrivers : drivers, [availDrivers, drivers]);
   const disponibilitaLabel = useMemo(() => formatDataBreve(order?.data_ritiro), [order]);
 
+  // "Assegna Viaggio" richiede: chi effettua il trasporto (autista se mezzo
+  // proprio, vettore se terzo) E un percorso calcolato/selezionato — nessuno
+  // dei due è opzionale per assegnare davvero l'ordine.
+  const hasTransport = transportMode === 'proprio' ? !!form.autista_id : !!form.vettore_id;
+  const hasRoute = !routeLoading && !!routeAlternatives[selectedRouteIdx];
+  const canSubmit = hasTransport && hasRoute;
+
   const handleAssign = async () => {
     setSaving(true);
     try {
@@ -288,9 +295,16 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-2">
+        {!canSubmit && (
+          <span className="text-xs text-muted-foreground mr-auto">
+            {!hasTransport
+              ? (transportMode === 'proprio' ? 'Seleziona un autista per assegnare.' : 'Seleziona un vettore per assegnare.')
+              : 'Serve un percorso valido per assegnare.'}
+          </span>
+        )}
         {onCancel && <Button variant="outline" onClick={onCancel}>Annulla</Button>}
-        <Button onClick={handleAssign} disabled={saving} data-testid="assign-order-submit">
+        <Button onClick={handleAssign} disabled={saving || !canSubmit} data-testid="assign-order-submit">
           {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Assegna Viaggio
         </Button>
       </div>
