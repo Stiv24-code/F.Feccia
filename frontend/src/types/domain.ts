@@ -79,6 +79,8 @@ export interface WashStation {
   citta?: string;
   lat?: number | null;
   lng?: number | null;
+  orario_da?: string;
+  orario_a?: string;
   note?: string;
   active: boolean;
   created_at?: string;

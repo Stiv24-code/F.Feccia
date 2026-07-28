@@ -21,8 +21,12 @@ type WashStation struct {
 	Citta     string   `gorm:"type:varchar(150)" json:"citta"`
 	Lat       *float64 `gorm:"not null" json:"lat"`
 	Lng       *float64 `gorm:"not null" json:"lng"`
-	Note      string   `gorm:"type:text" json:"note"`
-	Active    bool     `gorm:"not null;default:true;index" json:"active"`
+	// Orario di apertura, formato "HH:MM". Opzionale: se assente il punto di
+	// lavaggio non ha un orario dichiarato.
+	OrarioDa string `gorm:"type:varchar(10)" json:"orario_da"`
+	OrarioA  string `gorm:"type:varchar(10)" json:"orario_a"`
+	Note     string `gorm:"type:text" json:"note"`
+	Active   bool   `gorm:"not null;default:true;index" json:"active"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

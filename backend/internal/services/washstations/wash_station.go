@@ -46,6 +46,8 @@ func (s *WashStationService) Create(ctx context.Context, req dto.WashStationRequ
 		Citta:     req.Citta,
 		Lat:       req.Lat,
 		Lng:       req.Lng,
+		OrarioDa:  req.OrarioDa,
+		OrarioA:   req.OrarioA,
 		Note:      req.Note,
 		Active:    true,
 	}
@@ -70,6 +72,8 @@ func (s *WashStationService) Update(ctx context.Context, id uuid.UUID, req dto.W
 	w.Citta = req.Citta
 	w.Lat = req.Lat
 	w.Lng = req.Lng
+	w.OrarioDa = req.OrarioDa
+	w.OrarioA = req.OrarioA
 	w.Note = req.Note
 
 	if err := s.db.WithContext(ctx).Save(&w).Error; err != nil {
@@ -97,6 +101,8 @@ func toResponse(w models.WashStation) dto.WashStationResponse {
 		Citta:     w.Citta,
 		Lat:       w.Lat,
 		Lng:       w.Lng,
+		OrarioDa:  w.OrarioDa,
+		OrarioA:   w.OrarioA,
 		Note:      w.Note,
 		Active:    w.Active,
 		CreatedAt: w.CreatedAt,

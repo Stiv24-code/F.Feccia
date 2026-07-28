@@ -189,6 +189,8 @@ type WashStationRequest struct {
 	Citta     string   `json:"citta"`
 	Lat       *float64 `json:"lat" validate:"required"`
 	Lng       *float64 `json:"lng" validate:"required"`
+	OrarioDa  string   `json:"orario_da"`
+	OrarioA   string   `json:"orario_a"`
 	Note      string   `json:"note"`
 	Active    bool     `json:"active"`
 }
@@ -201,6 +203,8 @@ type WashStationResponse struct {
 	Citta     string    `json:"citta"`
 	Lat       *float64  `json:"lat"`
 	Lng       *float64  `json:"lng"`
+	OrarioDa  string    `json:"orario_da"`
+	OrarioA   string    `json:"orario_a"`
 	Note      string    `json:"note"`
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at"`

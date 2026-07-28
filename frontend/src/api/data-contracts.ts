@@ -1065,6 +1065,8 @@ export interface DtoWashStationRequest {
   lng: number;
   nome: string;
   note?: string;
+  orario_a?: string;
+  orario_da?: string;
   tipo?: string;
 }
 
@@ -1078,6 +1080,8 @@ export interface DtoWashStationResponse {
   lng?: number;
   nome?: string;
   note?: string;
+  orario_a?: string;
+  orario_da?: string;
   tipo?: string;
   updated_at?: string;
 }

@@ -8414,6 +8414,12 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
+                "orario_a": {
+                    "type": "string"
+                },
+                "orario_da": {
+                    "type": "string"
+                },
                 "tipo": {
                     "type": "string"
                 }
@@ -8447,6 +8453,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "note": {
+                    "type": "string"
+                },
+                "orario_a": {
+                    "type": "string"
+                },
+                "orario_da": {
                     "type": "string"
                 },
                 "tipo": {

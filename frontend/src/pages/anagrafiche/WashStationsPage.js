@@ -18,7 +18,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
-const emptyForm = { nome: '', tipo: '', indirizzo: '', citta: '', lat: null, lng: null, note: '', active: true };
+const emptyForm = { nome: '', tipo: '', indirizzo: '', citta: '', lat: null, lng: null, orario_da: '', orario_a: '', note: '', active: true };
 
 export default function WashStationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function WashStationsPage() {
   const saving = creating || updating;
 
   const openNew = () => { setForm(emptyForm); setEditId(null); setDialogOpen(true); };
-  const openEdit = (item) => { setForm({ nome: item.nome, tipo: item.tipo || '', indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
+  const openEdit = (item) => { setForm({ nome: item.nome, tipo: item.tipo || '', indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, orario_da: item.orario_da || '', orario_a: item.orario_a || '', note: item.note || '', active: item.active }); setEditId(item.id); setDialogOpen(true); };
 
   const handleSave = async () => {
     if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
@@ -87,6 +87,8 @@ export default function WashStationsPage() {
               flyToSignal={flySignal}
             />
           </div>
+          <div className="space-y-1.5"><Label>Orario apertura dalle</Label><Input type="time" value={form.orario_da} onChange={e => setForm({...form, orario_da: e.target.value})} /></div>
+          <div className="space-y-1.5"><Label>Orario apertura alle</Label><Input type="time" value={form.orario_a} onChange={e => setForm({...form, orario_a: e.target.value})} /></div>
           {editId && (
             <div className="md:col-span-2 flex items-center gap-2">
               <Switch checked={form.active} onCheckedChange={active => setForm({...form, active})} id="wash-station-active" />

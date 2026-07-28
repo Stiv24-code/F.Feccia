@@ -8412,6 +8412,12 @@
                 "note": {
                     "type": "string"
                 },
+                "orario_a": {
+                    "type": "string"
+                },
+                "orario_da": {
+                    "type": "string"
+                },
                 "tipo": {
                     "type": "string"
                 }
@@ -8445,6 +8451,12 @@
                     "type": "string"
                 },
                 "note": {
+                    "type": "string"
+                },
+                "orario_a": {
+                    "type": "string"
+                },
+                "orario_da": {
                     "type": "string"
                 },
                 "tipo": {
