@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile
       args:
         # In dev lasciamo vuota: la SPA usa URL relativo /api proxy-ato da nginx.
-        # In prod impostiamo a https://api.tms.wheretech.it per evitare doppio hop.
+        # In prod impostiamo al dominio API reale (es. https://api.tms.example.com) per evitare doppio hop.
         REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-}
     image: tms-frontend:dev
     # frontend/nginx/default.conf (nell'immagine) richiede certificati Let's

@@ -47,6 +47,8 @@ Le convenzioni di codice, naming e commit sono nelle rules di `.claude/rules/`.
 AWS / DNS / segreti / force push → conferma obbligatoria. Vedi `.claude/rules/aws-destructive-actions.md`.
 
 ## Cosa NON fare (riassunto)
+- Modifiche a route/DTO/modelli GORM esposti via API senza rigenerare swagger + client frontend
+  → rule `swagger-regen.md`
 - Niente riferimenti Emergent → rule `no-emergent-references.md`
 - Niente segreti in chiaro → rule `no-hardcoded-secrets.md`
 - Niente firma `Co-Authored-By: Claude` sui commit

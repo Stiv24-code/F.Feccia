@@ -6,7 +6,7 @@
   - **sidebar scura (#0B1220)** + workspace chiaro
   - accento teal (HSL **195 92% 28%**)
   - **colori stato**: giallo (PIANIFICABILE), rosso (VIAGGIO), arancione (CHIUSO), verde (FATTURATO)
-- Backend modulare (FastAPI + MongoDB) con CRUD stabile, esportazioni e basi per integrazioni.
+- Backend modulare con CRUD stabile, esportazioni e basi per integrazioni.
 - Estendere l’operatività con visualizzazioni “planner-first” e strumenti di controllo per l’operatore.
 
 **Estensioni implementate:**
@@ -39,7 +39,7 @@ User stories:
 4. Creare proforma e finalizzare (**FATTURATO**).
 
 **Steps (COMPLETATA):**
-- Modelli e collezioni MongoDB:
+- Modelli ed entità dati:
   - `customers`, `destinations`, `vehicles`, `drivers`, `carriers`, `products`, `garages`
   - `pricelists`, `orders`, `trips`, `invoices`, `counters`
 - Endpoint core: CRUD + lifecycle ordine/viaggio/fattura
@@ -74,7 +74,6 @@ User stories:
 **Steps (COMPLETATA):**
 - Auth token-based (login + me) e protezione route
 - CRUD Anagrafiche completo (Clienti/Destinazioni/Veicoli/Autisti/Vettori/Prodotti/Garage)
-- Fix serializzazione `_id` Mongo (`doc.pop("_id", None)`)
 - Fix unicode escape UI (€, à, →, •)
 - Fix filtri “all”
 
