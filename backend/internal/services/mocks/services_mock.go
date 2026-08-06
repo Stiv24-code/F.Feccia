@@ -241,6 +241,21 @@ func (mr *MockAuthMockRecorder) Register(req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuth)(nil).Register), req)
 }
 
+// RegisterClient mocks base method.
+func (m *MockAuth) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterClient", req)
+	ret0, _ := ret[0].(*dto.LoginResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterClient indicates an expected call of RegisterClient.
+func (mr *MockAuthMockRecorder) RegisterClient(req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterClient", reflect.TypeOf((*MockAuth)(nil).RegisterClient), req)
+}
+
 // MockCustomer is a mock of Customer interface.
 type MockCustomer struct {
 	ctrl     *gomock.Controller
@@ -1411,6 +1426,21 @@ func (m *MockOrder) Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse
 func (mr *MockOrderMockRecorder) Start(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockOrder)(nil).Start), ctx, id)
+}
+
+// Unassign mocks base method.
+func (m *MockOrder) Unassign(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unassign", ctx, id)
+	ret0, _ := ret[0].(*dto.OrderResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Unassign indicates an expected call of Unassign.
+func (mr *MockOrderMockRecorder) Unassign(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unassign", reflect.TypeOf((*MockOrder)(nil).Unassign), ctx, id)
 }
 
 // Update mocks base method.

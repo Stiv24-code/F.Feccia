@@ -150,6 +150,28 @@ func (h *OrderHandler) AssignOrder(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, item)
 }
 
+// @Summary Unassign order (PIANIFICATO -> PIANIFICABILE)
+// @Description Reverse of Assign: clears garage/mezzo/autista/vettore/wash_station and the computed route.
+// @Tags Orders
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/orders/{id}/unassign [patch]
+func (h *OrderHandler) UnassignOrder(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	item, err := h.Service.Unassign(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, item)
+}
+
 // @Summary Compute up to 3 truck-aware route alternatives for an order
 // @Description Ephemeral — nothing is persisted, the manager picks one and it travels in the Assign/UpdateRoute call.
 // @Tags Orders
@@ -282,6 +304,142 @@ func (h *OrderHandler) DeleteOrder(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid ID")
 	}
+	if err := h.Service.Delete(utils.RequestContext(c), id); err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return c.SendStatus(204)
+}
+
+// ListMyOrders godoc
+// @Summary List the logged-in client's own orders
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param stato query string false "Filter by stato"
+// @Param data_da query string false "data_ritiro >= data_da"
+// @Param data_a query string false "data_ritiro <= data_a"
+// @Success 200 {array} dto.OrderResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/me/orders [get]
+func (h *OrderHandler) ListMyOrders(c *fiber.Ctx) error {
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+
+	items, err := h.Service.List(utils.RequestContext(c), orders.ListFilters{
+		ClienteID: customerID.String(),
+		Stato:     c.Query("stato"),
+		DataDa:    c.Query("data_da"),
+		DataA:     c.Query("data_a"),
+	})
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, items)
+}
+
+// GetMyOrderByID godoc
+// @Summary Get one of the logged-in client's own orders by ID
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/me/orders/{id} [get]
+func (h *OrderHandler) GetMyOrderByID(c *fiber.Ctx) error {
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+
+	item, err := h.Service.GetByID(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	// 404 (not 403) for another client's order — doesn't confirm to the
+	// caller whether the id belongs to someone else or doesn't exist at all.
+	if item == nil || item.ClienteID != customerID.String() {
+		return utils.ErrorResponse(c, 404, "Ordine non trovato")
+	}
+	return utils.SuccessResponse(c, 200, item)
+}
+
+// CreateMyOrder godoc
+// @Summary Create an order as the logged-in client
+// @Description cliente_id in the body is ignored — the order is always created under the caller's own anagrafica.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param order body dto.OrderRequest true "Order data"
+// @Success 201 {object} dto.OrderResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/me/orders [post]
+func (h *OrderHandler) CreateMyOrder(c *fiber.Ctx) error {
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+
+	var req dto.OrderRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	// Always the caller's own customer, regardless of whatever (if anything)
+	// was sent in the body — a client must never be able to create an order
+	// under another customer's name.
+	req.ClienteID = customerID.String()
+	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+
+	item, err := h.Service.Create(utils.RequestContext(c), req)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 201, item)
+}
+
+// DeleteMyOrder godoc
+// @Summary Delete one of the logged-in client's own orders (only PIANIFICABILE, hard delete)
+// @Tags Auth
+// @Security BearerAuth
+// @Param id path string true "Order ID (UUID)"
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/me/orders/{id} [delete]
+func (h *OrderHandler) DeleteMyOrder(c *fiber.Ctx) error {
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+
+	// Ownership check before delete — same 404-not-403 reasoning as
+	// GetMyOrderByID: never confirm to the caller that an order belonging to
+	// a different customer exists. h.Service.Delete itself only enforces the
+	// PIANIFICABILE-only business rule, not ownership.
+	item, err := h.Service.GetByID(utils.RequestContext(c), id)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	if item == nil || item.ClienteID != customerID.String() {
+		return utils.ErrorResponse(c, 404, "Ordine non trovato")
+	}
+
 	if err := h.Service.Delete(utils.RequestContext(c), id); err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

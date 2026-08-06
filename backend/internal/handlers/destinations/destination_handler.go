@@ -87,6 +87,33 @@ func (h *DestinationHandler) CreateDestination(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 201, item)
 }
 
+// CreateMyDestination godoc
+// @Summary Create destination as the logged-in client
+// @Description Same shared destinations pool as staff — a client can add a new pickup/delivery address to pick from when creating its own orders, but (unlike staff) cannot update or delete existing ones.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param destination body dto.DestinationRequest true "Destination data"
+// @Success 201 {object} dto.DestinationResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/me/destinations [post]
+func (h *DestinationHandler) CreateMyDestination(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+	var req dto.DestinationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+	item, err := h.Service.Create(ctx, req)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 201, item)
+}
+
 // UpdateDestination godoc
 // @Summary Update destination (full replace)
 // @Tags Destinations

@@ -119,7 +119,7 @@ func newModelsTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Customer{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -193,6 +193,74 @@ func TestAuthService_Register_CreatesActiveUser(t *testing.T) {
 	// The new user must actually be able to log in afterwards.
 	if _, err := svc.Login("new@example.it", "supersecretpw12"); err != nil {
 		t.Fatalf("expected the newly registered user to be able to log in, got error: %v", err)
+	}
+}
+
+func TestAuthService_RegisterClient_CreatesLinkedCustomerAndLogsIn(t *testing.T) {
+	db := newModelsTestDB(t)
+	svc := newAuthServiceForTest(t, db)
+
+	result, err := svc.RegisterClient(dto.ClientRegisterRequest{
+		RagioneSociale: "Acme S.r.l.", Email: "cliente@example.it",
+		Name: "Mario Rossi", Password: "supersecretpw12",
+	})
+	if err != nil {
+		t.Fatalf("RegisterClient returned error: %v", err)
+	}
+	if result.User.Role != utils.RoleCliente || !result.User.Active {
+		t.Fatalf("expected an active cliente account, got %+v", result.User)
+	}
+	if result.User.CustomerID == nil || *result.User.CustomerID == "" {
+		t.Fatalf("expected CustomerID to be set on the response, got %+v", result.User)
+	}
+	if result.AccessToken == "" {
+		t.Fatalf("expected RegisterClient to auto-login (non-empty access token)")
+	}
+
+	var customer models.Customer
+	if err := db.First(&customer, "id = ?", *result.User.CustomerID).Error; err != nil {
+		t.Fatalf("expected a Customer row linked to the new user, got error: %v", err)
+	}
+	if customer.RagioneSociale != "Acme S.r.l." {
+		t.Fatalf("expected the anagrafica fields to be persisted, got %+v", customer)
+	}
+
+	// The claim must round-trip through the access token too, not just the
+	// response body — routes_client_portal.go relies on it.
+	claims, err := utils.ParseAccessToken(result.AccessToken, svc.jwtConf)
+	if err != nil {
+		t.Fatalf("ParseAccessToken returned error: %v", err)
+	}
+	if claims.Role != utils.RoleCliente || claims.CustomerID != *result.User.CustomerID {
+		t.Fatalf("expected access token claims to carry role=cliente + matching customer_id, got %+v", claims)
+	}
+
+	if _, err := svc.Login("cliente@example.it", "supersecretpw12"); err != nil {
+		t.Fatalf("expected the newly registered client to be able to log in, got error: %v", err)
+	}
+}
+
+func TestAuthService_RegisterClient_DuplicateEmailRejected(t *testing.T) {
+	db := newModelsTestDB(t)
+	svc := newAuthServiceForTest(t, db)
+	seedModelsUser(t, db, "dup-client@example.it", "whatever12345", "operatore", true)
+
+	result, err := svc.RegisterClient(dto.ClientRegisterRequest{
+		RagioneSociale: "Beta S.p.A.", Email: "dup-client@example.it",
+		Name: "Someone", Password: "anotherpassword12",
+	})
+	if result != nil {
+		t.Fatalf("expected nil result for duplicate email, got %+v", result)
+	}
+	apiErr, ok := err.(utils.APIError)
+	if !ok || apiErr.StatusCode() != 400 {
+		t.Fatalf("expected a 400 APIError, got %v (%T)", err, err)
+	}
+
+	var count int64
+	db.Model(&models.Customer{}).Where("ragione_sociale = ?", "Beta S.p.A.").Count(&count)
+	if count != 0 {
+		t.Fatalf("expected the Customer creation to be rolled back too, found %d rows", count)
 	}
 }
 

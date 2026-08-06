@@ -22,6 +22,7 @@ func JWTAuthMiddleware(cfg utils.JWTConfig) fiber.Handler {
 		}
 		c.Locals("user_id", claims.UserID)
 		c.Locals("role", claims.Role)
+		c.Locals("customer_id", claims.CustomerID)
 		return c.Next()
 	}
 }

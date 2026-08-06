@@ -47,7 +47,7 @@ func TestGenerateTokenPairAndParse(t *testing.T) {
 	userID := int64(42)
 	role := "admin"
 
-	pair, err := GenerateTokenPair(userID, role, cfg)
+	pair, err := GenerateTokenPair(userID, role, "", cfg)
 	if err != nil {
 		t.Fatalf("GenerateTokenPair returned error: %v", err)
 	}
@@ -72,6 +72,30 @@ func TestGenerateTokenPairAndParse(t *testing.T) {
 	}
 }
 
+func TestGenerateTokenPairCarriesCustomerIDForCliente(t *testing.T) {
+	t.Parallel()
+	cfg := JWTConfig{
+		AccessSecret:  "access-secret",
+		RefreshSecret: "refresh-secret",
+		AccessTTL:     time.Minute,
+		RefreshTTL:    time.Hour,
+	}
+
+	customerID := "11111111-1111-1111-1111-111111111111"
+	pair, err := GenerateTokenPair(7, RoleCliente, customerID, cfg)
+	if err != nil {
+		t.Fatalf("GenerateTokenPair returned error: %v", err)
+	}
+
+	accessClaims, err := ParseAccessToken(pair.AccessToken, cfg)
+	if err != nil {
+		t.Fatalf("ParseAccessToken returned error: %v", err)
+	}
+	if accessClaims.Role != RoleCliente || accessClaims.CustomerID != customerID {
+		t.Fatalf("expected role=%q customer_id=%q, got %+v", RoleCliente, customerID, accessClaims)
+	}
+}
+
 func TestParseAccessTokenExpired(t *testing.T) {
 	t.Parallel()
 	cfg := JWTConfig{
@@ -81,7 +105,7 @@ func TestParseAccessTokenExpired(t *testing.T) {
 		RefreshTTL:    time.Hour,
 	}
 
-	pair, err := GenerateTokenPair(1, RoleAdmin, cfg)
+	pair, err := GenerateTokenPair(1, RoleAdmin, "", cfg)
 	if err != nil {
 		t.Fatalf("GenerateTokenPair returned error: %v", err)
 	}
@@ -104,7 +128,7 @@ func TestParseAccessTokenInvalidSignature(t *testing.T) {
 		RefreshTTL:    time.Hour,
 	}
 
-	pair, err := GenerateTokenPair(1, RoleAdmin, cfg)
+	pair, err := GenerateTokenPair(1, RoleAdmin, "", cfg)
 	if err != nil {
 		t.Fatalf("GenerateTokenPair returned error: %v", err)
 	}
@@ -134,7 +158,7 @@ func TestParseRefreshTokenInvalidSignature(t *testing.T) {
 		RefreshTTL:    time.Hour,
 	}
 
-	pair, err := GenerateTokenPair(1, RoleAdmin, cfg)
+	pair, err := GenerateTokenPair(1, RoleAdmin, "", cfg)
 	if err != nil {
 		t.Fatalf("GenerateTokenPair returned error: %v", err)
 	}

@@ -99,18 +99,19 @@ attachAuthInterceptors(api);
 
 // Auth
 export const login = (data) => api.post('/auth/login', data);
-export const register = (data) => api.post('/auth/register', data);
 export const getMe = () => api.get('/auth/me');
 export const refreshSession = () => api.post('/auth/refresh');
 export const logout = () => api.post('/auth/logout');
+// Autoregistrazione cliente (pubblica): stessa risposta di login (access
+// token in body, refresh token nel cookie httpOnly) — auto-login immediato,
+// nessun approval. Vedi backend/internal/services/auth.RegisterClient.
+// Le route scoped del portale cliente (/me/anagrafica, /me/orders) sono
+// invece su RTK Query in store/api/appApi.ts, come le altre pagine anagrafiche.
+export const registerClient = (data) => api.post('/auth/register-cliente', data);
 
-// Admin (#54): profili RBAC e gestione utenti
-export const getProfiles = () => api.get('/admin/profiles');
-export const createProfile = (data) => api.post('/admin/profiles', data);
-export const updateProfile = (id, data) => api.put(`/admin/profiles/${id}`, data);
-export const deleteProfile = (id) => api.delete(`/admin/profiles/${id}`);
-export const getAdminUsers = () => api.get('/admin/users');
-export const updateAdminUser = (id, data) => api.patch(`/admin/users/${id}`, data);
+// Admin: gestione utenti migrata su RTK Query (src/store/api/appApi.ts,
+// client generato da swagger). I profili RBAC custom non sono mai stati
+// implementati lato backend e sono stati rimossi dal frontend.
 
 // Dashboard e CRUD clienti: migrati su RTK Query (src/store/api/appApi.ts,
 // client generato da swagger).
@@ -176,6 +177,7 @@ export const createOrder = (data) => api.post('/orders', data);
 export const getOrder = (id) => api.get(`/orders/${id}`);
 export const updateOrder = (id, data) => api.put(`/orders/${id}`, data);
 export const assignOrder = (id, data) => api.patch(`/orders/${id}/assign`, data);
+export const unassignOrder = (id) => api.patch(`/orders/${id}/unassign`);
 // Percorso stradale truck-aware (OpenRouteService) — fino a 3 alternative
 // effimere (nessuna scrittura su DB) da mostrare al manager in fase di
 // assegnazione, poi ricalcolo/persistenza su modifica manuale dei waypoint.

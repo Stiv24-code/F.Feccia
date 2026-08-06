@@ -68,6 +68,12 @@ definitions:
     properties:
       active:
         type: boolean
+      customer_id:
+        description: |-
+          CustomerID is only non-nil for RoleCliente accounts (self-registered
+          via /auth/register-cliente) — the Customer/anagrafica they're scoped
+          to. Distinct from the legacy unused ProfileID above.
+        type: string
       email:
         type: string
       id:
@@ -162,6 +168,38 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.ClientRegisterRequest:
+    properties:
+      cap:
+        type: string
+      citta:
+        type: string
+      codice_fiscale:
+        type: string
+      email:
+        type: string
+      indirizzo:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      partita_iva:
+        type: string
+      password:
+        minLength: 12
+        type: string
+      provincia:
+        type: string
+      ragione_sociale:
+        type: string
+      telefono:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - ragione_sociale
     type: object
   dto.CountryRequest:
     properties:
@@ -2016,6 +2054,12 @@ definitions:
         type: boolean
       created_at:
         type: string
+      customer_id:
+        description: |-
+          CustomerID links a RoleCliente account to its Customer/anagrafica —
+          always nil for staff roles. Set once, at registration (see
+          AuthService.RegisterClient), never reassigned.
+        type: string
       id:
         type: integer
       last_login_at:
@@ -2035,6 +2079,7 @@ definitions:
         - amministrazione
         - planner
         - operatore
+        - cliente
         type: string
       updated_at:
         type: string
@@ -2563,6 +2608,36 @@ paths:
       security:
       - BearerAuth: []
       summary: Register a new user (admin-only)
+      tags:
+      - Auth
+  /api/v1/auth/register-cliente:
+    post:
+      consumes:
+      - application/json
+      description: Creates a Customer (anagrafica) + a "cliente" account atomically,
+        then logs it in immediately (no approval step) — access token in body, refresh
+        token as httpOnly cookie, same as Login.
+      parameters:
+      - description: Client registration data
+        in: body
+        name: registration
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ClientRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Self-service client registration (public)
       tags:
       - Auth
   /api/v1/availability/drivers:
@@ -3860,6 +3935,235 @@ paths:
       summary: 'Live map: active trips, POI, garages, stats'
       tags:
       - Map
+  /api/v1/me/anagrafica:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CustomerResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get the logged-in client's own anagrafica
+      tags:
+      - Auth
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Customer data
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CustomerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update the logged-in client's own anagrafica (full replace)
+      tags:
+      - Auth
+  /api/v1/me/destinations:
+    post:
+      consumes:
+      - application/json
+      description: Same shared destinations pool as staff — a client can add a new
+        pickup/delivery address to pick from when creating its own orders, but (unlike
+        staff) cannot update or delete existing ones.
+      parameters:
+      - description: Destination data
+        in: body
+        name: destination
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DestinationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.DestinationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create destination as the logged-in client
+      tags:
+      - Auth
+  /api/v1/me/orders:
+    get:
+      parameters:
+      - description: Filter by stato
+        in: query
+        name: stato
+        type: string
+      - description: data_ritiro >= data_da
+        in: query
+        name: data_da
+        type: string
+      - description: data_ritiro <= data_a
+        in: query
+        name: data_a
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.OrderResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List the logged-in client's own orders
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: cliente_id in the body is ignored — the order is always created
+        under the caller's own anagrafica.
+      parameters:
+      - description: Order data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create an order as the logged-in client
+      tags:
+      - Auth
+  /api/v1/me/orders/{id}:
+    delete:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete one of the logged-in client's own orders (only PIANIFICABILE,
+        hard delete)
+      tags:
+      - Auth
+    get:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get one of the logged-in client's own orders by ID
+      tags:
+      - Auth
   /api/v1/orders:
     get:
       parameters:
@@ -4289,6 +4593,40 @@ paths:
       security:
       - BearerAuth: []
       summary: Start order (PIANIFICATO -> VIAGGIO)
+      tags:
+      - Orders
+  /api/v1/orders/{id}/unassign:
+    patch:
+      description: 'Reverse of Assign: clears garage/mezzo/autista/vettore/wash_station
+        and the computed route.'
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Unassign order (PIANIFICATO -> PIANIFICABILE)
       tags:
       - Orders
   /api/v1/pricelists:

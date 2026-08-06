@@ -46,6 +46,12 @@ export interface DtoAccountingEntryResponse {
 
 export interface DtoAuthUserResponse {
   active?: boolean;
+  /**
+   * CustomerID is only non-nil for RoleCliente accounts (self-registered
+   * via /auth/register-cliente) — the Customer/anagrafica they're scoped
+   * to. Distinct from the legacy unused ProfileID above.
+   */
+  customer_id?: string;
   email?: string;
   id?: number;
   name?: string;
@@ -97,6 +103,22 @@ export interface DtoCarrierResponse {
   ragione_sociale?: string;
   telefono?: string;
   updated_at?: string;
+}
+
+export interface DtoClientRegisterRequest {
+  cap?: string;
+  citta?: string;
+  codice_fiscale?: string;
+  email: string;
+  indirizzo?: string;
+  /** @minLength 1 */
+  name: string;
+  partita_iva?: string;
+  /** @minLength 12 */
+  password: string;
+  provincia?: string;
+  ragione_sociale: string;
+  telefono?: string;
 }
 
 export interface DtoCountryRequest {
@@ -1089,6 +1111,12 @@ export interface DtoWashStationResponse {
 export interface ModelsUser {
   active?: boolean;
   created_at?: string;
+  /**
+   * CustomerID links a RoleCliente account to its Customer/anagrafica —
+   * always nil for staff roles. Set once, at registration (see
+   * AuthService.RegisterClient), never reassigned.
+   */
+  customer_id?: string;
   id?: number;
   last_login_at?: string;
   /**
@@ -1099,6 +1127,6 @@ export interface ModelsUser {
   /** @maxLength 255 */
   name?: string;
   password_hash: string;
-  role: "admin" | "amministrazione" | "planner" | "operatore";
+  role: "admin" | "amministrazione" | "planner" | "operatore" | "cliente";
   updated_at?: string;
 }

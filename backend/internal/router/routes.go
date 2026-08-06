@@ -33,13 +33,29 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerAuthRoutes(api, handlers, jwtCfg)
 	registerWebhookRoutes(api, handlers)
 
+	// Everything reachable by "cliente" (or by any authenticated role
+	// regardless of which one) MUST be registered here, before authAll's
+	// Group("", ...) below. Fiber's Use(prefix, mw) — which is what Group
+	// with a non-empty handlers list boils down to — leaks forward onto
+	// every route sharing that prefix registered afterwards, on the same
+	// underlying router, no matter which wrapper variable is used to
+	// register it. With prefix "" that's every route in the app: anything
+	// registered after authAll silently re-inherits PermitAllRoles(), which
+	// excludes "cliente" — no amount of additional inline middleware on that
+	// route can undo an already-applied 403. (This exact mistake happened
+	// once already — every role started getting 403'd — see git history on
+	// this file.)
+	registerAuthMeRoute(api, handlers, jwtCfg)
+	registerClientPortalRoutes(api, handlers, jwtCfg)
+	registerDestinationReadRoutes(api, jwtCfg, handlers)
+	registerGeocodeRoutes(api, jwtCfg, handlers)
+
 	authAll := api.Group("", middleware.JWTAuthMiddleware(jwtCfg), middleware.PermitAllRoles())
 
-	registerAuthMeRoute(authAll, handlers)
 	registerAuthRegisterRoute(authAll, handlers)
 	registerAdminRoutes(authAll, handlers)
 	registerCustomerRoutes(authAll, handlers)
-	registerDestinationRoutes(authAll, handlers)
+	registerDestinationWriteRoutes(authAll, handlers)
 	registerCarrierRoutes(authAll, handlers)
 	registerGarageRoutes(authAll, handlers)
 	registerWashStationRoutes(authAll, handlers)
@@ -57,5 +73,4 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerMapRoutes(authAll, handlers)
 	registerAvailabilityRoutes(authAll, handlers)
 	registerExportRoutes(authAll, handlers)
-	registerGeocodeRoutes(authAll, handlers)
 }

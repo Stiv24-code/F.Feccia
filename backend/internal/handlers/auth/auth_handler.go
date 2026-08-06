@@ -166,6 +166,48 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, result)
 }
 
+// RegisterClient godoc
+// @Summary Self-service client registration (public)
+// @Description Creates a Customer (anagrafica) + a "cliente" account atomically, then logs it in immediately (no approval step) — access token in body, refresh token as httpOnly cookie, same as Login.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param registration body dto.ClientRegisterRequest true "Client registration data"
+// @Success 200 {object} dto.LoginResult
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/register-cliente [post]
+func (h *AuthHandler) RegisterClient(c *fiber.Ctx) error {
+	var req dto.ClientRegisterRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if errs := utils.NewValidator().Validate(&req); len(errs) > 0 {
+		return utils.ValidationErrorResponse(c, errs)
+	}
+
+	ctx := utils.RequestContext(c)
+	ip, ua := c.IP(), c.Get("User-Agent")
+
+	result, err := h.Service.RegisterClient(req)
+	if err != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.register_cliente", Resource: "user", StatusCode: 400, Success: false,
+			IP: ip, UserAgent: ua, Error: err.Error(), Metadata: map[string]interface{}{"email": req.Email},
+		})
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	userID := result.User.ID
+	h.AuditLogger.Log(ctx, audit.Entry{
+		Action: "auth.register_cliente", UserID: &userID, UserRole: result.User.Role,
+		Resource: "user", ResourceID: strconv.FormatInt(userID, 10), StatusCode: 200, Success: true,
+		IP: ip, UserAgent: ua,
+	})
+
+	utils.SetRefreshCookie(c, result.RefreshToken, result.RefreshTTL)
+	return utils.SuccessResponse(c, 200, result)
+}
+
 // Logout godoc
 // @Summary Logout
 // @Description Clears the refresh cookie; best-effort, works without a valid token

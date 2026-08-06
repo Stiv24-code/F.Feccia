@@ -5,10 +5,11 @@
 // niente duplicazione di path/tipi qui, RTK Query fa solo caching/tag.
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { apiClient } from '@/lib/apiClient';
-import { toQueryResult } from './rtkQueryHelpers';
+import { toQueryResult, toQueryError } from './rtkQueryHelpers';
 import type {
   DtoAccountingEntryRequest,
   DtoAccountingEntryResponse,
+  DtoAuthUserResponse,
   DtoBankRequest,
   DtoBankResponse,
   DtoCarrierRequest,
@@ -25,9 +26,12 @@ import type {
   DtoDriverResponse,
   DtoGarageRequest,
   DtoGarageResponse,
+  DtoOrderRequest,
   DtoOrderResponse,
   DtoProductRequest,
   DtoProductResponse,
+  DtoRegisterRequest,
+  DtoUpdateUserRequest,
   DtoVehicleRequest,
   DtoVehicleResponse,
   DtoWashStationRequest,
@@ -39,7 +43,8 @@ export const appApi = createApi({
   baseQuery: fakeBaseQuery(),
   tagTypes: [
     'Customer', 'Dashboard', 'Destination', 'Vehicle', 'Driver',
-    'Carrier', 'Product', 'Garage', 'WashStation', 'Country', 'Bank', 'AccountingEntry',
+    'Carrier', 'Product', 'Garage', 'WashStation', 'Country', 'Bank', 'AccountingEntry', 'AdminUser',
+    'MyAnagrafica', 'MyOrder',
   ],
   endpoints: (builder) => ({
     getDashboardStats: builder.query<DtoDashboardStatsResponse, void>({
@@ -242,6 +247,76 @@ export const appApi = createApi({
       queryFn: (id) => toQueryResult(apiClient.v1AccountingEntriesDelete(id)),
       invalidatesTags: ['AccountingEntry'],
     }),
+
+    getAdminUsers: builder.query<DtoAuthUserResponse[], void>({
+      queryFn: () => toQueryResult(apiClient.v1AdminUsersList()),
+      providesTags: ['AdminUser'],
+    }),
+    createAdminUser: builder.mutation<DtoAuthUserResponse, DtoRegisterRequest>({
+      // Creazione utente admin-facing: passa da /auth/register (non da
+      // POST /admin/users, che opera su uno shape Login/Role diverso e non
+      // usato dal frontend — vedi backend/internal/services/admin_panel).
+      queryFn: (body) => toQueryResult(apiClient.v1AuthRegisterCreate(body)),
+      invalidatesTags: ['AdminUser'],
+    }),
+    // Nome/ruolo e stato attivo vivono su due endpoint distinti sul backend
+    // (PUT /admin/users/{id} per login/name/role, PATCH per active — vedi
+    // backend/internal/services/admin_panel/admin_user.go): un solo
+    // mutation qui nasconde la doppia chiamata, così i componenti non
+    // devono conoscere questo dettaglio implementativo.
+    updateAdminUser: builder.mutation<
+      DtoAuthUserResponse,
+      { id: number; login: string; name: string; role: DtoUpdateUserRequest['role']; active: boolean }
+    >({
+      queryFn: async ({ id, login, name, role, active }) => {
+        try {
+          await apiClient.v1AdminUsersUpdate(id, { login, name, role });
+          const res = await apiClient.v1AdminUsersPartialUpdate(id, { active });
+          return { data: res.data };
+        } catch (err) {
+          return { error: toQueryError(err) };
+        }
+      },
+      invalidatesTags: ['AdminUser'],
+    }),
+    deleteAdminUser: builder.mutation<void, number>({
+      queryFn: (id) => toQueryResult(apiClient.v1AdminUsersDelete(id)),
+      invalidatesTags: ['AdminUser'],
+    }),
+
+    // Portale cliente (ruolo "cliente"): il backend forza sempre il proprio
+    // customer_id preso dal JWT, ignorando qualunque id passato qui — questi
+    // endpoint non accettano/servono mai un id esplicito.
+    getMyAnagrafica: builder.query<DtoCustomerResponse, void>({
+      queryFn: () => toQueryResult(apiClient.v1MeAnagraficaList()),
+      providesTags: ['MyAnagrafica'],
+    }),
+    updateMyAnagrafica: builder.mutation<DtoCustomerResponse, DtoCustomerRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1MeAnagraficaUpdate(body)),
+      invalidatesTags: ['MyAnagrafica'],
+    }),
+    getMyOrders: builder.query<DtoOrderResponse[], { stato?: string } | void>({
+      queryFn: (args?: { stato?: string }) => toQueryResult(apiClient.v1MeOrdersList({ stato: args?.stato || undefined })),
+      providesTags: ['MyOrder'],
+    }),
+    getMyOrder: builder.query<DtoOrderResponse, string>({
+      queryFn: (id) => toQueryResult(apiClient.v1MeOrdersDetail(id)),
+      providesTags: ['MyOrder'],
+    }),
+    createMyOrder: builder.mutation<DtoOrderResponse, DtoOrderRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1MeOrdersCreate(body)),
+      invalidatesTags: ['MyOrder'],
+    }),
+    deleteMyOrder: builder.mutation<void, string>({
+      queryFn: (id) => toQueryResult(apiClient.v1MeOrdersDelete(id)),
+      invalidatesTags: ['MyOrder'],
+    }),
+    // Pool condiviso con lo staff (stesso tag 'Destination' di getDestinations)
+    // — un cliente può solo aggiungere, non modificare/eliminare quelle esistenti.
+    createMyDestination: builder.mutation<DtoDestinationResponse, DtoDestinationRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1MeDestinationsCreate(body)),
+      invalidatesTags: ['Destination'],
+    }),
   }),
 });
 
@@ -293,4 +368,15 @@ export const {
   useCreateAccountingEntryMutation,
   useUpdateAccountingEntryMutation,
   useDeleteAccountingEntryMutation,
+  useGetAdminUsersQuery,
+  useCreateAdminUserMutation,
+  useUpdateAdminUserMutation,
+  useDeleteAdminUserMutation,
+  useGetMyAnagraficaQuery,
+  useUpdateMyAnagraficaMutation,
+  useGetMyOrdersQuery,
+  useGetMyOrderQuery,
+  useCreateMyOrderMutation,
+  useDeleteMyOrderMutation,
+  useCreateMyDestinationMutation,
 } = appApi;

@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
   Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
-  Globe, Landmark, BookOpen, Shield, UserCog, Droplets, Sun, Moon
+  Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon
 } from 'lucide-react';
 
 // Se `roles` è presente, la voce è visibile solo agli utenti con quel ruolo.
@@ -40,12 +40,7 @@ const navItems = [
   { label: 'Gestione Viaggi', path: '/viaggi', icon: Route, roles: ['admin', 'planner'] },
   { label: 'Mappa Viaggi', path: '/mappa', icon: Map },
   { label: 'Fatturazione', path: '/fatturazione', icon: FileText, roles: ['admin', 'amministrazione'] },
-  {
-    label: 'Amministrazione', icon: Shield, roles: ['admin'], children: [
-      { label: 'Profili', path: '/admin/profili', icon: Shield, roles: ['admin'] },
-      { label: 'Utenti', path: '/admin/utenti', icon: UserCog, roles: ['admin'] },
-    ]
-  },
+  { label: 'Utenti', path: '/admin/utenti', icon: UserCog, roles: ['admin'] },
 ];
 
 const filterByRole = (items, role) => {

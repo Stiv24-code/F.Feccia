@@ -4,6 +4,7 @@ import {
   logout as logoutApi,
   refreshSession,
   getMe,
+  registerClient as registerClientApi,
   setAccessToken,
   setOnAuthFailure,
 } from './api';
@@ -56,6 +57,16 @@ export const AuthProvider = ({ children }) => {
     return res.data.user;
   }, []);
 
+  // Autoregistrazione cliente: stessa risposta shape di login (access token
+  // in body, refresh token nel cookie httpOnly) — auto-login immediato,
+  // nessun approval, così il chiamante può navigare dritto nel portale.
+  const registerClient = useCallback(async (payload) => {
+    const res = await registerClientApi(payload);
+    setAccessToken(res.data.access_token);
+    setUser(res.data.user);
+    return res.data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await logoutApi();
@@ -67,8 +78,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const contextValue = useMemo(
-    () => ({ user, login, logout, loading }),
-    [user, login, logout, loading],
+    () => ({ user, login, registerClient, logout, loading }),
+    [user, login, registerClient, logout, loading],
   );
 
   return (

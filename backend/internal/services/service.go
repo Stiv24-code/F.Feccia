@@ -50,6 +50,7 @@ type Auth interface {
 	Refresh(refreshToken string) (*dto.LoginResult, error)
 	Me(userID int64) (*dto.AuthUserResponse, error)
 	Register(req dto.RegisterRequest) (*dto.AuthUserResponse, error)
+	RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error)
 }
 
 type Customer interface {
@@ -139,6 +140,7 @@ type Order interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.OrderRequest) (*dto.OrderResponse, error)
 	Assign(ctx context.Context, id uuid.UUID, req dto.OrderAssignRequest) (*dto.OrderResponse, error)
+	Unassign(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Start(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Close(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)
 	Discard(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error)

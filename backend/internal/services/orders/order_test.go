@@ -234,6 +234,119 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 	assertAPIError(t, err, 400)
 }
 
+func TestOrderService_Unassign_ClearsAssignmentAndRevertsState(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	svc := NewOrderService(db, "", "")
+
+	order, err := svc.Create(ctx, baseRequest(t, db))
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+
+	// Unassign before assign must fail (still PIANIFICABILE).
+	_, err = svc.Unassign(ctx, order.ID)
+	assertAPIError(t, err, 400)
+
+	autistaID := uuid.New()
+	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{TargaMotrice: "AB123CD", AutistaID: autistaID.String()})
+	if err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+	if assigned.Stato != "PIANIFICATO" {
+		t.Fatalf("expected stato PIANIFICATO after assign, got %q", assigned.Stato)
+	}
+
+	unassigned, err := svc.Unassign(ctx, order.ID)
+	if err != nil {
+		t.Fatalf("Unassign returned error: %v", err)
+	}
+	if unassigned.Stato != "PIANIFICABILE" {
+		t.Fatalf("expected stato PIANIFICABILE after unassign, got %q", unassigned.Stato)
+	}
+	if unassigned.TargaMotrice != "" || unassigned.Autista != nil {
+		t.Fatalf("expected assignment fields to be cleared, got targa_motrice=%q autista=%+v", unassigned.TargaMotrice, unassigned.Autista)
+	}
+
+	// Unassign again must fail (no longer PIANIFICATO).
+	_, err = svc.Unassign(ctx, order.ID)
+	assertAPIError(t, err, 400)
+}
+
+// newTestDBWithForeignKeys mirrors newTestDB but also migrates OrderRoute and
+// turns on SQLite FK enforcement (off by default, unlike Postgres) — needed
+// to catch ordering bugs like fk_orders_route blocking a DELETE on
+// order_routes while orders.route_id still points at it (regression: Unassign
+// used to delete the route before clearing the reference).
+func newTestDBWithForeignKeys(t *testing.T) *gorm.DB {
+	t.Helper()
+	db := newTestDB(t)
+	if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
+		t.Fatalf("failed to enable foreign_keys pragma: %v", err)
+	}
+	if err := db.AutoMigrate(&models.OrderRoute{}); err != nil {
+		t.Fatalf("failed to migrate OrderRoute: %v", err)
+	}
+	return db
+}
+
+func TestOrderService_Unassign_DeletesRouteAfterClearingReference(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDBWithForeignKeys(t)
+	svc := NewOrderService(db, "", "")
+
+	order, err := svc.Create(ctx, baseRequest(t, db))
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+
+	// Simulate a route having been computed/persisted for this order (Assign
+	// itself only creates one when routing is configured, which it isn't in
+	// this test setup).
+	route := models.OrderRoute{ID: uuid.New(), OrderID: order.ID, DistanceKm: 10, DurationMin: 20}
+	if err := db.Create(&route).Error; err != nil {
+		t.Fatalf("failed to seed route: %v", err)
+	}
+	if err := db.Model(&models.Order{}).Where("id = ?", order.ID).Update("route_id", route.ID).Error; err != nil {
+		t.Fatalf("failed to link route: %v", err)
+	}
+
+	if _, err := svc.Unassign(ctx, order.ID); err != nil {
+		t.Fatalf("Unassign returned error: %v", err)
+	}
+
+	var remaining int64
+	if err := db.Model(&models.OrderRoute{}).Where("id = ?", route.ID).Count(&remaining).Error; err != nil {
+		t.Fatalf("failed to count routes: %v", err)
+	}
+	if remaining != 0 {
+		t.Fatalf("expected the old route to be deleted, found %d", remaining)
+	}
+}
+
+func TestOrderService_Unassign_RejectsOrdersOnATrip(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	svc := NewOrderService(db, "", "")
+
+	order, err := svc.Create(ctx, baseRequest(t, db))
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+		t.Fatalf("Assign returned error: %v", err)
+	}
+	if err := svc.db.Model(&models.Order{}).Where("id = ?", order.ID).Update("viaggio_id", uuid.New()).Error; err != nil {
+		t.Fatalf("failed to set viaggio_id: %v", err)
+	}
+
+	_, err = svc.Unassign(ctx, order.ID)
+	assertAPIError(t, err, 400)
+}
+
 func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

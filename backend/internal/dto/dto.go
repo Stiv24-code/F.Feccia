@@ -26,7 +26,11 @@ type AuthUserResponse struct {
 	Name      string  `json:"name"`
 	Role      string  `json:"role"`
 	ProfileID *string `json:"profile_id"`
-	Active    bool    `json:"active"`
+	// CustomerID is only non-nil for RoleCliente accounts (self-registered
+	// via /auth/register-cliente) — the Customer/anagrafica they're scoped
+	// to. Distinct from the legacy unused ProfileID above.
+	CustomerID *string `json:"customer_id"`
+	Active     bool    `json:"active"`
 }
 
 // RegisterRequest mirrors Python's UserCreate — the password policy
@@ -37,6 +41,24 @@ type RegisterRequest struct {
 	Name     string `json:"name" validate:"required,min=1"`
 	Password string `json:"password" validate:"required,min=12"`
 	Role     string `json:"role" validate:"required,oneof=admin amministrazione planner operatore"`
+}
+
+// ClientRegisterRequest is the public, unauthenticated self-registration
+// form (POST /auth/register-cliente): creates a Customer (anagrafica) and a
+// RoleCliente User atomically (see AuthService.RegisterClient) — unlike
+// RegisterRequest, Role is never accepted from the caller.
+type ClientRegisterRequest struct {
+	RagioneSociale string `json:"ragione_sociale" validate:"required"`
+	Indirizzo      string `json:"indirizzo"`
+	Citta          string `json:"citta"`
+	Cap            string `json:"cap"`
+	Provincia      string `json:"provincia"`
+	PartitaIva     string `json:"partita_iva"`
+	CodiceFiscale  string `json:"codice_fiscale"`
+	Telefono       string `json:"telefono"`
+	Name           string `json:"name" validate:"required,min=1"`
+	Email          string `json:"email" validate:"required,email"`
+	Password       string `json:"password" validate:"required,min=12"`
 }
 
 // PatchUserRequest mirrors Python's UserUpdate (PATCH /admin/users/{id}):

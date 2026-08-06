@@ -14,11 +14,17 @@ const (
 	RoleAmministrazione = "amministrazione"
 	RolePlanner         = "planner"
 	RoleOperatore       = "operatore"
+	// RoleCliente is a self-registered end-customer account (see
+	// AuthService.RegisterClient) — deliberately excluded from
+	// middleware.PermitAllRoles(), so it never gets blanket access to the
+	// staff-only route group. It only reaches the dedicated /me/* client
+	// portal routes (routes_client_portal.go).
+	RoleCliente = "cliente"
 )
 
 func IsValidRole(role string) bool {
 	switch role {
-	case RoleAdmin, RoleAmministrazione, RolePlanner, RoleOperatore:
+	case RoleAdmin, RoleAmministrazione, RolePlanner, RoleOperatore, RoleCliente:
 		return true
 	default:
 		return false
@@ -40,6 +46,9 @@ type TokenPair struct {
 type UserClaims struct {
 	UserID int64  `json:"user_id"`
 	Role   string `json:"role"`
+	// CustomerID is only set for RoleCliente (the Customer/anagrafica this
+	// account is scoped to) — empty for every staff role.
+	CustomerID string `json:"customer_id,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -68,14 +77,15 @@ func NewJWTConfig(accessSecret, refreshSecret, accessTTLMinutes, refreshTTLHours
 	return cfg
 }
 
-func GenerateTokenPair(userID int64, role string, cfg JWTConfig) (TokenPair, error) {
+func GenerateTokenPair(userID int64, role string, customerID string, cfg JWTConfig) (TokenPair, error) {
 	if !IsValidRole(role) {
 		return TokenPair{}, fmt.Errorf("invalid role %q", role)
 	}
 
 	accessClaims := UserClaims{
-		UserID: userID,
-		Role:   role,
+		UserID:     userID,
+		Role:       role,
+		CustomerID: customerID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.AccessTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -87,8 +97,9 @@ func GenerateTokenPair(userID int64, role string, cfg JWTConfig) (TokenPair, err
 	}
 
 	refreshClaims := UserClaims{
-		UserID: userID,
-		Role:   role,
+		UserID:     userID,
+		Role:       role,
+		CustomerID: customerID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.RefreshTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

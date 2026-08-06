@@ -20,6 +20,7 @@ import {
   DtoBankResponse,
   DtoCarrierRequest,
   DtoCarrierResponse,
+  DtoClientRegisterRequest,
   DtoCountryRequest,
   DtoCountryResponse,
   DtoCreateUserRequest,
@@ -456,6 +457,26 @@ export class Api<SecurityDataType = unknown> {
       method: "POST",
       body: user,
       secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Creates a Customer (anagrafica) + a "cliente" account atomically, then logs it in immediately (no approval step) — access token in body, refresh token as httpOnly cookie, same as Login.
+   *
+   * @tags Auth
+   * @name V1AuthRegisterClienteCreate
+   * @summary Self-service client registration (public)
+   * @request POST:/api/v1/auth/register-cliente
+   */
+  v1AuthRegisterClienteCreate = (
+    registration: DtoClientRegisterRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoLoginResult, Record<string, string>>({
+      path: `/api/v1/auth/register-cliente`,
+      method: "POST",
+      body: registration,
       type: ContentType.Json,
       format: "json",
       ...params,
@@ -1453,6 +1474,147 @@ export class Api<SecurityDataType = unknown> {
   /**
    * No description
    *
+   * @tags Auth
+   * @name V1MeAnagraficaList
+   * @summary Get the logged-in client's own anagrafica
+   * @request GET:/api/v1/me/anagrafica
+   * @secure
+   */
+  v1MeAnagraficaList = (params: RequestParams = {}) =>
+    this.http.request<DtoCustomerResponse, Record<string, string>>({
+      path: `/api/v1/me/anagrafica`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Auth
+   * @name V1MeAnagraficaUpdate
+   * @summary Update the logged-in client's own anagrafica (full replace)
+   * @request PUT:/api/v1/me/anagrafica
+   * @secure
+   */
+  v1MeAnagraficaUpdate = (
+    customer: DtoCustomerRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoCustomerResponse, Record<string, string>>({
+      path: `/api/v1/me/anagrafica`,
+      method: "PUT",
+      body: customer,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Same shared destinations pool as staff — a client can add a new pickup/delivery address to pick from when creating its own orders, but (unlike staff) cannot update or delete existing ones.
+   *
+   * @tags Auth
+   * @name V1MeDestinationsCreate
+   * @summary Create destination as the logged-in client
+   * @request POST:/api/v1/me/destinations
+   * @secure
+   */
+  v1MeDestinationsCreate = (
+    destination: DtoDestinationRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoDestinationResponse, Record<string, string>>({
+      path: `/api/v1/me/destinations`,
+      method: "POST",
+      body: destination,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Auth
+   * @name V1MeOrdersList
+   * @summary List the logged-in client's own orders
+   * @request GET:/api/v1/me/orders
+   * @secure
+   */
+  v1MeOrdersList = (
+    query?: {
+      /** Filter by stato */
+      stato?: string;
+      /** data_ritiro >= data_da */
+      data_da?: string;
+      /** data_ritiro <= data_a */
+      data_a?: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoOrderResponse[], Record<string, string>>({
+      path: `/api/v1/me/orders`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description cliente_id in the body is ignored — the order is always created under the caller's own anagrafica.
+   *
+   * @tags Auth
+   * @name V1MeOrdersCreate
+   * @summary Create an order as the logged-in client
+   * @request POST:/api/v1/me/orders
+   * @secure
+   */
+  v1MeOrdersCreate = (order: DtoOrderRequest, params: RequestParams = {}) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/me/orders`,
+      method: "POST",
+      body: order,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Auth
+   * @name V1MeOrdersDetail
+   * @summary Get one of the logged-in client's own orders by ID
+   * @request GET:/api/v1/me/orders/{id}
+   * @secure
+   */
+  v1MeOrdersDetail = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/me/orders/${id}`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Auth
+   * @name V1MeOrdersDelete
+   * @summary Delete one of the logged-in client's own orders (only PIANIFICABILE, hard delete)
+   * @request DELETE:/api/v1/me/orders/{id}
+   * @secure
+   */
+  v1MeOrdersDelete = (id: string, params: RequestParams = {}) =>
+    this.http.request<void, Record<string, string>>({
+      path: `/api/v1/me/orders/${id}`,
+      method: "DELETE",
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
    * @tags Orders
    * @name V1OrdersList
    * @summary List orders
@@ -1725,6 +1887,23 @@ export class Api<SecurityDataType = unknown> {
   v1OrdersStartPartialUpdate = (id: string, params: RequestParams = {}) =>
     this.http.request<DtoOrderResponse, Record<string, string>>({
       path: `/api/v1/orders/${id}/start`,
+      method: "PATCH",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Reverse of Assign: clears garage/mezzo/autista/vettore/wash_station and the computed route.
+   *
+   * @tags Orders
+   * @name V1OrdersUnassignPartialUpdate
+   * @summary Unassign order (PIANIFICATO -> PIANIFICABILE)
+   * @request PATCH:/api/v1/orders/{id}/unassign
+   * @secure
+   */
+  v1OrdersUnassignPartialUpdate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoOrderResponse, Record<string, string>>({
+      path: `/api/v1/orders/${id}/unassign`,
       method: "PATCH",
       secure: true,
       format: "json",

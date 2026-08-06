@@ -132,6 +132,69 @@ func (h *CustomerHandler) UpdateCustomer(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, customer)
 }
 
+// GetMyAnagrafica godoc
+// @Summary Get the logged-in client's own anagrafica
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} dto.CustomerResponse
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/me/anagrafica [get]
+func (h *CustomerHandler) GetMyAnagrafica(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+
+	customer, err := h.Service.GetByID(ctx, customerID)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	if customer == nil {
+		return utils.ErrorResponse(c, 404, "Anagrafica non trovata")
+	}
+
+	return utils.SuccessResponse(c, 200, customer)
+}
+
+// UpdateMyAnagrafica godoc
+// @Summary Update the logged-in client's own anagrafica (full replace)
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param customer body dto.CustomerRequest true "Customer data"
+// @Success 200 {object} dto.CustomerResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/me/anagrafica [put]
+func (h *CustomerHandler) UpdateMyAnagrafica(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+
+	var req dto.CustomerRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+
+	customer, err := h.Service.Update(ctx, customerID, req)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	return utils.SuccessResponse(c, 200, customer)
+}
+
 // DeleteCustomer godoc
 // @Summary Delete customer (logical, sets active=false)
 // @Tags Customers

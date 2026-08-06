@@ -91,7 +91,7 @@ func TestJWTAuthMiddleware_ValidTokenSetsLocals(t *testing.T) {
 	const wantUserID int64 = 42
 	const wantRole = "admin"
 
-	pair, err := utils.GenerateTokenPair(wantUserID, wantRole, cfg)
+	pair, err := utils.GenerateTokenPair(wantUserID, wantRole, "", cfg)
 	if err != nil {
 		t.Fatalf("GenerateTokenPair error: %v", err)
 	}
@@ -106,6 +106,29 @@ func TestJWTAuthMiddleware_ValidTokenSetsLocals(t *testing.T) {
 	}
 	if body["role"] != wantRole {
 		t.Fatalf("expected role %q, got %v", wantRole, body["role"])
+	}
+}
+
+func TestJWTAuthMiddleware_SetsCustomerIDLocalForCliente(t *testing.T) {
+	cfg := newTestJWTConfig()
+	app := newJWTTestApp(cfg, func(c *fiber.Ctx) error {
+		customerID, _ := c.Locals("customer_id").(string)
+		return c.JSON(fiber.Map{"customer_id": customerID})
+	})
+
+	const wantCustomerID = "11111111-1111-1111-1111-111111111111"
+	pair, err := utils.GenerateTokenPair(7, utils.RoleCliente, wantCustomerID, cfg)
+	if err != nil {
+		t.Fatalf("GenerateTokenPair error: %v", err)
+	}
+
+	status, body := doJWTRequest(t, app, "Bearer "+pair.AccessToken)
+
+	if status != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, status)
+	}
+	if body["customer_id"] != wantCustomerID {
+		t.Fatalf("expected customer_id %q, got %v", wantCustomerID, body["customer_id"])
 	}
 }
 
@@ -176,6 +199,10 @@ func TestPermitAllRoles(t *testing.T) {
 		{"allowed for amministrazione", utils.RoleAmministrazione, fiber.StatusOK},
 		{"allowed for planner", utils.RolePlanner, fiber.StatusOK},
 		{"allowed for operatore", utils.RoleOperatore, fiber.StatusOK},
+		// cliente is deliberately excluded — a client account must never
+		// get blanket access to the staff-only route group (it only
+		// reaches routes_client_portal.go's dedicated group).
+		{"forbidden for cliente", utils.RoleCliente, fiber.StatusForbidden},
 		{"forbidden for empty role", "", fiber.StatusForbidden},
 		{"forbidden for unknown role", "user", fiber.StatusForbidden},
 	}

@@ -22,6 +22,7 @@ func registerOrderRoutes(authAll fiber.Router, handlers *app_handlers.Handler) {
 	authAll.Put("/orders/:id", requireWrite, handlers.Orders.UpdateOrder)
 
 	authAll.Patch("/orders/:id/assign", requirePlanner, handlers.Orders.AssignOrder)
+	authAll.Patch("/orders/:id/unassign", requirePlanner, handlers.Orders.UnassignOrder)
 	authAll.Post("/orders/:id/route-alternatives", requirePlanner, handlers.Orders.RouteAlternatives)
 	authAll.Patch("/orders/:id/route", requirePlanner, handlers.Orders.UpdateRoute)
 	authAll.Patch("/orders/:id/start", requirePlanner, handlers.Orders.StartOrder)

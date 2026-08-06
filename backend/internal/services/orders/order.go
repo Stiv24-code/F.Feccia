@@ -335,6 +335,59 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	return &resp, nil
 }
 
+// Unassign mirrors PATCH /orders/{id}/unassign: only valid from PIANIFICATO,
+// moves back to PIANIFICABILE — the reverse of Assign. A PIANIFICATO order
+// is locked (no route/waypoint edits, see UpdateRoute's callers): to change
+// garage/mezzo/autista/vettore/wash_station or the route, the manager must
+// unassign first, edit via AssignOrderForm, then Assign again. Only for
+// orders NOT attached to a Trip, same restriction as Start/Discard.
+func (s *OrderService) Unassign(ctx context.Context, id uuid.UUID) (*dto.OrderResponse, error) {
+	var order models.Order
+	if err := s.db.WithContext(ctx).First(&order, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	if order.ViaggioID != nil {
+		return nil, utils.NewAPIError(400, "L'ordine fa parte di un viaggio: rimuovilo dal viaggio per modificarlo")
+	}
+	if order.Stato != models.OrderStatoPianificato {
+		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere riportato a pianificabile. Deve essere in stato PIANIFICATO.", order.Stato))
+	}
+
+	oldRouteID := order.RouteID
+
+	order.Stato = models.OrderStatoPianificabile
+	order.GarageID = nil
+	order.TargaMotrice = ""
+	order.TargaRimorchio = ""
+	order.AutistaID = nil
+	order.VettoreID = nil
+	order.WashStationID = nil
+	order.RouteID = nil
+
+	// Il vecchio OrderRoute va rimosso solo dopo che l'ordine non lo
+	// referenzia più (route_id azzerato) — altrimenti la FK fk_orders_route
+	// blocca la DELETE (violazione vista su Postgres, non su SQLite dove i
+	// test girano perché lì i FK non sono enforced di default).
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&order).Error; err != nil {
+			return err
+		}
+		if oldRouteID != nil {
+			return tx.Delete(&models.OrderRoute{}, "id = ?", *oldRouteID).Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	reloaded, err := s.reload(ctx, order.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp := ToResponse(*reloaded)
+	return &resp, nil
+}
+
 // Start mirrors PATCH /orders/{id}/start: only valid from PIANIFICATO, moves
 // to VIAGGIO. Only for orders NOT attached to a Trip — an order with
 // ViaggioID set must depart together with its trip (trips.TripService.Start),

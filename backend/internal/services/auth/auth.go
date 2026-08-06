@@ -8,6 +8,7 @@ import (
 	"fratelli-feccia/internal/models"
 	"fratelli-feccia/pkg/utils"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -104,8 +105,61 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, 
 	return &resp, nil
 }
 
+// RegisterClient mirrors POST /auth/register-cliente (public, unauthenticated):
+// atomically creates a Customer (anagrafica) and a RoleCliente User linked to
+// it, then logs the new account in immediately (no approval step) — same
+// LoginResult shape as Login/Refresh, so the frontend can go straight into
+// the client portal.
+func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error) {
+	var count int64
+	s.db.Model(&models.User{}).Where("login = ?", req.Email).Count(&count)
+	if count > 0 {
+		return nil, utils.NewAPIError(400, "Email già registrata")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	var user models.User
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		customer := models.Customer{
+			ID:             uuid.New(),
+			RagioneSociale: req.RagioneSociale,
+			Indirizzo:      req.Indirizzo,
+			Citta:          req.Citta,
+			Cap:            req.Cap,
+			Provincia:      req.Provincia,
+			PartitaIva:     req.PartitaIva,
+			CodiceFiscale:  req.CodiceFiscale,
+			Telefono:       req.Telefono,
+			Email:          req.Email,
+			Active:         true,
+		}
+		if err := tx.Create(&customer).Error; err != nil {
+			return err
+		}
+
+		user = models.User{
+			Login: req.Email, Name: req.Name, PasswordHash: string(hash),
+			Role: utils.RoleCliente, CustomerID: &customer.ID, Active: true,
+		}
+		return tx.Create(&user).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildLoginResult(user)
+}
+
 func (s *AuthService) buildLoginResult(user models.User) (*dto.LoginResult, error) {
-	tokens, err := utils.GenerateTokenPair(user.ID, user.Role, s.jwtConf)
+	customerID := ""
+	if user.CustomerID != nil {
+		customerID = user.CustomerID.String()
+	}
+	tokens, err := utils.GenerateTokenPair(user.ID, user.Role, customerID, s.jwtConf)
 	if err != nil {
 		return nil, err
 	}
@@ -121,12 +175,18 @@ func (s *AuthService) buildLoginResult(user models.User) (*dto.LoginResult, erro
 }
 
 func toAuthUserResponse(u models.User) dto.AuthUserResponse {
+	var customerID *string
+	if u.CustomerID != nil {
+		id := u.CustomerID.String()
+		customerID = &id
+	}
 	return dto.AuthUserResponse{
-		ID:        u.ID,
-		Email:     u.Login,
-		Name:      u.Name,
-		Role:      u.Role,
-		ProfileID: nil,
-		Active:    u.Active,
+		ID:         u.ID,
+		Email:      u.Login,
+		Name:       u.Name,
+		Role:       u.Role,
+		ProfileID:  nil,
+		CustomerID: customerID,
+		Active:     u.Active,
 	}
 }
