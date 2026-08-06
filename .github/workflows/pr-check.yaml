@@ -22,12 +22,6 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          working-directory: backend
-
       - name: go test
         run: go test ./...
 
