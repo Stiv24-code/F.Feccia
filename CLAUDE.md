@@ -33,7 +33,7 @@ Contesto essenziale: `plan.md` (release POC), `design_guidelines.md` (UI),
 `c:\Users\gcapo\OneDrive - WhereTech\AI\ClaudeLavoro\LoginBusiness\repo\`
 
 ## Strumenti
-- **Repo**: https://github.com/gcaporossi-wheretech/LoginBusiness
+- \
 - **Master tracking**: [issue #1](https://github.com/gcaporossi-wheretech/LoginBusiness/issues/1) — aggiornare solo a chiusura fase
 - **Milestones**: Phase 0..5 (piano di porting)
 - **Memory**: `C:\Users\gcapo\.claude\projects\c--Users-gcapo-OneDrive---WhereTech-AI-ClaudeLavoro-LoginBusiness\memory\`

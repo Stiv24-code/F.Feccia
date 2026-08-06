@@ -1,0 +1,77 @@
+# docker-compose.prod.yml — VPS: pull immagini già buildate (CI → Docker Hub),
+# nessun build locale. TLS e routing pubblico sono gestiti da un reverse proxy
+# a livello host (già configurato sul VPS), che instrada verso le porte
+# esposte qui sotto (GO_BACKEND_PORT per /api, GO_FRONTEND_PORT per il resto).
+#
+# Uso sul server (cartella ~/f.feccia):
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${GO_DB_USER}
+      POSTGRES_PASSWORD: ${GO_DB_PASSWORD}
+      POSTGRES_DB: ${GO_DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GO_DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+    networks:
+      - tms
+
+  backend-go:
+    image: ${DOCKER_USER}/tms-backend-go:${APP_VERSION:-latest}
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${GO_DB_USER}
+      DB_PASSWORD: ${GO_DB_PASSWORD}
+      DB_NAME: ${GO_DB_NAME}
+      DB_SSLMODE: disable
+      JWT_ACCESS_SECRET: ${GO_JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${GO_JWT_REFRESH_SECRET}
+      IS_LOCAL: "false"
+      SECURE_COOKIES: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+      ORS_API_KEY: ${ORS_API_KEY:-}
+      ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
+    ports:
+      - "${GO_BACKEND_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tms
+
+  nginx:
+    image: ${DOCKER_USER}/tms-frontend:${APP_VERSION:-latest}
+    ports:
+      - "${GO_FRONTEND_PORT:-8090}:80"
+    depends_on:
+      backend-go:
+        condition: service_started
+    restart: always
+    networks:
+      - tms
+
+volumes:
+  postgres_data:
+
+networks:
+  tms:
+    driver: bridge

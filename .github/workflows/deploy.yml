@@ -1,0 +1,98 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main", "develop"]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/pr-check.yaml
+
+  build:
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            image: tms-backend-go
+          - service: frontend
+            image: tms-frontend
+            build_arg: VITE_BACKEND_URL
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ vars.DOCKER_USER }}" --password-stdin
+
+      - name: Build image
+        env:
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
+        run: |
+          BUILD_ARG_FLAG=""
+          if [ -n "${{ matrix.build_arg }}" ]; then
+            BUILD_ARG_FLAG="--build-arg ${{ matrix.build_arg }}=${VITE_BACKEND_URL}"
+          fi
+          docker build \
+            ${BUILD_ARG_FLAG} \
+            -t ${{ vars.DOCKER_USER }}/${{ matrix.image }}:sha-${{ github.sha }} \
+            -t ${{ vars.DOCKER_USER }}/${{ matrix.image }}:latest \
+            ./${{ matrix.service }}
+
+      - name: Push image
+        run: |
+          docker push ${{ vars.DOCKER_USER }}/${{ matrix.image }}:sha-${{ github.sha }}
+          docker push ${{ vars.DOCKER_USER }}/${{ matrix.image }}:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            cd ~/f.feccia
+            sed -i "s|^APP_VERSION=.*|APP_VERSION=sha-${{ github.sha }}|" .env
+            docker compose -f docker-compose.prod.yml pull backend-go nginx
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend-go nginx
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke
+        env:
+          BASE_URL: ${{ vars.VITE_BACKEND_URL }}
+        run: |
+          # vars.VITE_BACKEND_URL è tipo https://domain/api → togliamo /api per il check root
+          BASE_URL="${BASE_URL%/api}"
+          for i in $(seq 1 10); do
+            if curl -fsS "${BASE_URL}/api/v1/health" >/dev/null && curl -fsS "${BASE_URL}/" >/dev/null; then
+              echo "OK"
+              exit 0
+            fi
+            echo "retry $i/10..."
+            sleep 5
+          done
+          echo "::error::smoke check falliti (backend /api/v1/health o frontend /)"
+          exit 1
+
+  notify:
+    needs: [checks, build, deploy, verify]
+    if: always()
+    uses: ./.github/workflows/notify.yml
+    with:
+      checks_result: ${{ needs.checks.result }}
+      build_result: ${{ needs.build.result }}
+      deploy_result: ${{ needs.deploy.result }}
+      verify_result: ${{ needs.verify.result }}
+    secrets: inherit

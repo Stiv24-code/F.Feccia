@@ -1,0 +1,67 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_call:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.sum
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: backend
+
+      - name: go test
+        run: go test ./...
+
+      # Il contratto REST (route, DTO, modelli esposti) deve restare in sync
+      # con swagger.json/yaml — vedi .claude/rules/swagger-regen.md.
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Verifica swagger allineato al codice
+        run: |
+          make swagger
+          git diff --exit-code -- docs/ || {
+            echo "::error::swagger.json/yaml non aggiornati — esegui 'make swagger' e committa docs/"
+            exit 1
+          }
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: frontend/yarn.lock
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn lint
+
+      - run: yarn type-check
+
+      - run: yarn build

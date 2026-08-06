@@ -1,0 +1,54 @@
+name: Notify Telegram
+
+on:
+  workflow_call:
+    inputs:
+      checks_result:
+        required: true
+        type: string
+      build_result:
+        required: true
+        type: string
+      deploy_result:
+        required: true
+        type: string
+      verify_result:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          CHECKS="${{ inputs.checks_result }}"
+          BUILD="${{ inputs.build_result }}"
+          DEPLOY="${{ inputs.deploy_result }}"
+          VERIFY="${{ inputs.verify_result }}"
+
+          INFO="${{ github.repository }} @ ${{ github.ref_name }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$CHECKS" != "success" ]; then
+            TEXT="❌ Type-check упал%0A${INFO}%0A${RUN_URL}"
+          elif [ "$BUILD" != "success" ]; then
+            TEXT="❌ Build упал%0A${INFO}%0A${RUN_URL}"
+          elif [ "$DEPLOY" != "success" ]; then
+            TEXT="❌ Deploy упал%0A${INFO}%0A${RUN_URL}"
+          elif [ "$VERIFY" != "success" ]; then
+            TEXT="❌ Smoke не прошёл (задеплоено, но не отвечает корректно)%0A${INFO}%0A${RUN_URL}"
+          else
+            TEXT="✅ Деплой успешен%0A${INFO}%0AActor: ${{ github.actor }}%0AVersion: sha-${{ github.sha }}"
+          fi
+
+          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "text=${TEXT}" \
+            -d "disable_web_page_preview=true")
+
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -q '"ok":true' || { echo "Telegram API rejected"; exit 1; }
