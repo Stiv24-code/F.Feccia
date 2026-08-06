@@ -78,7 +78,7 @@ export const appApi = createApi({
     }),
 
     getDestinations: builder.query<DtoDestinationResponse[], { search?: string; includeInactive?: boolean } | void>({
-      queryFn: (args) => toQueryResult(apiClient.v1DestinationsList({ search: args?.search || undefined, include_inactive: args?.includeInactive || undefined })),
+      queryFn: (args = {}) => toQueryResult(apiClient.v1DestinationsList({ search: args.search || undefined, include_inactive: args.includeInactive || undefined })),
       providesTags: ['Destination'],
     }),
     createDestination: builder.mutation<DtoDestinationResponse, DtoDestinationRequest>({
