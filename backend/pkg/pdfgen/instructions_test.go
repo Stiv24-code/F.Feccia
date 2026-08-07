@@ -12,7 +12,7 @@ import (
 func TestBuildInstructionsPDF_ProducesValidPDF(t *testing.T) {
 	clienteID := uuid.New()
 	trip := models.Trip{
-		ID: uuid.New(), TargaMotrice: "AB123CD", TargaRimorchio: "TR001AA",
+		ID: uuid.New(), Motrice: &models.Motrice{Targa: "AB123CD"}, Semirimorchio: &models.Semirimorchio{Targa: "TR001AA"},
 		Autista: &models.Driver{Nome: "Mario", Cognome: "Rossi"}, Garage: &models.Garage{Nome: "Garage Lodi"},
 		DataPartenza: "2026-01-10", DataArrivo: "2026-01-11", KmTotali: 350.5,
 	}

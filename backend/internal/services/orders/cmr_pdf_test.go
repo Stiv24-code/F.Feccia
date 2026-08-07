@@ -21,9 +21,9 @@ func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 	if err := db.Create(&customer).Error; err != nil {
 		t.Fatalf("failed to seed customer: %v", err)
 	}
-	vehicle := models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Marca: "Iveco", Active: true}
-	if err := db.Create(&vehicle).Error; err != nil {
-		t.Fatalf("failed to seed vehicle: %v", err)
+	motrice := models.Motrice{ID: uuid.New(), Targa: "AB123CD", Marca: "Iveco", Active: true}
+	if err := db.Create(&motrice).Error; err != nil {
+		t.Fatalf("failed to seed motrice: %v", err)
 	}
 
 	carico := models.Destination{ID: uuid.New(), Nome: "Milano (MI)", Active: true, Lat: geoPtr(45.4642), Lng: geoPtr(9.19)}
@@ -38,7 +38,7 @@ func TestGetCMRPDF_ResolvesCustomerAndVehicle(t *testing.T) {
 	order := models.Order{
 		ID: uuid.New(), ClienteID: customer.ID,
 		DestinazioneCaricoID: &carico.ID, DestinazioneScaricoID: &scarico.ID,
-		DataRitiro: "2026-01-10", TargaMotrice: "AB123CD", Progressivo: "26/0001",
+		DataRitiro: "2026-01-10", MotriceID: &motrice.ID, Progressivo: "26/0001",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&order).Error; err != nil {

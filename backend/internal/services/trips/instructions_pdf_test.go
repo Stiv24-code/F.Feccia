@@ -24,8 +24,12 @@ func TestGetInstructionsPDF_ResolvesOrdersCustomersAndDriver(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	motrice := models.Motrice{ID: uuid.New(), Targa: "AB123CD", Active: true}
+	if err := db.Create(&motrice).Error; err != nil {
+		t.Fatal(err)
+	}
 	trip := models.Trip{
-		ID: uuid.New(), TargaMotrice: "AB123CD", AutistaID: &driver.ID,
+		ID: uuid.New(), MotriceID: &motrice.ID, AutistaID: &driver.ID,
 		DataPartenza: "2026-01-10", KmTotali: 200,
 		Segments: []models.TripSegment{{Ordine: 1, Tipo: "base_carico", Km: 40, TempoStimatoMin: 30}},
 	}

@@ -434,11 +434,13 @@ definitions:
         type: integer
       total_drivers:
         type: integer
+      total_motrici:
+        type: integer
       total_orders:
         type: integer
       total_revenue:
         type: number
-      total_vehicles:
+      total_semirimorchi:
         type: integer
     type: object
   dto.DestinationRequest:
@@ -524,6 +526,34 @@ definitions:
       note:
         type: string
       patente:
+        items:
+          enum:
+          - AM
+          - A1
+          - A2
+          - A
+          - B1
+          - B
+          - BE
+          - C1
+          - C1E
+          - C
+          - CE
+          - D1
+          - D1E
+          - D
+          - DE
+          - CQC
+          - ADR
+          type: string
+        type: array
+      prossime_ferie_a:
+        type: string
+      prossime_ferie_da:
+        description: |-
+          ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability
+          window (nil if none), computed on read only by DriverService.List —
+          not persisted, not populated by Create/Update.
         type: string
       scadenza_patente:
         type: string
@@ -545,7 +575,27 @@ definitions:
       note:
         type: string
       patente:
-        type: string
+        items:
+          enum:
+          - AM
+          - A1
+          - A2
+          - A
+          - B1
+          - B
+          - BE
+          - C1
+          - C1E
+          - C
+          - CE
+          - D1
+          - D1E
+          - D
+          - DE
+          - CQC
+          - ADR
+          type: string
+        type: array
       scadenza_patente:
         type: string
       telefono:
@@ -573,6 +623,34 @@ definitions:
       note:
         type: string
       patente:
+        items:
+          enum:
+          - AM
+          - A1
+          - A2
+          - A
+          - B1
+          - B
+          - BE
+          - C1
+          - C1E
+          - C
+          - CE
+          - D1
+          - D1E
+          - D
+          - DE
+          - CQC
+          - ADR
+          type: string
+        type: array
+      prossime_ferie_a:
+        type: string
+      prossime_ferie_da:
+        description: |-
+          ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability
+          window (nil if none), computed on read only by DriverService.List —
+          not persisted, not populated by Create/Update.
         type: string
       scadenza_patente:
         type: string
@@ -592,6 +670,11 @@ definitions:
       data_da:
         type: string
       motivo:
+        enum:
+        - ferie
+        - malattia
+        - permesso
+        - altro
         type: string
       note:
         type: string
@@ -615,91 +698,13 @@ definitions:
       id:
         type: string
       motivo:
+        enum:
+        - ferie
+        - malattia
+        - permesso
+        - altro
         type: string
       note:
-        type: string
-    type: object
-  dto.GPSHistoryResponse:
-    properties:
-      gps_source:
-        type: string
-      heading:
-        type: number
-      lat:
-        type: number
-      lng:
-        type: number
-      speed_kmh:
-        type: number
-      targa:
-        type: string
-      timestamp:
-        type: string
-      vehicle_id:
-        type: string
-    type: object
-  dto.GPSLiveVehicle:
-    properties:
-      gps_active:
-        type: boolean
-      gps_source:
-        type: string
-      gps_tracker_url:
-        type: string
-      id:
-        type: string
-      last_gps_update:
-        type: string
-      last_heading:
-        type: number
-      last_lat:
-        type: number
-      last_lng:
-        type: number
-      last_speed_kmh:
-        type: number
-      marca:
-        type: string
-      modello:
-        type: string
-      targa:
-        type: string
-      tipo_veicolo:
-        type: string
-    type: object
-  dto.GPSPositionShort:
-    properties:
-      lat:
-        type: number
-      lng:
-        type: number
-    type: object
-  dto.GPSUpdateResult:
-    properties:
-      gps_source:
-        type: string
-      ok:
-        type: boolean
-      position:
-        $ref: '#/definitions/dto.GPSPositionShort'
-      targa:
-        type: string
-    type: object
-  dto.GPSWebhookPayload:
-    properties:
-      heading:
-        type: number
-      lat:
-        type: number
-      lng:
-        type: number
-      speed_kmh:
-        type: number
-      targa:
-        type: string
-      timestamp:
-        type: string
-      vehicle_id:
         type: string
     type: object
   dto.GarageRequest:
@@ -946,24 +951,10 @@ definitions:
         type: number
       garage:
         $ref: '#/definitions/dto.MapNamedPoint'
-      gps_heading:
-        type: number
-      gps_last_update:
-        type: string
-      gps_live:
-        type: boolean
-      gps_source:
-        type: string
-      gps_speed_kmh:
-        type: number
-      gps_tracker_url:
-        type: string
       id:
         type: string
-      last_temp_alert:
-        type: boolean
-      last_temp_celsius:
-        type: number
+      motrice:
+        $ref: '#/definitions/dto.MotriceResponse'
       progress:
         type: number
       progressivo:
@@ -978,8 +969,6 @@ definitions:
         $ref: '#/definitions/dto.MapPoint'
       stato:
         type: string
-      targa_motrice:
-        type: string
       tariffa:
         type: number
       tipologia:
@@ -990,8 +979,6 @@ definitions:
   dto.MapStats:
     properties:
       chiusi:
-        type: integer
-      gps_live:
         type: integer
       in_viaggio:
         type: integer
@@ -1028,6 +1015,71 @@ definitions:
       totale:
         type: number
     type: object
+  dto.MotriceAvailabilityResponse:
+    properties:
+      active:
+        type: boolean
+      anno:
+        type: integer
+      created_at:
+        type: string
+      disponibilita:
+        type: string
+      id:
+        type: string
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      targa:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.MotriceRequest:
+    properties:
+      anno:
+        type: integer
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      targa:
+        type: string
+    required:
+    - targa
+    type: object
+  dto.MotriceResponse:
+    properties:
+      active:
+        type: boolean
+      anno:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      marca:
+        type: string
+      modello:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      targa:
+        type: string
+      updated_at:
+        type: string
+    type: object
   dto.OKResult:
     properties:
       ok:
@@ -1039,6 +1091,8 @@ definitions:
         type: string
       garage_id:
         type: string
+      motrice_id:
+        type: string
       route_waypoints:
         description: |-
           RouteWaypoints: la sequenza scelta dal manager tra le alternative
@@ -1049,9 +1103,7 @@ definitions:
         items:
           $ref: '#/definitions/dto.RouteWaypointDTO'
         type: array
-      targa_motrice:
-        type: string
-      targa_rimorchio:
+      semirimorchio_id:
         type: string
       vettore_id:
         type: string
@@ -1171,6 +1223,10 @@ definitions:
         items:
           $ref: '#/definitions/dto.OrderItemResponseDTO'
         type: array
+      motrice:
+        $ref: '#/definitions/dto.MotriceResponse'
+      motrice_id:
+        type: string
       note:
         type: string
       ora_consegna_a:
@@ -1189,6 +1245,10 @@ definitions:
         $ref: '#/definitions/dto.RouteResponseDTO'
       route_id:
         type: string
+      semirimorchio:
+        $ref: '#/definitions/dto.SemirimorchioResponse'
+      semirimorchio_id:
+        type: string
       servizi_accessori:
         items:
           type: string
@@ -1200,10 +1260,6 @@ definitions:
         - VIAGGIO
         - CHIUSO
         - SCARTATO
-        type: string
-      targa_motrice:
-        type: string
-      targa_rimorchio:
         type: string
       tariffa:
         type: number
@@ -1552,6 +1608,65 @@ definitions:
       tipo:
         type: string
     type: object
+  dto.SemirimorchioAvailabilityResponse:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      disponibilita:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      tipo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.SemirimorchioRequest:
+    properties:
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      tipo:
+        type: string
+    required:
+    - targa
+    type: object
+  dto.SemirimorchioResponse:
+    properties:
+      active:
+        type: boolean
+      created_at:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      portata_kg:
+        type: number
+      scompartature:
+        type: integer
+      targa:
+        type: string
+      tipo:
+        type: string
+      updated_at:
+        type: string
+    type: object
   dto.TariffLookupResult:
     properties:
       found:
@@ -1572,63 +1687,6 @@ definitions:
         type: number
       tipo_tariffa:
         type: string
-    type: object
-  dto.TemperatureReadingResponse:
-    properties:
-      out_of_range:
-        type: boolean
-      sensor_id:
-        type: string
-      source:
-        type: string
-      targa:
-        type: string
-      temp_celsius:
-        type: number
-      ts:
-        type: string
-      vehicle_id:
-        type: string
-    type: object
-  dto.TemperatureThresholdsRequest:
-    properties:
-      temp_max:
-        type: number
-      temp_min:
-        type: number
-    type: object
-  dto.TemperatureThresholdsResult:
-    properties:
-      ok:
-        type: boolean
-      temp_max:
-        type: number
-      temp_min:
-        type: number
-    type: object
-  dto.TemperatureWebhookRequest:
-    properties:
-      sensor_id:
-        type: string
-      targa:
-        type: string
-      temp_celsius:
-        type: number
-      ts:
-        type: string
-      vehicle_id:
-        type: string
-    required:
-    - temp_celsius
-    type: object
-  dto.TemperatureWebhookResult:
-    properties:
-      alert:
-        type: boolean
-      ok:
-        type: boolean
-      out_of_range:
-        type: boolean
     type: object
   dto.TransportCategoryRequest:
     properties:
@@ -1672,6 +1730,10 @@ definitions:
         type: string
       km_totali:
         type: number
+      motrice:
+        $ref: '#/definitions/dto.MotriceResponse'
+      motrice_id:
+        type: string
       note:
         type: string
       ordini:
@@ -1686,11 +1748,11 @@ definitions:
         items:
           $ref: '#/definitions/dto.TripSegmentDTO'
         type: array
+      semirimorchio:
+        $ref: '#/definitions/dto.SemirimorchioResponse'
+      semirimorchio_id:
+        type: string
       stato:
-        type: string
-      targa_motrice:
-        type: string
-      targa_rimorchio:
         type: string
       vettore:
         $ref: '#/definitions/dto.CarrierResponse'
@@ -1707,15 +1769,15 @@ definitions:
         type: string
       garage_id:
         type: string
+      motrice_id:
+        type: string
       note:
         type: string
       ordini_ids:
         items:
           type: string
         type: array
-      targa_motrice:
-        type: string
-      targa_rimorchio:
+      semirimorchio_id:
         type: string
       vettore_id:
         type: string
@@ -1742,6 +1804,10 @@ definitions:
         type: string
       km_totali:
         type: number
+      motrice:
+        $ref: '#/definitions/dto.MotriceResponse'
+      motrice_id:
+        type: string
       note:
         type: string
       ordini_ids:
@@ -1752,11 +1818,11 @@ definitions:
         items:
           $ref: '#/definitions/dto.TripSegmentDTO'
         type: array
+      semirimorchio:
+        $ref: '#/definitions/dto.SemirimorchioResponse'
+      semirimorchio_id:
+        type: string
       stato:
-        type: string
-      targa_motrice:
-        type: string
-      targa_rimorchio:
         type: string
       vettore:
         $ref: '#/definitions/dto.CarrierResponse'
@@ -1808,169 +1874,6 @@ definitions:
     required:
     - login
     - role
-    type: object
-  dto.VehicleAvailabilityResponse:
-    properties:
-      active:
-        type: boolean
-      anno:
-        type: integer
-      created_at:
-        type: string
-      disponibilita:
-        type: string
-      gps_active:
-        type: boolean
-      gps_api_key:
-        type: string
-      gps_source:
-        type: string
-      gps_tracker_tipo:
-        type: string
-      gps_tracker_url:
-        type: string
-      id:
-        type: string
-      last_gps_update:
-        type: string
-      last_heading:
-        type: number
-      last_lat:
-        type: number
-      last_lng:
-        type: number
-      last_speed_kmh:
-        type: number
-      last_temp_alert:
-        type: boolean
-      last_temp_celsius:
-        type: number
-      last_temp_sensor_id:
-        type: string
-      last_temp_ts:
-        type: string
-      marca:
-        type: string
-      modello:
-        type: string
-      note:
-        type: string
-      portata_kg:
-        type: number
-      scompartature:
-        type: integer
-      targa:
-        type: string
-      temp_max:
-        type: number
-      temp_min:
-        type: number
-      tipo_veicolo:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  dto.VehicleGPSUpdateRequest:
-    properties:
-      heading:
-        type: number
-      lat:
-        type: number
-      lng:
-        type: number
-      speed_kmh:
-        type: number
-      timestamp:
-        type: string
-    required:
-    - lat
-    - lng
-    type: object
-  dto.VehicleRequest:
-    properties:
-      anno:
-        type: integer
-      gps_api_key:
-        type: string
-      gps_tracker_tipo:
-        type: string
-      gps_tracker_url:
-        type: string
-      marca:
-        type: string
-      modello:
-        type: string
-      note:
-        type: string
-      portata_kg:
-        type: number
-      scompartature:
-        type: integer
-      targa:
-        type: string
-      tipo_veicolo:
-        type: string
-    required:
-    - targa
-    type: object
-  dto.VehicleResponse:
-    properties:
-      active:
-        type: boolean
-      anno:
-        type: integer
-      created_at:
-        type: string
-      gps_active:
-        type: boolean
-      gps_api_key:
-        type: string
-      gps_source:
-        type: string
-      gps_tracker_tipo:
-        type: string
-      gps_tracker_url:
-        type: string
-      id:
-        type: string
-      last_gps_update:
-        type: string
-      last_heading:
-        type: number
-      last_lat:
-        type: number
-      last_lng:
-        type: number
-      last_speed_kmh:
-        type: number
-      last_temp_alert:
-        type: boolean
-      last_temp_celsius:
-        type: number
-      last_temp_sensor_id:
-        type: string
-      last_temp_ts:
-        type: string
-      marca:
-        type: string
-      modello:
-        type: string
-      note:
-        type: string
-      portata_kg:
-        type: number
-      scompartature:
-        type: integer
-      targa:
-        type: string
-      temp_max:
-        type: number
-      temp_min:
-        type: number
-      tipo_veicolo:
-        type: string
-      updated_at:
-        type: string
     type: object
   dto.VehicleTypeRequest:
     properties:
@@ -2667,7 +2570,7 @@ paths:
       summary: Driver availability for a date range
       tags:
       - Availability
-  /api/v1/availability/vehicles:
+  /api/v1/availability/motrici:
     get:
       parameters:
       - description: Range start (YYYY-MM-DD)
@@ -2687,11 +2590,38 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/dto.VehicleAvailabilityResponse'
+              $ref: '#/definitions/dto.MotriceAvailabilityResponse'
             type: array
       security:
       - BearerAuth: []
-      summary: Vehicle availability for a date range
+      summary: Motrice availability for a date range
+      tags:
+      - Availability
+  /api/v1/availability/semirimorchi:
+    get:
+      parameters:
+      - description: Range start (YYYY-MM-DD)
+        in: query
+        name: data_da
+        required: true
+        type: string
+      - description: Range end (YYYY-MM-DD)
+        in: query
+        name: data_a
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.SemirimorchioAvailabilityResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Semirimorchio availability for a date range
       tags:
       - Availability
   /api/v1/banks:
@@ -4164,6 +4094,116 @@ paths:
       summary: Get one of the logged-in client's own orders by ID
       tags:
       - Auth
+  /api/v1/motrici:
+    get:
+      parameters:
+      - description: Filter by targa
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.MotriceResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List motrici
+      tags:
+      - Motrici
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Motrice data
+        in: body
+        name: motrice
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MotriceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.MotriceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create motrice
+      tags:
+      - Motrici
+  /api/v1/motrici/{id}:
+    delete:
+      parameters:
+      - description: Motrice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete motrice (logical, sets active=false)
+      tags:
+      - Motrici
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Motrice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Motrice data
+        in: body
+        name: motrice
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MotriceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MotriceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update motrice (full replace)
+      tags:
+      - Motrici
   /api/v1/orders:
     get:
       parameters:
@@ -5001,6 +5041,116 @@ paths:
       summary: Update product (full replace)
       tags:
       - Products
+  /api/v1/semirimorchi:
+    get:
+      parameters:
+      - description: Filter by targa
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.SemirimorchioResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List semirimorchi
+      tags:
+      - Semirimorchi
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Semirimorchio data
+        in: body
+        name: semirimorchio
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SemirimorchioRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SemirimorchioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create semirimorchio
+      tags:
+      - Semirimorchi
+  /api/v1/semirimorchi/{id}:
+    delete:
+      parameters:
+      - description: Semirimorchio ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete semirimorchio (logical, sets active=false)
+      tags:
+      - Semirimorchi
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Semirimorchio ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Semirimorchio data
+        in: body
+        name: semirimorchio
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SemirimorchioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SemirimorchioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update semirimorchio (full replace)
+      tags:
+      - Semirimorchi
   /api/v1/transport-categories:
     get:
       produces:
@@ -5051,6 +5201,10 @@ paths:
       - description: Filter by stato
         in: query
         name: stato
+        type: string
+      - description: Filter by driver (UUID) — viaggi assegnati a un autista
+        in: query
+        name: autista_id
         type: string
       - description: Max results (default 200)
         in: query
@@ -5318,290 +5472,6 @@ paths:
       summary: Create vehicle type
       tags:
       - Masterdata
-  /api/v1/vehicles:
-    get:
-      parameters:
-      - description: Filter by targa
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.VehicleResponse'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: List vehicles
-      tags:
-      - Vehicles
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Vehicle data
-        in: body
-        name: vehicle
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VehicleRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/dto.VehicleResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "409":
-          description: Conflict
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create vehicle
-      tags:
-      - Vehicles
-  /api/v1/vehicles/{id}:
-    delete:
-      parameters:
-      - description: Vehicle ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "204":
-          description: No Content
-      security:
-      - BearerAuth: []
-      summary: Delete vehicle (logical, sets active=false)
-      tags:
-      - Vehicles
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Vehicle ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Vehicle data
-        in: body
-        name: vehicle
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VehicleRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.VehicleResponse'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update vehicle (full replace of the create-able fields)
-      tags:
-      - Vehicles
-  /api/v1/vehicles/{id}/gps-history:
-    get:
-      parameters:
-      - description: Vehicle ID (UUID) or targa
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Max results (default 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.GPSHistoryResponse'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: GPS history for a vehicle
-      tags:
-      - Vehicles
-  /api/v1/vehicles/{id}/gps-position:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Vehicle ID (UUID) or targa
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: GPS position
-        in: body
-        name: position
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VehicleGPSUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.GPSUpdateResult'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update vehicle GPS position (by id or targa)
-      tags:
-      - Vehicles
-  /api/v1/vehicles/{id}/temperature:
-    get:
-      parameters:
-      - description: Vehicle ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Max results (default 200)
-        in: query
-        name: limit
-        type: integer
-      - description: Only out-of-range readings
-        in: query
-        name: only_alerts
-        type: boolean
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.TemperatureReadingResponse'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: Temperature history for a vehicle
-      tags:
-      - Vehicles
-  /api/v1/vehicles/{id}/temperature-thresholds:
-    patch:
-      consumes:
-      - application/json
-      parameters:
-      - description: Vehicle ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Thresholds
-        in: body
-        name: thresholds
-        required: true
-        schema:
-          $ref: '#/definitions/dto.TemperatureThresholdsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TemperatureThresholdsResult'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Set temperature thresholds for a vehicle
-      tags:
-      - Vehicles
-  /api/v1/vehicles/gps-live:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.GPSLiveVehicle'
-            type: array
-      security:
-      - BearerAuth: []
-      summary: Live GPS positions for all active vehicles
-      tags:
-      - Vehicles
-  /api/v1/vehicles/gps-position-by-plate/{targa}:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Vehicle targa
-        in: path
-        name: targa
-        required: true
-        type: string
-      - description: GPS position
-        in: body
-        name: position
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VehicleGPSUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.GPSUpdateResult'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update vehicle GPS position by targa
-      tags:
-      - Vehicles
   /api/v1/wash-stations:
     get:
       parameters:
@@ -5712,76 +5582,6 @@ paths:
       summary: Update wash station (full replace)
       tags:
       - WashStations
-  /api/v1/webhooks/gps/{vendor}:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: GPS vendor
-        in: path
-        name: vendor
-        required: true
-        type: string
-      - description: Normalized GPS payload
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.GPSWebhookPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.GPSUpdateResult'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: GPS provider webhook ingestion
-      tags:
-      - Vehicles
-  /api/v1/webhooks/temperature/{vendor}:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Sensor vendor
-        in: path
-        name: vendor
-        required: true
-        type: string
-      - description: Temperature reading
-        in: body
-        name: payload
-        required: true
-        schema:
-          $ref: '#/definitions/dto.TemperatureWebhookRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TemperatureWebhookResult'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Temperature sensor webhook ingestion
-      tags:
-      - Vehicles
 schemes:
 - https
 - http

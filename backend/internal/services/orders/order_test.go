@@ -21,7 +21,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Vehicle{}); err != nil {
+	if err := db.AutoMigrate(&database.Counter{}, &models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Motrice{}, &models.Semirimorchio{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -168,7 +168,7 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	_, err = svc.Close(ctx, order.ID)
 	assertAPIError(t, err, 400)
 
-	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{TargaMotrice: "AB123CD", AutistaID: uuid.New().String()})
+	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{MotriceID: uuid.New().String(), AutistaID: uuid.New().String()})
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
@@ -249,7 +249,7 @@ func TestOrderService_Unassign_ClearsAssignmentAndRevertsState(t *testing.T) {
 	assertAPIError(t, err, 400)
 
 	autistaID := uuid.New()
-	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{TargaMotrice: "AB123CD", AutistaID: autistaID.String()})
+	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{MotriceID: uuid.New().String(), AutistaID: autistaID.String()})
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
@@ -264,8 +264,8 @@ func TestOrderService_Unassign_ClearsAssignmentAndRevertsState(t *testing.T) {
 	if unassigned.Stato != "PIANIFICABILE" {
 		t.Fatalf("expected stato PIANIFICABILE after unassign, got %q", unassigned.Stato)
 	}
-	if unassigned.TargaMotrice != "" || unassigned.Autista != nil {
-		t.Fatalf("expected assignment fields to be cleared, got targa_motrice=%q autista=%+v", unassigned.TargaMotrice, unassigned.Autista)
+	if unassigned.MotriceID != "" || unassigned.Autista != nil {
+		t.Fatalf("expected assignment fields to be cleared, got motrice_id=%q autista=%+v", unassigned.MotriceID, unassigned.Autista)
 	}
 
 	// Unassign again must fail (no longer PIANIFICATO).

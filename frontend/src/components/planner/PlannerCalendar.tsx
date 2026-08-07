@@ -158,7 +158,7 @@ export default function PlannerCalendar({ orders, onOpen }: PlannerCalendarProps
                     <span>{o.ora_ritiro_da || '—'}</span>
                     {autistaNome && (
                       <span className="flex items-center gap-0.5 truncate max-w-[70%]">
-                        <Truck className="h-2.5 w-2.5 shrink-0" />{o.targa_motrice || autistaNome}
+                        <Truck className="h-2.5 w-2.5 shrink-0" />{o.motrice?.targa || autistaNome}
                       </span>
                     )}
                   </div>

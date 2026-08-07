@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"fratelli-feccia/internal/models"
@@ -94,50 +95,60 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d destinazioni\n", len(destinations))
 
-	// ─────────────────────────── VEICOLI ───────────────────────────
-	vehicles := []models.Vehicle{
-		{Targa: "KX300X", TipoVeicolo: "motrice", Marca: "IVECO", Modello: "S-Way 490", PortataKg: 26000},
-		{Targa: "AB123CD", TipoVeicolo: "motrice", Marca: "MAN", Modello: "TGX 18.510", PortataKg: 24000},
-		{Targa: "MN012OP", TipoVeicolo: "motrice", Marca: "SCANIA", Modello: "R500", PortataKg: 26000},
-		{Targa: "FT456WE", TipoVeicolo: "motrice", Marca: "MERCEDES", Modello: "Actros 1845", PortataKg: 25000},
-		{Targa: "GH789RT", TipoVeicolo: "motrice", Marca: "VOLVO", Modello: "FH 500", PortataKg: 26000},
-		{Targa: "LP321QZ", TipoVeicolo: "motrice", Marca: "DAF", Modello: "XG+ 530", PortataKg: 25000},
-		{Targa: "VB654SD", TipoVeicolo: "motrice", Marca: "IVECO", Modello: "S-Way 460", PortataKg: 24000},
-		{Targa: "NM987FG", TipoVeicolo: "motrice", Marca: "RENAULT", Modello: "T 480", PortataKg: 24000},
-		{Targa: "EF456GH", TipoVeicolo: "rimorchio_isotermico", Marca: "KRONE", Modello: "Cool Liner", PortataKg: 28000},
-		{Targa: "IJ789KL", TipoVeicolo: "rimorchio", Marca: "SCHMITZ", Modello: "S.KO Cool", PortataKg: 25000},
-		{Targa: "TY123WQ", TipoVeicolo: "rimorchio_isotermico", Marca: "LAMBERET", Modello: "SR2 Green", PortataKg: 27000},
-		{Targa: "OP456ER", TipoVeicolo: "rimorchio_isotermico", Marca: "CARRIER", Modello: "Transicold Vector", PortataKg: 26000},
-		{Targa: "HJ789UI", TipoVeicolo: "rimorchio", Marca: "KÖGEL", Modello: "Cargo Rail", PortataKg: 25000},
-		{Targa: "ZX321CV", TipoVeicolo: "container", Marca: "MAERSK", Modello: "20ft Reefer", PortataKg: 22000},
+	// ─────────────────────────── MOTRICI ───────────────────────────
+	motrici := []models.Motrice{
+		{Targa: "KX300X", Marca: "IVECO", Modello: "S-Way 490", PortataKg: 26000},
+		{Targa: "AB123CD", Marca: "MAN", Modello: "TGX 18.510", PortataKg: 24000},
+		{Targa: "MN012OP", Marca: "SCANIA", Modello: "R500", PortataKg: 26000},
+		{Targa: "FT456WE", Marca: "MERCEDES", Modello: "Actros 1845", PortataKg: 25000},
+		{Targa: "GH789RT", Marca: "VOLVO", Modello: "FH 500", PortataKg: 26000},
+		{Targa: "LP321QZ", Marca: "DAF", Modello: "XG+ 530", PortataKg: 25000},
+		{Targa: "VB654SD", Marca: "IVECO", Modello: "S-Way 460", PortataKg: 24000},
+		{Targa: "NM987FG", Marca: "RENAULT", Modello: "T 480", PortataKg: 24000},
 	}
-	for i := range vehicles {
-		vehicles[i].ID = uuid.New()
-		vehicles[i].Anno = randRange(2019, 2025)
-		if vehicles[i].TipoVeicolo == "motrice" {
-			vehicles[i].Scompartature = 1
-		} else {
-			vehicles[i].Scompartature = randRange(1, 3)
-		}
-		vehicles[i].Active = true
+	for i := range motrici {
+		motrici[i].ID = uuid.New()
+		motrici[i].Anno = randRange(2019, 2025)
+		motrici[i].Active = true
 	}
-	if err := db.Create(&vehicles).Error; err != nil {
-		return fmt.Errorf("veicoli: %w", err)
+	if err := db.Create(&motrici).Error; err != nil {
+		return fmt.Errorf("motrici: %w", err)
 	}
-	fmt.Printf("✓ %d veicoli\n", len(vehicles))
+	fmt.Printf("✓ %d motrici\n", len(motrici))
+
+	// ─────────────────────────── SEMIRIMORCHI ───────────────────────────
+	trailers := []models.Semirimorchio{
+		{Targa: "EF456GH", Tipo: "Frigo", PortataKg: 28000},
+		{Targa: "IJ789KL", Tipo: "Centinato", PortataKg: 25000},
+		{Targa: "TY123WQ", Tipo: "Frigo", PortataKg: 27000},
+		{Targa: "OP456ER", Tipo: "Frigo", PortataKg: 26000},
+		{Targa: "HJ789UI", Tipo: "Centinato", PortataKg: 25000},
+		{Targa: "ZX321CV", Tipo: "Container", PortataKg: 22000},
+	}
+	for i := range trailers {
+		trailers[i].ID = uuid.New()
+		trailers[i].Scompartature = randRange(1, 3)
+		trailers[i].Active = true
+	}
+	if err := db.Create(&trailers).Error; err != nil {
+		return fmt.Errorf("semirimorchi: %w", err)
+	}
+	fmt.Printf("✓ %d semirimorchi\n", len(trailers))
 
 	// ─────────────────────────── AUTISTI ───────────────────────────
+	patenteCE, _ := json.Marshal([]string{"CE"})
+	patenteCEADR, _ := json.Marshal([]string{"CE", "ADR"})
 	drivers := []models.Driver{
-		{Nome: "Marco", Cognome: "Rossi", Patente: "CE", Telefono: "+39 333 1234567"},
-		{Nome: "Luca", Cognome: "Bianchi", Patente: "CE", Telefono: "+39 334 7654321"},
-		{Nome: "Giuseppe", Cognome: "Verdi", Patente: "CE", Telefono: "+39 335 1112233"},
-		{Nome: "Antonio", Cognome: "Neri", Patente: "CE+ADR", Telefono: "+39 336 4445566"},
-		{Nome: "Franco", Cognome: "Colombo", Patente: "CE", Telefono: "+39 337 7788990"},
-		{Nome: "Roberto", Cognome: "Ricci", Patente: "CE+ADR", Telefono: "+39 338 1122334"},
-		{Nome: "Alessandro", Cognome: "Moretti", Patente: "CE", Telefono: "+39 339 5566778"},
-		{Nome: "Stefano", Cognome: "Barbieri", Patente: "CE", Telefono: "+39 340 9900112"},
-		{Nome: "Davide", Cognome: "Fontana", Patente: "CE+ADR", Telefono: "+39 341 3344556"},
-		{Nome: "Paolo", Cognome: "Esposito", Patente: "CE", Telefono: "+39 342 7788901"},
+		{Nome: "Marco", Cognome: "Rossi", Patente: datatypes.JSON(patenteCE), Telefono: "+39 333 1234567"},
+		{Nome: "Luca", Cognome: "Bianchi", Patente: datatypes.JSON(patenteCE), Telefono: "+39 334 7654321"},
+		{Nome: "Giuseppe", Cognome: "Verdi", Patente: datatypes.JSON(patenteCE), Telefono: "+39 335 1112233"},
+		{Nome: "Antonio", Cognome: "Neri", Patente: datatypes.JSON(patenteCEADR), Telefono: "+39 336 4445566"},
+		{Nome: "Franco", Cognome: "Colombo", Patente: datatypes.JSON(patenteCE), Telefono: "+39 337 7788990"},
+		{Nome: "Roberto", Cognome: "Ricci", Patente: datatypes.JSON(patenteCEADR), Telefono: "+39 338 1122334"},
+		{Nome: "Alessandro", Cognome: "Moretti", Patente: datatypes.JSON(patenteCE), Telefono: "+39 339 5566778"},
+		{Nome: "Stefano", Cognome: "Barbieri", Patente: datatypes.JSON(patenteCE), Telefono: "+39 340 9900112"},
+		{Nome: "Davide", Cognome: "Fontana", Patente: datatypes.JSON(patenteCEADR), Telefono: "+39 341 3344556"},
+		{Nome: "Paolo", Cognome: "Esposito", Patente: datatypes.JSON(patenteCE), Telefono: "+39 342 7788901"},
 	}
 	for i := range drivers {
 		drivers[i].ID = uuid.New()
@@ -302,19 +313,6 @@ func Seed(db *gorm.DB) error {
 	// invece di finire in un anno passato non più visibile di default.
 	today := time.Now()
 
-	var motrici []models.Vehicle
-	for _, v := range vehicles {
-		if v.TipoVeicolo == "motrice" {
-			motrici = append(motrici, v)
-		}
-	}
-	var trailers []models.Vehicle
-	for _, v := range vehicles {
-		if v.TipoVeicolo != "motrice" {
-			trailers = append(trailers, v)
-		}
-	}
-
 	orders := make([]models.Order, 0, 60)
 	for i := 0; i < 60; i++ {
 		seq := i + 1
@@ -356,7 +354,7 @@ func Seed(db *gorm.DB) error {
 		if stato == "PIANIFICATO" || stato == "VIAGGIO" || stato == "CHIUSO" {
 			m := pick(motrici)
 			d := pick(drivers)
-			order.TargaMotrice = m.Targa
+			order.MotriceID = &m.ID
 			order.AutistaID = &d.ID
 			// Punto di partenza: sempre presente su un ordine assegnato (come nel
 			// form di assegnazione reale). Punto di lavaggio dopo lo scarico:
@@ -480,7 +478,7 @@ func Seed(db *gorm.DB) error {
 
 		trip := models.Trip{
 			ID: uuid.New(), OrdiniIds: ordiniIdsJSON,
-			TargaMotrice: m.Targa, TargaRimorchio: trailer.Targa,
+			MotriceID: &m.ID, SemirimorchioID: &trailer.ID,
 			AutistaID: &d.ID,
 			GarageID:  &garages[0].ID,
 			KmTotali:  float64(randRange(300, 2500)), CostoStimato: float64(randRange(800, 4000)),
@@ -490,7 +488,7 @@ func Seed(db *gorm.DB) error {
 
 		for _, o := range tripOrds {
 			db.Model(&models.Order{}).Where("id = ?", o.ID).Updates(map[string]interface{}{
-				"viaggio_id": trip.ID, "targa_motrice": m.Targa, "autista_id": d.ID,
+				"viaggio_id": trip.ID, "motrice_id": m.ID, "autista_id": d.ID,
 			})
 		}
 	}

@@ -247,9 +247,10 @@ export interface DtoDashboardStatsResponse {
   pianificabili?: number;
   total_customers?: number;
   total_drivers?: number;
+  total_motrici?: number;
   total_orders?: number;
   total_revenue?: number;
-  total_vehicles?: number;
+  total_semirimorchi?: number;
 }
 
 export interface DtoDestinationRequest {
@@ -294,7 +295,32 @@ export interface DtoDriverAvailabilityResponse {
   motivo_indisponibilita?: string;
   nome?: string;
   note?: string;
-  patente?: string;
+  patente?: (
+    | "AM"
+    | "A1"
+    | "A2"
+    | "A"
+    | "B1"
+    | "B"
+    | "BE"
+    | "C1"
+    | "C1E"
+    | "C"
+    | "CE"
+    | "D1"
+    | "D1E"
+    | "D"
+    | "DE"
+    | "CQC"
+    | "ADR"
+  )[];
+  prossime_ferie_a?: string;
+  /**
+   * ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability
+   * window (nil if none), computed on read only by DriverService.List —
+   * not persisted, not populated by Create/Update.
+   */
+  prossime_ferie_da?: string;
   scadenza_patente?: string;
   telefono?: string;
   updated_at?: string;
@@ -306,7 +332,25 @@ export interface DtoDriverRequest {
   email?: string;
   nome: string;
   note?: string;
-  patente?: string;
+  patente?: (
+    | "AM"
+    | "A1"
+    | "A2"
+    | "A"
+    | "B1"
+    | "B"
+    | "BE"
+    | "C1"
+    | "C1E"
+    | "C"
+    | "CE"
+    | "D1"
+    | "D1E"
+    | "D"
+    | "DE"
+    | "CQC"
+    | "ADR"
+  )[];
   scadenza_patente?: string;
   telefono?: string;
 }
@@ -320,7 +364,32 @@ export interface DtoDriverResponse {
   id?: string;
   nome?: string;
   note?: string;
-  patente?: string;
+  patente?: (
+    | "AM"
+    | "A1"
+    | "A2"
+    | "A"
+    | "B1"
+    | "B"
+    | "BE"
+    | "C1"
+    | "C1E"
+    | "C"
+    | "CE"
+    | "D1"
+    | "D1E"
+    | "D"
+    | "DE"
+    | "CQC"
+    | "ADR"
+  )[];
+  prossime_ferie_a?: string;
+  /**
+   * ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability
+   * window (nil if none), computed on read only by DriverService.List —
+   * not persisted, not populated by Create/Update.
+   */
+  prossime_ferie_da?: string;
   scadenza_patente?: string;
   telefono?: string;
   updated_at?: string;
@@ -331,7 +400,7 @@ export interface DtoDriverUnavailabilityRequest {
   autista_nome?: string;
   data_a: string;
   data_da: string;
-  motivo?: string;
+  motivo?: "ferie" | "malattia" | "permesso" | "altro";
   note?: string;
 }
 
@@ -342,57 +411,8 @@ export interface DtoDriverUnavailabilityResponse {
   data_a?: string;
   data_da?: string;
   id?: string;
-  motivo?: string;
+  motivo?: "ferie" | "malattia" | "permesso" | "altro";
   note?: string;
-}
-
-export interface DtoGPSHistoryResponse {
-  gps_source?: string;
-  heading?: number;
-  lat?: number;
-  lng?: number;
-  speed_kmh?: number;
-  targa?: string;
-  timestamp?: string;
-  vehicle_id?: string;
-}
-
-export interface DtoGPSLiveVehicle {
-  gps_active?: boolean;
-  gps_source?: string;
-  gps_tracker_url?: string;
-  id?: string;
-  last_gps_update?: string;
-  last_heading?: number;
-  last_lat?: number;
-  last_lng?: number;
-  last_speed_kmh?: number;
-  marca?: string;
-  modello?: string;
-  targa?: string;
-  tipo_veicolo?: string;
-}
-
-export interface DtoGPSPositionShort {
-  lat?: number;
-  lng?: number;
-}
-
-export interface DtoGPSUpdateResult {
-  gps_source?: string;
-  ok?: boolean;
-  position?: DtoGPSPositionShort;
-  targa?: string;
-}
-
-export interface DtoGPSWebhookPayload {
-  heading?: number;
-  lat?: number;
-  lng?: number;
-  speed_kmh?: number;
-  targa?: string;
-  timestamp?: string;
-  vehicle_id?: string;
 }
 
 export interface DtoGarageRequest {
@@ -527,22 +547,14 @@ export interface DtoMapRoute {
   duration_hours?: number;
   eta_hours?: number;
   garage?: DtoMapNamedPoint;
-  gps_heading?: number;
-  gps_last_update?: string;
-  gps_live?: boolean;
-  gps_source?: string;
-  gps_speed_kmh?: number;
-  gps_tracker_url?: string;
   id?: string;
-  last_temp_alert?: boolean;
-  last_temp_celsius?: number;
+  motrice?: DtoMotriceResponse;
   progress?: number;
   progressivo?: string;
   remaining_km?: number;
   road_points?: DtoMapPoint[];
   scarico?: DtoMapPoint;
   stato?: string;
-  targa_motrice?: string;
   tariffa?: number;
   tipologia?: string;
   wash_station?: DtoMapNamedPoint;
@@ -550,7 +562,6 @@ export interface DtoMapRoute {
 
 export interface DtoMapStats {
   chiusi?: number;
-  gps_live?: number;
   in_viaggio?: number;
   pianificabili?: number;
 }
@@ -569,6 +580,42 @@ export interface DtoMonthlyOrderTrend {
   totale?: number;
 }
 
+export interface DtoMotriceAvailabilityResponse {
+  active?: boolean;
+  anno?: number;
+  created_at?: string;
+  disponibilita?: string;
+  id?: string;
+  marca?: string;
+  modello?: string;
+  note?: string;
+  portata_kg?: number;
+  targa?: string;
+  updated_at?: string;
+}
+
+export interface DtoMotriceRequest {
+  anno?: number;
+  marca?: string;
+  modello?: string;
+  note?: string;
+  portata_kg?: number;
+  targa: string;
+}
+
+export interface DtoMotriceResponse {
+  active?: boolean;
+  anno?: number;
+  created_at?: string;
+  id?: string;
+  marca?: string;
+  modello?: string;
+  note?: string;
+  portata_kg?: number;
+  targa?: string;
+  updated_at?: string;
+}
+
 export interface DtoOKResult {
   ok?: boolean;
 }
@@ -576,6 +623,7 @@ export interface DtoOKResult {
 export interface DtoOrderAssignRequest {
   autista_id?: string;
   garage_id?: string;
+  motrice_id?: string;
   /**
    * RouteWaypoints: la sequenza scelta dal manager tra le alternative
    * proposte (POST /orders/{id}/route-alternatives). Opzionale — se
@@ -584,8 +632,7 @@ export interface DtoOrderAssignRequest {
    * non si fida di quella eventualmente mandata dal client.
    */
   route_waypoints?: DtoRouteWaypointDTO[];
-  targa_motrice?: string;
-  targa_rimorchio?: string;
+  semirimorchio_id?: string;
   vettore_id?: string;
   wash_station_id?: string;
 }
@@ -644,6 +691,8 @@ export interface DtoOrderResponse {
   garage_id?: string;
   id?: string;
   items?: DtoOrderItemResponseDTO[];
+  motrice?: DtoMotriceResponse;
+  motrice_id?: string;
   note?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
@@ -653,10 +702,10 @@ export interface DtoOrderResponse {
   rif_ordine_cliente?: string;
   route?: DtoRouteResponseDTO;
   route_id?: string;
+  semirimorchio?: DtoSemirimorchioResponse;
+  semirimorchio_id?: string;
   servizi_accessori?: string[];
   stato?: "PIANIFICABILE" | "PIANIFICATO" | "VIAGGIO" | "CHIUSO" | "SCARTATO";
-  targa_motrice?: string;
-  targa_rimorchio?: string;
   tariffa?: number;
   tipo_tariffa?: string;
   tipologia?: string;
@@ -843,6 +892,39 @@ export interface DtoRouteWaypointResponseDTO {
   tipo?: string;
 }
 
+export interface DtoSemirimorchioAvailabilityResponse {
+  active?: boolean;
+  created_at?: string;
+  disponibilita?: string;
+  id?: string;
+  note?: string;
+  portata_kg?: number;
+  scompartature?: number;
+  targa?: string;
+  tipo?: string;
+  updated_at?: string;
+}
+
+export interface DtoSemirimorchioRequest {
+  note?: string;
+  portata_kg?: number;
+  scompartature?: number;
+  targa: string;
+  tipo?: string;
+}
+
+export interface DtoSemirimorchioResponse {
+  active?: boolean;
+  created_at?: string;
+  id?: string;
+  note?: string;
+  portata_kg?: number;
+  scompartature?: number;
+  targa?: string;
+  tipo?: string;
+  updated_at?: string;
+}
+
 export interface DtoTariffLookupResult {
   found?: boolean;
   item_id?: string;
@@ -853,41 +935,6 @@ export interface DtoTariffLookupResult {
   tariffa?: number;
   tariffa_base?: number;
   tipo_tariffa?: string;
-}
-
-export interface DtoTemperatureReadingResponse {
-  out_of_range?: boolean;
-  sensor_id?: string;
-  source?: string;
-  targa?: string;
-  temp_celsius?: number;
-  ts?: string;
-  vehicle_id?: string;
-}
-
-export interface DtoTemperatureThresholdsRequest {
-  temp_max?: number;
-  temp_min?: number;
-}
-
-export interface DtoTemperatureThresholdsResult {
-  ok?: boolean;
-  temp_max?: number;
-  temp_min?: number;
-}
-
-export interface DtoTemperatureWebhookRequest {
-  sensor_id?: string;
-  targa?: string;
-  temp_celsius: number;
-  ts?: string;
-  vehicle_id?: string;
-}
-
-export interface DtoTemperatureWebhookResult {
-  alert?: boolean;
-  ok?: boolean;
-  out_of_range?: boolean;
 }
 
 export interface DtoTransportCategoryRequest {
@@ -913,13 +960,15 @@ export interface DtoTripDetailResponse {
   garage_id?: string;
   id?: string;
   km_totali?: number;
+  motrice?: DtoMotriceResponse;
+  motrice_id?: string;
   note?: string;
   ordini?: DtoOrderResponse[];
   ordini_ids?: string[];
   segmenti?: DtoTripSegmentDTO[];
+  semirimorchio?: DtoSemirimorchioResponse;
+  semirimorchio_id?: string;
   stato?: string;
-  targa_motrice?: string;
-  targa_rimorchio?: string;
   vettore?: DtoCarrierResponse;
   vettore_id?: string;
 }
@@ -929,10 +978,10 @@ export interface DtoTripRequest {
   data_arrivo?: string;
   data_partenza?: string;
   garage_id?: string;
+  motrice_id?: string;
   note?: string;
   ordini_ids?: string[];
-  targa_motrice?: string;
-  targa_rimorchio?: string;
+  semirimorchio_id?: string;
   vettore_id?: string;
 }
 
@@ -947,12 +996,14 @@ export interface DtoTripResponse {
   garage_id?: string;
   id?: string;
   km_totali?: number;
+  motrice?: DtoMotriceResponse;
+  motrice_id?: string;
   note?: string;
   ordini_ids?: string[];
   segmenti?: DtoTripSegmentDTO[];
+  semirimorchio?: DtoSemirimorchioResponse;
+  semirimorchio_id?: string;
   stato?: string;
-  targa_motrice?: string;
-  targa_rimorchio?: string;
   vettore?: DtoCarrierResponse;
   vettore_id?: string;
 }
@@ -980,91 +1031,6 @@ export interface DtoUpdateUserRequest {
   name?: string;
   password?: string;
   role: "admin" | "amministrazione" | "planner" | "operatore";
-}
-
-export interface DtoVehicleAvailabilityResponse {
-  active?: boolean;
-  anno?: number;
-  created_at?: string;
-  disponibilita?: string;
-  gps_active?: boolean;
-  gps_api_key?: string;
-  gps_source?: string;
-  gps_tracker_tipo?: string;
-  gps_tracker_url?: string;
-  id?: string;
-  last_gps_update?: string;
-  last_heading?: number;
-  last_lat?: number;
-  last_lng?: number;
-  last_speed_kmh?: number;
-  last_temp_alert?: boolean;
-  last_temp_celsius?: number;
-  last_temp_sensor_id?: string;
-  last_temp_ts?: string;
-  marca?: string;
-  modello?: string;
-  note?: string;
-  portata_kg?: number;
-  scompartature?: number;
-  targa?: string;
-  temp_max?: number;
-  temp_min?: number;
-  tipo_veicolo?: string;
-  updated_at?: string;
-}
-
-export interface DtoVehicleGPSUpdateRequest {
-  heading?: number;
-  lat: number;
-  lng: number;
-  speed_kmh?: number;
-  timestamp?: string;
-}
-
-export interface DtoVehicleRequest {
-  anno?: number;
-  gps_api_key?: string;
-  gps_tracker_tipo?: string;
-  gps_tracker_url?: string;
-  marca?: string;
-  modello?: string;
-  note?: string;
-  portata_kg?: number;
-  scompartature?: number;
-  targa: string;
-  tipo_veicolo?: string;
-}
-
-export interface DtoVehicleResponse {
-  active?: boolean;
-  anno?: number;
-  created_at?: string;
-  gps_active?: boolean;
-  gps_api_key?: string;
-  gps_source?: string;
-  gps_tracker_tipo?: string;
-  gps_tracker_url?: string;
-  id?: string;
-  last_gps_update?: string;
-  last_heading?: number;
-  last_lat?: number;
-  last_lng?: number;
-  last_speed_kmh?: number;
-  last_temp_alert?: boolean;
-  last_temp_celsius?: number;
-  last_temp_sensor_id?: string;
-  last_temp_ts?: string;
-  marca?: string;
-  modello?: string;
-  note?: string;
-  portata_kg?: number;
-  scompartature?: number;
-  targa?: string;
-  temp_max?: number;
-  temp_min?: number;
-  tipo_veicolo?: string;
-  updated_at?: string;
 }
 
 export interface DtoVehicleTypeRequest {

@@ -17,7 +17,7 @@ import '@/App.css';
 // di auth context.
 const CustomersPage = lazy(() => import('@/pages/anagrafiche/CustomersPage'));
 const DestinationsPage = lazy(() => import('@/pages/anagrafiche/DestinationsPage'));
-const VehiclesPage = lazy(() => import('@/pages/anagrafiche/VehiclesPage'));
+const TransportPage = lazy(() => import('@/pages/anagrafiche/TransportPage'));
 const DriversPage = lazy(() => import('@/pages/anagrafiche/DriversPage'));
 const CarriersPage = lazy(() => import('@/pages/anagrafiche/CarriersPage'));
 const ProductsPage = lazy(() => import('@/pages/anagrafiche/ProductsPage'));
@@ -63,7 +63,7 @@ function StaffRoutes() {
           <Route path="anagrafiche/clienti" element={<CustomersPage />} />
           <Route path="anagrafiche/clienti/:id/cruscotto" element={<CustomerDashboardPage />} />
           <Route path="anagrafiche/destinazioni" element={<DestinationsPage />} />
-          <Route path="anagrafiche/veicoli" element={<VehiclesPage />} />
+          <Route path="anagrafiche/veicoli" element={<TransportPage />} />
           <Route path="anagrafiche/autisti" element={<DriversPage />} />
           <Route path="anagrafiche/vettori" element={<CarriersPage />} />
           <Route path="anagrafiche/prodotti" element={<ProductsPage />} />

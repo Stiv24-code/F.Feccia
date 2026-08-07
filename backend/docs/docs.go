@@ -910,7 +910,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/availability/vehicles": {
+        "/api/v1/availability/motrici": {
             "get": {
                 "security": [
                     {
@@ -923,7 +923,7 @@ const docTemplate = `{
                 "tags": [
                     "Availability"
                 ],
-                "summary": "Vehicle availability for a date range",
+                "summary": "Motrice availability for a date range",
                 "parameters": [
                     {
                         "type": "string",
@@ -946,7 +946,50 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/dto.VehicleAvailabilityResponse"
+                                "$ref": "#/definitions/dto.MotriceAvailabilityResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/availability/semirimorchi": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Availability"
+                ],
+                "summary": "Semirimorchio availability for a date range",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Range start (YYYY-MM-DD)",
+                        "name": "data_da",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Range end (YYYY-MM-DD)",
+                        "name": "data_a",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SemirimorchioAvailabilityResponse"
                             }
                         }
                     }
@@ -3310,6 +3353,183 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/motrici": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motrici"
+                ],
+                "summary": "List motrici",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by targa",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.MotriceResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motrici"
+                ],
+                "summary": "Create motrice",
+                "parameters": [
+                    {
+                        "description": "Motrice data",
+                        "name": "motrice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MotriceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MotriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/motrici/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Motrici"
+                ],
+                "summary": "Update motrice (full replace)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motrice ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Motrice data",
+                        "name": "motrice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MotriceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MotriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Motrici"
+                ],
+                "summary": "Delete motrice (logical, sets active=false)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Motrice ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/orders": {
             "get": {
                 "security": [
@@ -4640,6 +4860,183 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/semirimorchi": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Semirimorchi"
+                ],
+                "summary": "List semirimorchi",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by targa",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SemirimorchioResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Semirimorchi"
+                ],
+                "summary": "Create semirimorchio",
+                "parameters": [
+                    {
+                        "description": "Semirimorchio data",
+                        "name": "semirimorchio",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SemirimorchioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SemirimorchioResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/semirimorchi/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Semirimorchi"
+                ],
+                "summary": "Update semirimorchio (full replace)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Semirimorchio ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Semirimorchio data",
+                        "name": "semirimorchio",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SemirimorchioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SemirimorchioResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Semirimorchi"
+                ],
+                "summary": "Delete semirimorchio (logical, sets active=false)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Semirimorchio ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/transport-categories": {
             "get": {
                 "security": [
@@ -4731,6 +5128,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter by stato",
                         "name": "stato",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by driver (UUID) — viaggi assegnati a un autista",
+                        "name": "autista_id",
                         "in": "query"
                     },
                     {
@@ -5148,462 +5551,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/vehicles": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "List vehicles",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter by targa",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.VehicleResponse"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Create vehicle",
-                "parameters": [
-                    {
-                        "description": "Vehicle data",
-                        "name": "vehicle",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/gps-live": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Live GPS positions for all active vehicles",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.GPSLiveVehicle"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/gps-position-by-plate/{targa}": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Update vehicle GPS position by targa",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle targa",
-                        "name": "targa",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "GPS position",
-                        "name": "position",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleGPSUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.GPSUpdateResult"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Update vehicle (full replace of the create-able fields)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Vehicle data",
-                        "name": "vehicle",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Delete vehicle (logical, sets active=false)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/{id}/gps-history": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "GPS history for a vehicle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID) or targa",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Max results (default 100)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.GPSHistoryResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/{id}/gps-position": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Update vehicle GPS position (by id or targa)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID) or targa",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "GPS position",
-                        "name": "position",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VehicleGPSUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.GPSUpdateResult"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/{id}/temperature": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Temperature history for a vehicle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Max results (default 200)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Only out-of-range readings",
-                        "name": "only_alerts",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.TemperatureReadingResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vehicles/{id}/temperature-thresholds": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Set temperature thresholds for a vehicle",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Thresholds",
-                        "name": "thresholds",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.TemperatureThresholdsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TemperatureThresholdsResult"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/wash-stations": {
             "get": {
                 "security": [
@@ -5771,113 +5718,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/webhooks/gps/{vendor}": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "GPS provider webhook ingestion",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "GPS vendor",
-                        "name": "vendor",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Normalized GPS payload",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.GPSWebhookPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.GPSUpdateResult"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/webhooks/temperature/{vendor}": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicles"
-                ],
-                "summary": "Temperature sensor webhook ingestion",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Sensor vendor",
-                        "name": "vendor",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Temperature reading",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.TemperatureWebhookRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TemperatureWebhookResult"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -6539,13 +6379,16 @@ const docTemplate = `{
                 "total_drivers": {
                     "type": "integer"
                 },
+                "total_motrici": {
+                    "type": "integer"
+                },
                 "total_orders": {
                     "type": "integer"
                 },
                 "total_revenue": {
                     "type": "number"
                 },
-                "total_vehicles": {
+                "total_semirimorchi": {
                     "type": "integer"
                 }
             }
@@ -6674,6 +6517,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "patente": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "AM",
+                            "A1",
+                            "A2",
+                            "A",
+                            "B1",
+                            "B",
+                            "BE",
+                            "C1",
+                            "C1E",
+                            "C",
+                            "CE",
+                            "D1",
+                            "D1E",
+                            "D",
+                            "DE",
+                            "CQC",
+                            "ADR"
+                        ]
+                    }
+                },
+                "prossime_ferie_a": {
+                    "type": "string"
+                },
+                "prossime_ferie_da": {
+                    "description": "ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability\nwindow (nil if none), computed on read only by DriverService.List —\nnot persisted, not populated by Create/Update.",
                     "type": "string"
                 },
                 "scadenza_patente": {
@@ -6710,7 +6582,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "patente": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "AM",
+                            "A1",
+                            "A2",
+                            "A",
+                            "B1",
+                            "B",
+                            "BE",
+                            "C1",
+                            "C1E",
+                            "C",
+                            "CE",
+                            "D1",
+                            "D1E",
+                            "D",
+                            "DE",
+                            "CQC",
+                            "ADR"
+                        ]
+                    }
                 },
                 "scadenza_patente": {
                     "type": "string"
@@ -6748,6 +6642,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "patente": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "AM",
+                            "A1",
+                            "A2",
+                            "A",
+                            "B1",
+                            "B",
+                            "BE",
+                            "C1",
+                            "C1E",
+                            "C",
+                            "CE",
+                            "D1",
+                            "D1E",
+                            "D",
+                            "DE",
+                            "CQC",
+                            "ADR"
+                        ]
+                    }
+                },
+                "prossime_ferie_a": {
+                    "type": "string"
+                },
+                "prossime_ferie_da": {
+                    "description": "ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability\nwindow (nil if none), computed on read only by DriverService.List —\nnot persisted, not populated by Create/Update.",
                     "type": "string"
                 },
                 "scadenza_patente": {
@@ -6782,7 +6705,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "motivo": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "ferie",
+                        "malattia",
+                        "permesso",
+                        "altro"
+                    ]
                 },
                 "note": {
                     "type": "string"
@@ -6811,136 +6740,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "motivo": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "ferie",
+                        "malattia",
+                        "permesso",
+                        "altro"
+                    ]
                 },
                 "note": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.GPSHistoryResponse": {
-            "type": "object",
-            "properties": {
-                "gps_source": {
-                    "type": "string"
-                },
-                "heading": {
-                    "type": "number"
-                },
-                "lat": {
-                    "type": "number"
-                },
-                "lng": {
-                    "type": "number"
-                },
-                "speed_kmh": {
-                    "type": "number"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "vehicle_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.GPSLiveVehicle": {
-            "type": "object",
-            "properties": {
-                "gps_active": {
-                    "type": "boolean"
-                },
-                "gps_source": {
-                    "type": "string"
-                },
-                "gps_tracker_url": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_gps_update": {
-                    "type": "string"
-                },
-                "last_heading": {
-                    "type": "number"
-                },
-                "last_lat": {
-                    "type": "number"
-                },
-                "last_lng": {
-                    "type": "number"
-                },
-                "last_speed_kmh": {
-                    "type": "number"
-                },
-                "marca": {
-                    "type": "string"
-                },
-                "modello": {
-                    "type": "string"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "tipo_veicolo": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.GPSPositionShort": {
-            "type": "object",
-            "properties": {
-                "lat": {
-                    "type": "number"
-                },
-                "lng": {
-                    "type": "number"
-                }
-            }
-        },
-        "dto.GPSUpdateResult": {
-            "type": "object",
-            "properties": {
-                "gps_source": {
-                    "type": "string"
-                },
-                "ok": {
-                    "type": "boolean"
-                },
-                "position": {
-                    "$ref": "#/definitions/dto.GPSPositionShort"
-                },
-                "targa": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.GPSWebhookPayload": {
-            "type": "object",
-            "properties": {
-                "heading": {
-                    "type": "number"
-                },
-                "lat": {
-                    "type": "number"
-                },
-                "lng": {
-                    "type": "number"
-                },
-                "speed_kmh": {
-                    "type": "number"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "vehicle_id": {
                     "type": "string"
                 }
             }
@@ -7315,32 +7123,11 @@ const docTemplate = `{
                 "garage": {
                     "$ref": "#/definitions/dto.MapNamedPoint"
                 },
-                "gps_heading": {
-                    "type": "number"
-                },
-                "gps_last_update": {
-                    "type": "string"
-                },
-                "gps_live": {
-                    "type": "boolean"
-                },
-                "gps_source": {
-                    "type": "string"
-                },
-                "gps_speed_kmh": {
-                    "type": "number"
-                },
-                "gps_tracker_url": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
-                "last_temp_alert": {
-                    "type": "boolean"
-                },
-                "last_temp_celsius": {
-                    "type": "number"
+                "motrice": {
+                    "$ref": "#/definitions/dto.MotriceResponse"
                 },
                 "progress": {
                     "type": "number"
@@ -7363,9 +7150,6 @@ const docTemplate = `{
                 "stato": {
                     "type": "string"
                 },
-                "targa_motrice": {
-                    "type": "string"
-                },
                 "tariffa": {
                     "type": "number"
                 },
@@ -7381,9 +7165,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "chiusi": {
-                    "type": "integer"
-                },
-                "gps_live": {
                     "type": "integer"
                 },
                 "in_viaggio": {
@@ -7440,6 +7221,105 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.MotriceAvailabilityResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "anno": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "disponibilita": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "modello": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "targa": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MotriceRequest": {
+            "type": "object",
+            "required": [
+                "targa"
+            ],
+            "properties": {
+                "anno": {
+                    "type": "integer"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "modello": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "targa": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MotriceResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "anno": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "modello": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "targa": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.OKResult": {
             "type": "object",
             "properties": {
@@ -7457,6 +7337,9 @@ const docTemplate = `{
                 "garage_id": {
                     "type": "string"
                 },
+                "motrice_id": {
+                    "type": "string"
+                },
                 "route_waypoints": {
                     "description": "RouteWaypoints: la sequenza scelta dal manager tra le alternative\nproposte (POST /orders/{id}/route-alternatives). Opzionale — se\nassente l'ordine viene comunque assegnato, semplicemente senza un\nOrderRoute calcolato. Il server ricalcola sempre la geometria via ORS,\nnon si fida di quella eventualmente mandata dal client.",
                     "type": "array",
@@ -7464,10 +7347,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.RouteWaypointDTO"
                     }
                 },
-                "targa_motrice": {
-                    "type": "string"
-                },
-                "targa_rimorchio": {
+                "semirimorchio_id": {
                     "type": "string"
                 },
                 "vettore_id": {
@@ -7648,6 +7528,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.OrderItemResponseDTO"
                     }
                 },
+                "motrice": {
+                    "$ref": "#/definitions/dto.MotriceResponse"
+                },
+                "motrice_id": {
+                    "type": "string"
+                },
                 "note": {
                     "type": "string"
                 },
@@ -7675,6 +7561,12 @@ const docTemplate = `{
                 "route_id": {
                     "type": "string"
                 },
+                "semirimorchio": {
+                    "$ref": "#/definitions/dto.SemirimorchioResponse"
+                },
+                "semirimorchio_id": {
+                    "type": "string"
+                },
                 "servizi_accessori": {
                     "type": "array",
                     "items": {
@@ -7690,12 +7582,6 @@ const docTemplate = `{
                         "CHIUSO",
                         "SCARTATO"
                     ]
-                },
-                "targa_motrice": {
-                    "type": "string"
-                },
-                "targa_rimorchio": {
-                    "type": "string"
                 },
                 "tariffa": {
                     "type": "number"
@@ -8222,6 +8108,96 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.SemirimorchioAvailabilityResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "disponibilita": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "scompartature": {
+                    "type": "integer"
+                },
+                "targa": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SemirimorchioRequest": {
+            "type": "object",
+            "required": [
+                "targa"
+            ],
+            "properties": {
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "scompartature": {
+                    "type": "integer"
+                },
+                "targa": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SemirimorchioResponse": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "portata_kg": {
+                    "type": "number"
+                },
+                "scompartature": {
+                    "type": "integer"
+                },
+                "targa": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.TariffLookupResult": {
             "type": "object",
             "properties": {
@@ -8251,94 +8227,6 @@ const docTemplate = `{
                 },
                 "tipo_tariffa": {
                     "type": "string"
-                }
-            }
-        },
-        "dto.TemperatureReadingResponse": {
-            "type": "object",
-            "properties": {
-                "out_of_range": {
-                    "type": "boolean"
-                },
-                "sensor_id": {
-                    "type": "string"
-                },
-                "source": {
-                    "type": "string"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "temp_celsius": {
-                    "type": "number"
-                },
-                "ts": {
-                    "type": "string"
-                },
-                "vehicle_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.TemperatureThresholdsRequest": {
-            "type": "object",
-            "properties": {
-                "temp_max": {
-                    "type": "number"
-                },
-                "temp_min": {
-                    "type": "number"
-                }
-            }
-        },
-        "dto.TemperatureThresholdsResult": {
-            "type": "object",
-            "properties": {
-                "ok": {
-                    "type": "boolean"
-                },
-                "temp_max": {
-                    "type": "number"
-                },
-                "temp_min": {
-                    "type": "number"
-                }
-            }
-        },
-        "dto.TemperatureWebhookRequest": {
-            "type": "object",
-            "required": [
-                "temp_celsius"
-            ],
-            "properties": {
-                "sensor_id": {
-                    "type": "string"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "temp_celsius": {
-                    "type": "number"
-                },
-                "ts": {
-                    "type": "string"
-                },
-                "vehicle_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.TemperatureWebhookResult": {
-            "type": "object",
-            "properties": {
-                "alert": {
-                    "type": "boolean"
-                },
-                "ok": {
-                    "type": "boolean"
-                },
-                "out_of_range": {
-                    "type": "boolean"
                 }
             }
         },
@@ -8406,6 +8294,12 @@ const docTemplate = `{
                 "km_totali": {
                     "type": "number"
                 },
+                "motrice": {
+                    "$ref": "#/definitions/dto.MotriceResponse"
+                },
+                "motrice_id": {
+                    "type": "string"
+                },
                 "note": {
                     "type": "string"
                 },
@@ -8427,13 +8321,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.TripSegmentDTO"
                     }
                 },
+                "semirimorchio": {
+                    "$ref": "#/definitions/dto.SemirimorchioResponse"
+                },
+                "semirimorchio_id": {
+                    "type": "string"
+                },
                 "stato": {
-                    "type": "string"
-                },
-                "targa_motrice": {
-                    "type": "string"
-                },
-                "targa_rimorchio": {
                     "type": "string"
                 },
                 "vettore": {
@@ -8459,6 +8353,9 @@ const docTemplate = `{
                 "garage_id": {
                     "type": "string"
                 },
+                "motrice_id": {
+                    "type": "string"
+                },
                 "note": {
                     "type": "string"
                 },
@@ -8468,10 +8365,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "targa_motrice": {
-                    "type": "string"
-                },
-                "targa_rimorchio": {
+                "semirimorchio_id": {
                     "type": "string"
                 },
                 "vettore_id": {
@@ -8512,6 +8406,12 @@ const docTemplate = `{
                 "km_totali": {
                     "type": "number"
                 },
+                "motrice": {
+                    "$ref": "#/definitions/dto.MotriceResponse"
+                },
+                "motrice_id": {
+                    "type": "string"
+                },
                 "note": {
                     "type": "string"
                 },
@@ -8527,13 +8427,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/dto.TripSegmentDTO"
                     }
                 },
+                "semirimorchio": {
+                    "$ref": "#/definitions/dto.SemirimorchioResponse"
+                },
+                "semirimorchio_id": {
+                    "type": "string"
+                },
                 "stato": {
-                    "type": "string"
-                },
-                "targa_motrice": {
-                    "type": "string"
-                },
-                "targa_rimorchio": {
                     "type": "string"
                 },
                 "vettore": {
@@ -8608,252 +8508,6 @@ const docTemplate = `{
                         "planner",
                         "operatore"
                     ]
-                }
-            }
-        },
-        "dto.VehicleAvailabilityResponse": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "type": "boolean"
-                },
-                "anno": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "disponibilita": {
-                    "type": "string"
-                },
-                "gps_active": {
-                    "type": "boolean"
-                },
-                "gps_api_key": {
-                    "type": "string"
-                },
-                "gps_source": {
-                    "type": "string"
-                },
-                "gps_tracker_tipo": {
-                    "type": "string"
-                },
-                "gps_tracker_url": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_gps_update": {
-                    "type": "string"
-                },
-                "last_heading": {
-                    "type": "number"
-                },
-                "last_lat": {
-                    "type": "number"
-                },
-                "last_lng": {
-                    "type": "number"
-                },
-                "last_speed_kmh": {
-                    "type": "number"
-                },
-                "last_temp_alert": {
-                    "type": "boolean"
-                },
-                "last_temp_celsius": {
-                    "type": "number"
-                },
-                "last_temp_sensor_id": {
-                    "type": "string"
-                },
-                "last_temp_ts": {
-                    "type": "string"
-                },
-                "marca": {
-                    "type": "string"
-                },
-                "modello": {
-                    "type": "string"
-                },
-                "note": {
-                    "type": "string"
-                },
-                "portata_kg": {
-                    "type": "number"
-                },
-                "scompartature": {
-                    "type": "integer"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "temp_max": {
-                    "type": "number"
-                },
-                "temp_min": {
-                    "type": "number"
-                },
-                "tipo_veicolo": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VehicleGPSUpdateRequest": {
-            "type": "object",
-            "required": [
-                "lat",
-                "lng"
-            ],
-            "properties": {
-                "heading": {
-                    "type": "number"
-                },
-                "lat": {
-                    "type": "number"
-                },
-                "lng": {
-                    "type": "number"
-                },
-                "speed_kmh": {
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VehicleRequest": {
-            "type": "object",
-            "required": [
-                "targa"
-            ],
-            "properties": {
-                "anno": {
-                    "type": "integer"
-                },
-                "gps_api_key": {
-                    "type": "string"
-                },
-                "gps_tracker_tipo": {
-                    "type": "string"
-                },
-                "gps_tracker_url": {
-                    "type": "string"
-                },
-                "marca": {
-                    "type": "string"
-                },
-                "modello": {
-                    "type": "string"
-                },
-                "note": {
-                    "type": "string"
-                },
-                "portata_kg": {
-                    "type": "number"
-                },
-                "scompartature": {
-                    "type": "integer"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "tipo_veicolo": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VehicleResponse": {
-            "type": "object",
-            "properties": {
-                "active": {
-                    "type": "boolean"
-                },
-                "anno": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "gps_active": {
-                    "type": "boolean"
-                },
-                "gps_api_key": {
-                    "type": "string"
-                },
-                "gps_source": {
-                    "type": "string"
-                },
-                "gps_tracker_tipo": {
-                    "type": "string"
-                },
-                "gps_tracker_url": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_gps_update": {
-                    "type": "string"
-                },
-                "last_heading": {
-                    "type": "number"
-                },
-                "last_lat": {
-                    "type": "number"
-                },
-                "last_lng": {
-                    "type": "number"
-                },
-                "last_speed_kmh": {
-                    "type": "number"
-                },
-                "last_temp_alert": {
-                    "type": "boolean"
-                },
-                "last_temp_celsius": {
-                    "type": "number"
-                },
-                "last_temp_sensor_id": {
-                    "type": "string"
-                },
-                "last_temp_ts": {
-                    "type": "string"
-                },
-                "marca": {
-                    "type": "string"
-                },
-                "modello": {
-                    "type": "string"
-                },
-                "note": {
-                    "type": "string"
-                },
-                "portata_kg": {
-                    "type": "number"
-                },
-                "scompartature": {
-                    "type": "integer"
-                },
-                "targa": {
-                    "type": "string"
-                },
-                "temp_max": {
-                    "type": "number"
-                },
-                "temp_min": {
-                    "type": "number"
-                },
-                "tipo_veicolo": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },

@@ -37,7 +37,7 @@ func NewTripService(db *gorm.DB, orsApiKey, orsBaseURL string) *TripService {
 // (Autista, Vettore, Garage) plus Segments — the choke point toResponse
 // relies on to build the nested Response DTOs.
 func preloadTripAssociations(q *gorm.DB) *gorm.DB {
-	return q.Preload("Segments").Preload("Autista").Preload("Vettore").Preload("Garage")
+	return q.Preload("Segments").Preload("Motrice").Preload("Semirimorchio").Preload("Autista").Preload("Vettore").Preload("Garage")
 }
 
 func (s *TripService) reload(ctx context.Context, id uuid.UUID) (*models.Trip, error) {
@@ -48,13 +48,16 @@ func (s *TripService) reload(ctx context.Context, id uuid.UUID) (*models.Trip, e
 	return &trip, nil
 }
 
-func (s *TripService) List(ctx context.Context, stato string, limit int) ([]dto.TripResponse, error) {
+func (s *TripService) List(ctx context.Context, stato string, autistaID uuid.UUID, limit int) ([]dto.TripResponse, error) {
 	if limit <= 0 {
 		limit = defaultListLimit
 	}
 	query := preloadTripAssociations(s.db.WithContext(ctx))
 	if stato != "" {
 		query = query.Where("stato = ?", stato)
+	}
+	if autistaID != uuid.Nil {
+		query = query.Where("autista_id = ?", autistaID)
 	}
 	var trips []models.Trip
 	if err := query.Order("created_at DESC").Limit(limit).Find(&trips).Error; err != nil {
@@ -73,6 +76,14 @@ func (s *TripService) List(ctx context.Context, stato string, limit int) ([]dto.
 // The trip itself starts PIANIFICATO too — orders and trip only move to
 // VIAGGIO/IN_CORSO together, via Start.
 func (s *TripService) Create(ctx context.Context, req dto.TripRequest) (*dto.TripResponse, error) {
+	motriceID, err := utils.ParseOptionalUUID(req.MotriceID)
+	if err != nil {
+		return nil, err
+	}
+	semirimorchioID, err := utils.ParseOptionalUUID(req.SemirimorchioID)
+	if err != nil {
+		return nil, err
+	}
 	autistaID, err := utils.ParseOptionalUUID(req.AutistaID)
 	if err != nil {
 		return nil, err
@@ -87,30 +98,30 @@ func (s *TripService) Create(ctx context.Context, req dto.TripRequest) (*dto.Tri
 	}
 
 	trip := models.Trip{
-		ID:             uuid.New(),
-		OrdiniIds:      marshalStrings(req.OrdiniIds),
-		TargaMotrice:   req.TargaMotrice,
-		TargaRimorchio: req.TargaRimorchio,
-		AutistaID:      autistaID,
-		VettoreID:      vettoreID,
-		GarageID:       garageID,
-		Note:           req.Note,
-		DataPartenza:   req.DataPartenza,
-		DataArrivo:     req.DataArrivo,
-		Stato:          "PIANIFICATO",
+		ID:              uuid.New(),
+		OrdiniIds:       marshalStrings(req.OrdiniIds),
+		MotriceID:       motriceID,
+		SemirimorchioID: semirimorchioID,
+		AutistaID:       autistaID,
+		VettoreID:       vettoreID,
+		GarageID:        garageID,
+		Note:            req.Note,
+		DataPartenza:    req.DataPartenza,
+		DataArrivo:      req.DataArrivo,
+		Stato:           "PIANIFICATO",
 	}
 
 	for _, orderID := range req.OrdiniIds {
 		s.db.WithContext(ctx).Model(&models.Order{}).
 			Where("id = ? AND stato = ?", orderID, "PIANIFICABILE").
 			Updates(map[string]interface{}{
-				"stato":           "PIANIFICATO",
-				"viaggio_id":      trip.ID,
-				"targa_motrice":   req.TargaMotrice,
-				"targa_rimorchio": req.TargaRimorchio,
-				"autista_id":      autistaID,
-				"vettore_id":      vettoreID,
-				"updated_at":      time.Now().UTC(),
+				"stato":            "PIANIFICATO",
+				"viaggio_id":       trip.ID,
+				"motrice_id":       motriceID,
+				"semirimorchio_id": semirimorchioID,
+				"autista_id":       autistaID,
+				"vettore_id":       vettoreID,
+				"updated_at":       time.Now().UTC(),
 			})
 	}
 
@@ -311,12 +322,12 @@ func (s *TripService) AddOrder(ctx context.Context, tripID, orderID uuid.UUID) (
 		targetStato = string(models.OrderStatoViaggio)
 	}
 	if err := s.db.WithContext(ctx).Model(&models.Order{}).Where("id = ?", orderID).Updates(map[string]interface{}{
-		"stato":           targetStato,
-		"viaggio_id":      tripID,
-		"targa_motrice":   trip.TargaMotrice,
-		"targa_rimorchio": trip.TargaRimorchio,
-		"autista_id":      trip.AutistaID,
-		"updated_at":      time.Now().UTC(),
+		"stato":            targetStato,
+		"viaggio_id":       tripID,
+		"motrice_id":       trip.MotriceID,
+		"semirimorchio_id": trip.SemirimorchioID,
+		"autista_id":       trip.AutistaID,
+		"updated_at":       time.Now().UTC(),
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -476,8 +487,28 @@ func driverResponse(d *models.Driver) *dto.DriverResponse {
 	}
 	return &dto.DriverResponse{
 		ID: d.ID, Nome: d.Nome, Cognome: d.Cognome, CodiceFiscale: d.CodiceFiscale,
-		Patente: d.Patente, ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
+		Patente: unmarshalStrings(d.Patente), ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
 		Email: d.Email, Note: d.Note, Active: d.Active, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
+	}
+}
+
+func motriceResponse(m *models.Motrice) *dto.MotriceResponse {
+	if m == nil {
+		return nil
+	}
+	return &dto.MotriceResponse{
+		ID: m.ID, Targa: m.Targa, Marca: m.Marca, Modello: m.Modello, Anno: m.Anno,
+		PortataKg: m.PortataKg, Note: m.Note, Active: m.Active, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
+	}
+}
+
+func semirimorchioResponse(r *models.Semirimorchio) *dto.SemirimorchioResponse {
+	if r == nil {
+		return nil
+	}
+	return &dto.SemirimorchioResponse{
+		ID: r.ID, Targa: r.Targa, Tipo: r.Tipo, Scompartature: r.Scompartature,
+		PortataKg: r.PortataKg, Note: r.Note, Active: r.Active, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 	}
 }
 
@@ -514,7 +545,8 @@ func toResponse(t models.Trip) dto.TripResponse {
 	}
 	return dto.TripResponse{
 		ID: t.ID, OrdiniIds: unmarshalStrings(t.OrdiniIds),
-		TargaMotrice: t.TargaMotrice, TargaRimorchio: t.TargaRimorchio,
+		MotriceID: uuidPtrString(t.MotriceID), Motrice: motriceResponse(t.Motrice),
+		SemirimorchioID: uuidPtrString(t.SemirimorchioID), Semirimorchio: semirimorchioResponse(t.Semirimorchio),
 		AutistaID: uuidPtrString(t.AutistaID), Autista: driverResponse(t.Autista),
 		VettoreID: uuidPtrString(t.VettoreID), Vettore: carrierResponse(t.Vettore),
 		GarageID: uuidPtrString(t.GarageID), Garage: garageResponse(t.Garage),

@@ -96,7 +96,7 @@ func TestTripService_Create_SyncsOrdersAndComputesSegments(t *testing.T) {
 	order := createOrder(t, db, "Milano (MI)", "Lodi (LO)", "2026-01-10")
 
 	trip, err := svc.Create(context.Background(), dto.TripRequest{
-		OrdiniIds: []string{order.ID.String()}, TargaMotrice: "AB123CD", AutistaID: uuid.New().String(),
+		OrdiniIds: []string{order.ID.String()}, MotriceID: uuid.New().String(), AutistaID: uuid.New().String(),
 	})
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)

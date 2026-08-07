@@ -36,9 +36,10 @@ func (s *DashboardService) Stats(ctx context.Context) (*dto.DashboardStatsRespon
 	db.Model(&models.Order{}).Where("stato = ?", "CHIUSO").Count(&chiusi)
 	db.Model(&models.Order{}).Where("fattura_id IS NOT NULL").Count(&fatturati)
 
-	var totalCustomers, totalVehicles, totalDrivers int64
+	var totalCustomers, totalMotrici, totalSemirimorchi, totalDrivers int64
 	db.Model(&models.Customer{}).Where("active = ?", true).Count(&totalCustomers)
-	db.Model(&models.Vehicle{}).Where("active = ?", true).Count(&totalVehicles)
+	db.Model(&models.Motrice{}).Where("active = ?", true).Count(&totalMotrici)
+	db.Model(&models.Semirimorchio{}).Where("active = ?", true).Count(&totalSemirimorchi)
 	db.Model(&models.Driver{}).Where("active = ?", true).Count(&totalDrivers)
 
 	var totalRevenue float64
@@ -61,8 +62,8 @@ func (s *DashboardService) Stats(ctx context.Context) (*dto.DashboardStatsRespon
 	return &dto.DashboardStatsResponse{
 		TotalOrders: totalOrders, Pianificabili: pianificabili, InViaggio: inViaggio,
 		Chiusi: chiusi, Fatturati: fatturati, TotalCustomers: totalCustomers,
-		TotalVehicles: totalVehicles, TotalDrivers: totalDrivers, TotalRevenue: totalRevenue,
-		MonthlyTrend: monthly,
+		TotalMotrici: totalMotrici, TotalSemirimorchi: totalSemirimorchi, TotalDrivers: totalDrivers,
+		TotalRevenue: totalRevenue, MonthlyTrend: monthly,
 	}, nil
 }
 

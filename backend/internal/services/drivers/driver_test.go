@@ -17,7 +17,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Driver{}); err != nil {
+	if err := db.AutoMigrate(&models.Driver{}, &models.DriverUnavailability{}); err != nil {
 		t.Fatalf("failed to migrate Driver: %v", err)
 	}
 	return db

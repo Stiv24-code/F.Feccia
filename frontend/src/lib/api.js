@@ -116,21 +116,14 @@ export const registerClient = (data) => api.post('/auth/register-cliente', data)
 // Dashboard e CRUD clienti: migrati su RTK Query (src/store/api/appApi.ts,
 // client generato da swagger).
 
-// Destinations, Vehicles, Drivers, Carriers, Products, Garages: CRUD
-// migrato su RTK Query (src/store/api/appApi.ts). Le liste restano qui
+// Destinations, Motrici, Semirimorchi, Drivers, Carriers, Products, Garages:
+// CRUD migrato su RTK Query (src/store/api/appApi.ts). Le liste restano qui
 // perché usate anche da pagine non ancora migrate (Orders, PriceLists,
 // Planner, Trips).
 export const getDestinations = (search = '') => api.get(`/destinations?search=${search}`);
 
-export const getVehicles = (search = '') => api.get(`/vehicles?search=${search}`);
-// Temperatura cisterna (issue #38)
-export const getVehicleTemperature = (id, params = {}) => {
-  const qs = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '' && v !== false) qs.set(k, v); });
-  return api.get(`/vehicles/${id}/temperature?${qs.toString()}`);
-};
-export const setVehicleTemperatureThresholds = (id, data) =>
-  api.patch(`/vehicles/${id}/temperature-thresholds`, data);
+export const getMotrici = (search = '') => api.get(`/motrici?search=${search}`);
+export const getSemirimorchi = (search = '') => api.get(`/semirimorchi?search=${search}`);
 
 export const getDrivers = (search = '') => api.get(`/drivers?search=${search}`);
 
@@ -242,7 +235,8 @@ export const exportOrdersExcel = (params = {}) => {
 export const getMapTrips = () => api.get('/map/trips');
 
 // Availability
-export const getVehicleAvailability = (dataDa, dataA) => api.get(`/availability/vehicles?data_da=${dataDa}&data_a=${dataA}`);
+export const getMotriceAvailability = (dataDa, dataA) => api.get(`/availability/motrici?data_da=${dataDa}&data_a=${dataA}`);
+export const getSemirimorchioAvailability = (dataDa, dataA) => api.get(`/availability/semirimorchi?data_da=${dataDa}&data_a=${dataA}`);
 export const getDriverAvailability = (dataDa, dataA) => api.get(`/availability/drivers?data_da=${dataDa}&data_a=${dataA}`);
 
 // Driver Unavailability

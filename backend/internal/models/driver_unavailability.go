@@ -6,6 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// MotivoOptions is the fixed set of DriverUnavailability.Motivo values,
+// mirrored into dto.go's `oneof` validation and the swagger `enums` tag.
+var MotivoOptions = []string{"ferie", "malattia", "permesso", "altro"}
+
 // DriverUnavailability represents a driver leave/sick/permit period.
 // Unlike the master-data entities, deletion here is a real hard delete
 // (no `active` flag), mirroring backend/routers/driver_unavailability.py.

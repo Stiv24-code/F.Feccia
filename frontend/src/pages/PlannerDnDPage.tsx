@@ -5,9 +5,9 @@ import {
 } from '@dnd-kit/core';
 import { format, addDays, parseISO, isValid, startOfDay } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { getOrders, getVehicles, createTrip, getDrivers } from '@/lib/api';
+import { getOrders, getMotrici, createTrip, getDrivers } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { DtoOrderResponse, DtoVehicleResponse, DtoDriverResponse } from '@/api/data-contracts';
+import type { DtoOrderResponse, DtoMotriceResponse, DtoDriverResponse } from '@/api/data-contracts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,7 +124,7 @@ interface DnDFilters {
 
 interface DropDialogState {
   order: DtoOrderResponse;
-  vehicle: DtoVehicleResponse;
+  vehicle: DtoMotriceResponse;
   day: string;
 }
 
@@ -135,7 +135,7 @@ export default function PlannerDnDPage() {
   });
 
   const [orders, setOrders] = useState<DtoOrderResponse[]>([]);
-  const [vehicles, setVehicles] = useState<DtoVehicleResponse[]>([]);
+  const [vehicles, setVehicles] = useState<DtoMotriceResponse[]>([]);
   const [drivers, setDrivers] = useState<DtoDriverResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeOrder, setActiveOrder] = useState<DtoOrderResponse | null>(null);
@@ -159,12 +159,12 @@ export default function PlannerDnDPage() {
     setLoading(true);
     Promise.all([
       getOrders({ stato: 'PIANIFICABILE' }),
-      getVehicles(),
+      getMotrici(),
       getDrivers(),
     ])
       .then(([o, v, d]) => {
         setOrders(o.data);
-        setVehicles(v.data.filter((x: DtoVehicleResponse) => x.active !== false));
+        setVehicles(v.data.filter((x: DtoMotriceResponse) => x.active !== false));
         setDrivers(d.data.filter((x: DtoDriverResponse) => x.active !== false));
       })
       .catch((err: unknown) => logger.error('Errore caricamento planner DnD:', err))
@@ -220,8 +220,8 @@ export default function PlannerDnDPage() {
     try {
       await createTrip({
         ordini_ids: [dropDialog.order.id],
-        targa_motrice: dropDialog.vehicle.targa,
-        targa_rimorchio: '',
+        motrice_id: dropDialog.vehicle.id,
+        semirimorchio_id: '',
         autista_id: dropForm.autista_id,
         garage_id: '',
         data_partenza: dropDialog.day,
@@ -317,7 +317,7 @@ export default function PlannerDnDPage() {
                           <Truck className="h-3 w-3 shrink-0" />
                           <span className="font-mono font-semibold truncate">{v.targa}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground truncate">{v.tipo_veicolo}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{v.marca} {v.modello}</p>
                       </td>
                       {days.map(d => {
                         const slotKey = `${v.id}__${toIso(d)}`;

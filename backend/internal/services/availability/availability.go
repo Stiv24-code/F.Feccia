@@ -1,6 +1,6 @@
-// Package availability ports backend/routers/availability.py: two read-only
-// endpoints cross-referencing vehicles/drivers against active orders (and,
-// for drivers, driver_unavailability) for a given date range.
+// Package availability ports backend/routers/availability.py: read-only
+// endpoints cross-referencing motrici/semirimorchi/drivers against active
+// orders (and, for drivers, driver_unavailability) for a given date range.
 package availability
 
 import (
@@ -11,7 +11,8 @@ import (
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
 	"fratelli-feccia/internal/services/drivers"
-	"fratelli-feccia/internal/services/vehicles"
+	"fratelli-feccia/internal/services/motrici"
+	"fratelli-feccia/internal/services/semirimorchi"
 )
 
 type AvailabilityService struct {
@@ -22,39 +23,66 @@ func NewAvailabilityService(db *gorm.DB) *AvailabilityService {
 	return &AvailabilityService{db: db}
 }
 
-// VehicleAvailability mirrors vehicle_availability: a vehicle is "busy" if
-// its targa (motrice or rimorchio) appears on a VIAGGIO order whose
-// ritiro/consegna window overlaps [dataDa, dataA].
-func (s *AvailabilityService) VehicleAvailability(ctx context.Context, dataDa, dataA string) ([]dto.VehicleAvailabilityResponse, error) {
-	var allVehicles []models.Vehicle
-	if err := s.db.WithContext(ctx).Where("active = ?", true).Find(&allVehicles).Error; err != nil {
+// MotriceAvailability mirrors the former vehicle_availability for the
+// tractor half: a motrice is "busy" if it's referenced by a VIAGGIO order
+// whose ritiro/consegna window overlaps [dataDa, dataA].
+func (s *AvailabilityService) MotriceAvailability(ctx context.Context, dataDa, dataA string) ([]dto.MotriceAvailabilityResponse, error) {
+	var all []models.Motrice
+	if err := s.db.WithContext(ctx).Where("active = ?", true).Find(&all).Error; err != nil {
 		return nil, err
 	}
 
 	var busyOrders []models.Order
 	if err := s.db.WithContext(ctx).
-		Where("stato = ? AND targa_motrice <> ? AND data_ritiro <= ? AND data_consegna >= ?", "VIAGGIO", "", dataA, dataDa).
+		Where("stato = ? AND motrice_id IS NOT NULL AND data_ritiro <= ? AND data_consegna >= ?", "VIAGGIO", dataA, dataDa).
 		Find(&busyOrders).Error; err != nil {
 		return nil, err
 	}
-
-	busyPlates := make(map[string]bool, len(busyOrders)*2)
+	busyIDs := make(map[string]bool, len(busyOrders))
 	for _, o := range busyOrders {
-		if o.TargaMotrice != "" {
-			busyPlates[o.TargaMotrice] = true
-		}
-		if o.TargaRimorchio != "" {
-			busyPlates[o.TargaRimorchio] = true
+		if o.MotriceID != nil {
+			busyIDs[o.MotriceID.String()] = true
 		}
 	}
 
-	result := make([]dto.VehicleAvailabilityResponse, len(allVehicles))
-	for i, v := range allVehicles {
+	result := make([]dto.MotriceAvailabilityResponse, len(all))
+	for i, m := range all {
 		status := "available"
-		if busyPlates[v.Targa] {
+		if busyIDs[m.ID.String()] {
 			status = "busy"
 		}
-		result[i] = dto.VehicleAvailabilityResponse{VehicleResponse: vehicles.ToResponse(v), Disponibilita: status}
+		result[i] = dto.MotriceAvailabilityResponse{MotriceResponse: motrici.ToResponse(m), Disponibilita: status}
+	}
+	return result, nil
+}
+
+// SemirimorchioAvailability mirrors MotriceAvailability for the trailer half.
+func (s *AvailabilityService) SemirimorchioAvailability(ctx context.Context, dataDa, dataA string) ([]dto.SemirimorchioAvailabilityResponse, error) {
+	var all []models.Semirimorchio
+	if err := s.db.WithContext(ctx).Where("active = ?", true).Find(&all).Error; err != nil {
+		return nil, err
+	}
+
+	var busyOrders []models.Order
+	if err := s.db.WithContext(ctx).
+		Where("stato = ? AND semirimorchio_id IS NOT NULL AND data_ritiro <= ? AND data_consegna >= ?", "VIAGGIO", dataA, dataDa).
+		Find(&busyOrders).Error; err != nil {
+		return nil, err
+	}
+	busyIDs := make(map[string]bool, len(busyOrders))
+	for _, o := range busyOrders {
+		if o.SemirimorchioID != nil {
+			busyIDs[o.SemirimorchioID.String()] = true
+		}
+	}
+
+	result := make([]dto.SemirimorchioAvailabilityResponse, len(all))
+	for i, r := range all {
+		status := "available"
+		if busyIDs[r.ID.String()] {
+			status = "busy"
+		}
+		result[i] = dto.SemirimorchioAvailabilityResponse{SemirimorchioResponse: semirimorchi.ToResponse(r), Disponibilita: status}
 	}
 	return result, nil
 }

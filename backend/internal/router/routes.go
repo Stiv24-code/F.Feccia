@@ -31,7 +31,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	api := app.Group("/api/v1")
 
 	registerAuthRoutes(api, handlers, jwtCfg)
-	registerWebhookRoutes(api, handlers)
 
 	// Everything reachable by "cliente" (or by any authenticated role
 	// regardless of which one) MUST be registered here, before authAll's
@@ -65,7 +64,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerAnagraficheRoutes(authAll, handlers)
 	registerDriverUnavailabilityRoutes(authAll, handlers)
 	registerOrderRoutes(authAll, handlers)
-	registerVehicleRoutes(authAll, handlers)
+	registerMotriceRoutes(authAll, handlers)
+	registerSemirimorchioRoutes(authAll, handlers)
 	registerTripRoutes(authAll, handlers)
 	registerPriceListRoutes(authAll, handlers)
 	registerInvoiceRoutes(authAll, handlers)

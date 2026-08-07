@@ -778,6 +778,170 @@ func (mr *MockDriverMockRecorder) Update(ctx, id, req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockDriver)(nil).Update), ctx, id, req)
 }
 
+// MockMotrice is a mock of Motrice interface.
+type MockMotrice struct {
+	ctrl     *gomock.Controller
+	recorder *MockMotriceMockRecorder
+}
+
+// MockMotriceMockRecorder is the mock recorder for MockMotrice.
+type MockMotriceMockRecorder struct {
+	mock *MockMotrice
+}
+
+// NewMockMotrice creates a new mock instance.
+func NewMockMotrice(ctrl *gomock.Controller) *MockMotrice {
+	mock := &MockMotrice{ctrl: ctrl}
+	mock.recorder = &MockMotriceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMotrice) EXPECT() *MockMotriceMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockMotrice) Create(ctx context.Context, req dto.MotriceRequest) (*dto.MotriceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret0, _ := ret[0].(*dto.MotriceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockMotriceMockRecorder) Create(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockMotrice)(nil).Create), ctx, req)
+}
+
+// Delete mocks base method.
+func (m *MockMotrice) Delete(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockMotriceMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockMotrice)(nil).Delete), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockMotrice) List(ctx context.Context, search string) ([]dto.MotriceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, search)
+	ret0, _ := ret[0].([]dto.MotriceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockMotriceMockRecorder) List(ctx, search interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockMotrice)(nil).List), ctx, search)
+}
+
+// Update mocks base method.
+func (m *MockMotrice) Update(ctx context.Context, id uuid.UUID, req dto.MotriceRequest) (*dto.MotriceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, req)
+	ret0, _ := ret[0].(*dto.MotriceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockMotriceMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockMotrice)(nil).Update), ctx, id, req)
+}
+
+// MockSemirimorchio is a mock of Semirimorchio interface.
+type MockSemirimorchio struct {
+	ctrl     *gomock.Controller
+	recorder *MockSemirimorchioMockRecorder
+}
+
+// MockSemirimorchioMockRecorder is the mock recorder for MockSemirimorchio.
+type MockSemirimorchioMockRecorder struct {
+	mock *MockSemirimorchio
+}
+
+// NewMockSemirimorchio creates a new mock instance.
+func NewMockSemirimorchio(ctrl *gomock.Controller) *MockSemirimorchio {
+	mock := &MockSemirimorchio{ctrl: ctrl}
+	mock.recorder = &MockSemirimorchioMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSemirimorchio) EXPECT() *MockSemirimorchioMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockSemirimorchio) Create(ctx context.Context, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret0, _ := ret[0].(*dto.SemirimorchioResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockSemirimorchioMockRecorder) Create(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSemirimorchio)(nil).Create), ctx, req)
+}
+
+// Delete mocks base method.
+func (m *MockSemirimorchio) Delete(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockSemirimorchioMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSemirimorchio)(nil).Delete), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockSemirimorchio) List(ctx context.Context, search string) ([]dto.SemirimorchioResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, search)
+	ret0, _ := ret[0].([]dto.SemirimorchioResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockSemirimorchioMockRecorder) List(ctx, search interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockSemirimorchio)(nil).List), ctx, search)
+}
+
+// Update mocks base method.
+func (m *MockSemirimorchio) Update(ctx context.Context, id uuid.UUID, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, req)
+	ret0, _ := ret[0].(*dto.SemirimorchioResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockSemirimorchioMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockSemirimorchio)(nil).Update), ctx, id, req)
+}
+
 // MockProduct is a mock of Product interface.
 type MockProduct struct {
 	ctrl     *gomock.Controller
@@ -1473,208 +1637,6 @@ func (mr *MockOrderMockRecorder) UpdateRoute(ctx, id, waypoints interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRoute", reflect.TypeOf((*MockOrder)(nil).UpdateRoute), ctx, id, waypoints)
 }
 
-// MockVehicle is a mock of Vehicle interface.
-type MockVehicle struct {
-	ctrl     *gomock.Controller
-	recorder *MockVehicleMockRecorder
-}
-
-// MockVehicleMockRecorder is the mock recorder for MockVehicle.
-type MockVehicleMockRecorder struct {
-	mock *MockVehicle
-}
-
-// NewMockVehicle creates a new mock instance.
-func NewMockVehicle(ctrl *gomock.Controller) *MockVehicle {
-	mock := &MockVehicle{ctrl: ctrl}
-	mock.recorder = &MockVehicleMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockVehicle) EXPECT() *MockVehicleMockRecorder {
-	return m.recorder
-}
-
-// Create mocks base method.
-func (m *MockVehicle) Create(ctx context.Context, req dto.VehicleRequest) (*dto.VehicleResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, req)
-	ret0, _ := ret[0].(*dto.VehicleResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockVehicleMockRecorder) Create(ctx, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockVehicle)(nil).Create), ctx, req)
-}
-
-// Delete mocks base method.
-func (m *MockVehicle) Delete(ctx context.Context, id uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockVehicleMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVehicle)(nil).Delete), ctx, id)
-}
-
-// GetAllGPSLive mocks base method.
-func (m *MockVehicle) GetAllGPSLive(ctx context.Context) ([]dto.GPSLiveVehicle, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllGPSLive", ctx)
-	ret0, _ := ret[0].([]dto.GPSLiveVehicle)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllGPSLive indicates an expected call of GetAllGPSLive.
-func (mr *MockVehicleMockRecorder) GetAllGPSLive(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllGPSLive", reflect.TypeOf((*MockVehicle)(nil).GetAllGPSLive), ctx)
-}
-
-// GetGPSHistory mocks base method.
-func (m *MockVehicle) GetGPSHistory(ctx context.Context, vehicleIDOrTarga string, limit int) ([]dto.GPSHistoryResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGPSHistory", ctx, vehicleIDOrTarga, limit)
-	ret0, _ := ret[0].([]dto.GPSHistoryResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetGPSHistory indicates an expected call of GetGPSHistory.
-func (mr *MockVehicleMockRecorder) GetGPSHistory(ctx, vehicleIDOrTarga, limit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGPSHistory", reflect.TypeOf((*MockVehicle)(nil).GetGPSHistory), ctx, vehicleIDOrTarga, limit)
-}
-
-// GetTemperatureHistory mocks base method.
-func (m *MockVehicle) GetTemperatureHistory(ctx context.Context, vehicleID uuid.UUID, limit int, onlyAlerts bool) ([]dto.TemperatureReadingResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTemperatureHistory", ctx, vehicleID, limit, onlyAlerts)
-	ret0, _ := ret[0].([]dto.TemperatureReadingResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTemperatureHistory indicates an expected call of GetTemperatureHistory.
-func (mr *MockVehicleMockRecorder) GetTemperatureHistory(ctx, vehicleID, limit, onlyAlerts interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTemperatureHistory", reflect.TypeOf((*MockVehicle)(nil).GetTemperatureHistory), ctx, vehicleID, limit, onlyAlerts)
-}
-
-// IngestGPSWebhook mocks base method.
-func (m *MockVehicle) IngestGPSWebhook(ctx context.Context, vendor string, payload dto.GPSWebhookPayload) (*dto.GPSUpdateResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IngestGPSWebhook", ctx, vendor, payload)
-	ret0, _ := ret[0].(*dto.GPSUpdateResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IngestGPSWebhook indicates an expected call of IngestGPSWebhook.
-func (mr *MockVehicleMockRecorder) IngestGPSWebhook(ctx, vendor, payload interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IngestGPSWebhook", reflect.TypeOf((*MockVehicle)(nil).IngestGPSWebhook), ctx, vendor, payload)
-}
-
-// IngestTemperatureWebhook mocks base method.
-func (m *MockVehicle) IngestTemperatureWebhook(ctx context.Context, vendor string, payload dto.TemperatureWebhookRequest) (*dto.TemperatureWebhookResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IngestTemperatureWebhook", ctx, vendor, payload)
-	ret0, _ := ret[0].(*dto.TemperatureWebhookResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IngestTemperatureWebhook indicates an expected call of IngestTemperatureWebhook.
-func (mr *MockVehicleMockRecorder) IngestTemperatureWebhook(ctx, vendor, payload interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IngestTemperatureWebhook", reflect.TypeOf((*MockVehicle)(nil).IngestTemperatureWebhook), ctx, vendor, payload)
-}
-
-// List mocks base method.
-func (m *MockVehicle) List(ctx context.Context, search string) ([]dto.VehicleResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, search)
-	ret0, _ := ret[0].([]dto.VehicleResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List.
-func (mr *MockVehicleMockRecorder) List(ctx, search interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVehicle)(nil).List), ctx, search)
-}
-
-// SetTemperatureThresholds mocks base method.
-func (m *MockVehicle) SetTemperatureThresholds(ctx context.Context, vehicleID uuid.UUID, req dto.TemperatureThresholdsRequest) (*dto.TemperatureThresholdsResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetTemperatureThresholds", ctx, vehicleID, req)
-	ret0, _ := ret[0].(*dto.TemperatureThresholdsResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SetTemperatureThresholds indicates an expected call of SetTemperatureThresholds.
-func (mr *MockVehicleMockRecorder) SetTemperatureThresholds(ctx, vehicleID, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTemperatureThresholds", reflect.TypeOf((*MockVehicle)(nil).SetTemperatureThresholds), ctx, vehicleID, req)
-}
-
-// Update mocks base method.
-func (m *MockVehicle) Update(ctx context.Context, id uuid.UUID, req dto.VehicleRequest) (*dto.VehicleResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, req)
-	ret0, _ := ret[0].(*dto.VehicleResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockVehicleMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockVehicle)(nil).Update), ctx, id, req)
-}
-
-// UpdateGPSByID mocks base method.
-func (m *MockVehicle) UpdateGPSByID(ctx context.Context, idOrTarga string, req dto.VehicleGPSUpdateRequest) (*dto.GPSUpdateResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateGPSByID", ctx, idOrTarga, req)
-	ret0, _ := ret[0].(*dto.GPSUpdateResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateGPSByID indicates an expected call of UpdateGPSByID.
-func (mr *MockVehicleMockRecorder) UpdateGPSByID(ctx, idOrTarga, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGPSByID", reflect.TypeOf((*MockVehicle)(nil).UpdateGPSByID), ctx, idOrTarga, req)
-}
-
-// UpdateGPSByPlate mocks base method.
-func (m *MockVehicle) UpdateGPSByPlate(ctx context.Context, targa string, req dto.VehicleGPSUpdateRequest) (*dto.GPSUpdateResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateGPSByPlate", ctx, targa, req)
-	ret0, _ := ret[0].(*dto.GPSUpdateResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateGPSByPlate indicates an expected call of UpdateGPSByPlate.
-func (mr *MockVehicleMockRecorder) UpdateGPSByPlate(ctx, targa, req interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateGPSByPlate", reflect.TypeOf((*MockVehicle)(nil).UpdateGPSByPlate), ctx, targa, req)
-}
-
 // MockTrip is a mock of Trip interface.
 type MockTrip struct {
 	ctrl     *gomock.Controller
@@ -1775,18 +1737,18 @@ func (mr *MockTripMockRecorder) GetInstructionsPDF(ctx, id interface{}) *gomock.
 }
 
 // List mocks base method.
-func (m *MockTrip) List(ctx context.Context, stato string, limit int) ([]dto.TripResponse, error) {
+func (m *MockTrip) List(ctx context.Context, stato string, autistaID uuid.UUID, limit int) ([]dto.TripResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, stato, limit)
+	ret := m.ctrl.Call(m, "List", ctx, stato, autistaID, limit)
 	ret0, _ := ret[0].([]dto.TripResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockTripMockRecorder) List(ctx, stato, limit interface{}) *gomock.Call {
+func (mr *MockTripMockRecorder) List(ctx, stato, autistaID, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockTrip)(nil).List), ctx, stato, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockTrip)(nil).List), ctx, stato, autistaID, limit)
 }
 
 // RecomputeSegments mocks base method.
@@ -2286,19 +2248,34 @@ func (mr *MockAvailabilityMockRecorder) DriverAvailability(ctx, dataDa, dataA in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DriverAvailability", reflect.TypeOf((*MockAvailability)(nil).DriverAvailability), ctx, dataDa, dataA)
 }
 
-// VehicleAvailability mocks base method.
-func (m *MockAvailability) VehicleAvailability(ctx context.Context, dataDa, dataA string) ([]dto.VehicleAvailabilityResponse, error) {
+// MotriceAvailability mocks base method.
+func (m *MockAvailability) MotriceAvailability(ctx context.Context, dataDa, dataA string) ([]dto.MotriceAvailabilityResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VehicleAvailability", ctx, dataDa, dataA)
-	ret0, _ := ret[0].([]dto.VehicleAvailabilityResponse)
+	ret := m.ctrl.Call(m, "MotriceAvailability", ctx, dataDa, dataA)
+	ret0, _ := ret[0].([]dto.MotriceAvailabilityResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// VehicleAvailability indicates an expected call of VehicleAvailability.
-func (mr *MockAvailabilityMockRecorder) VehicleAvailability(ctx, dataDa, dataA interface{}) *gomock.Call {
+// MotriceAvailability indicates an expected call of MotriceAvailability.
+func (mr *MockAvailabilityMockRecorder) MotriceAvailability(ctx, dataDa, dataA interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VehicleAvailability", reflect.TypeOf((*MockAvailability)(nil).VehicleAvailability), ctx, dataDa, dataA)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MotriceAvailability", reflect.TypeOf((*MockAvailability)(nil).MotriceAvailability), ctx, dataDa, dataA)
+}
+
+// SemirimorchioAvailability mocks base method.
+func (m *MockAvailability) SemirimorchioAvailability(ctx context.Context, dataDa, dataA string) ([]dto.SemirimorchioAvailabilityResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SemirimorchioAvailability", ctx, dataDa, dataA)
+	ret0, _ := ret[0].([]dto.SemirimorchioAvailabilityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SemirimorchioAvailability indicates an expected call of SemirimorchioAvailability.
+func (mr *MockAvailabilityMockRecorder) SemirimorchioAvailability(ctx, dataDa, dataA interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SemirimorchioAvailability", reflect.TypeOf((*MockAvailability)(nil).SemirimorchioAvailability), ctx, dataDa, dataA)
 }
 
 // MockExport is a mock of Export interface.

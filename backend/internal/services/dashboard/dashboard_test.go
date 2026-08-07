@@ -17,7 +17,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Vehicle{}, &models.Invoice{}, &models.InvoiceLine{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Garage{}, &models.Driver{}, &models.Carrier{}, &models.WashStation{}, &models.Motrice{}, &models.Semirimorchio{}, &models.Invoice{}, &models.InvoiceLine{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -70,7 +70,8 @@ func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	seedOrderWithFattura(t, db, clienteID, "CHIUSO", "2026-02-10", "", "nazionale", "", 400, uuid.New())
 
 	db.Create(&models.Customer{ID: clienteID, RagioneSociale: "C1", Active: true})
-	db.Create(&models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Active: true})
+	db.Create(&models.Motrice{ID: uuid.New(), Targa: "AB123CD", Active: true})
+	db.Create(&models.Semirimorchio{ID: uuid.New(), Targa: "TR001AA", Active: true})
 	db.Create(&models.Driver{ID: uuid.New(), Nome: "M", Cognome: "R", Active: true})
 
 	inv := models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "DEFINITIVA", Totale: 750, CostiAccessori: []byte("[]")}
@@ -84,7 +85,7 @@ func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	if stats.TotalOrders != 4 || stats.Pianificabili != 1 || stats.InViaggio != 1 || stats.Chiusi != 2 || stats.Fatturati != 1 {
 		t.Fatalf("unexpected order counts: %+v", stats)
 	}
-	if stats.TotalCustomers != 1 || stats.TotalVehicles != 1 || stats.TotalDrivers != 1 {
+	if stats.TotalCustomers != 1 || stats.TotalMotrici != 1 || stats.TotalSemirimorchi != 1 || stats.TotalDrivers != 1 {
 		t.Fatalf("unexpected master-data counts: %+v", stats)
 	}
 	if stats.TotalRevenue != 750 {

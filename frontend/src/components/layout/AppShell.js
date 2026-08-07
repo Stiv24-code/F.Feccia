@@ -22,7 +22,7 @@ const navItems = [
     label: 'Anagrafiche', icon: ClipboardList, children: [
       { label: 'Clienti', path: '/anagrafiche/clienti', icon: Users },
       { label: 'Destinazioni', path: '/anagrafiche/destinazioni', icon: MapPin },
-      { label: 'Veicoli', path: '/anagrafiche/veicoli', icon: Truck },
+      { label: 'Trasporto', path: '/anagrafiche/veicoli', icon: Truck },
       { label: 'Autisti', path: '/anagrafiche/autisti', icon: UserCircle },
       { label: 'Vettori', path: '/anagrafiche/vettori', icon: Building2 },
       { label: 'Prodotti', path: '/anagrafiche/prodotti', icon: Package },
@@ -187,7 +187,7 @@ const AppShell = ({ children }) => {
     if (path === '/' || path === '/dashboard') return 'Dashboard';
     if (path.includes('clienti')) return 'Clienti';
     if (path.includes('destinazioni')) return 'Destinazioni';
-    if (path.includes('veicoli')) return 'Veicoli';
+    if (path.includes('veicoli')) return 'Trasporto';
     if (path.includes('autisti')) return 'Autisti';
     if (path.includes('vettori')) return 'Vettori';
     if (path.includes('prodotti')) return 'Prodotti';

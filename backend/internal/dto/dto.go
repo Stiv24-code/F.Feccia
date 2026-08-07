@@ -234,14 +234,14 @@ type WashStationResponse struct {
 }
 
 type DriverRequest struct {
-	Nome            string  `json:"nome" validate:"required"`
-	Cognome         string  `json:"cognome" validate:"required"`
-	CodiceFiscale   string  `json:"codice_fiscale"`
-	Patente         string  `json:"patente"`
-	ScadenzaPatente *string `json:"scadenza_patente"`
-	Telefono        string  `json:"telefono"`
-	Email           string  `json:"email"`
-	Note            string  `json:"note"`
+	Nome            string   `json:"nome" validate:"required"`
+	Cognome         string   `json:"cognome" validate:"required"`
+	CodiceFiscale   string   `json:"codice_fiscale"`
+	Patente         []string `json:"patente" enums:"AM,A1,A2,A,B1,B,BE,C1,C1E,C,CE,D1,D1E,D,DE,CQC,ADR" validate:"omitempty,dive,oneof=AM A1 A2 A B1 B BE C1 C1E C CE D1 D1E D DE CQC ADR"`
+	ScadenzaPatente *string  `json:"scadenza_patente"`
+	Telefono        string   `json:"telefono"`
+	Email           string   `json:"email"`
+	Note            string   `json:"note"`
 }
 
 type DriverResponse struct {
@@ -249,7 +249,7 @@ type DriverResponse struct {
 	Nome            string    `json:"nome"`
 	Cognome         string    `json:"cognome"`
 	CodiceFiscale   string    `json:"codice_fiscale"`
-	Patente         string    `json:"patente"`
+	Patente         []string  `json:"patente" enums:"AM,A1,A2,A,B1,B,BE,C1,C1E,C,CE,D1,D1E,D,DE,CQC,ADR"`
 	ScadenzaPatente *string   `json:"scadenza_patente"`
 	Telefono        string    `json:"telefono"`
 	Email           string    `json:"email"`
@@ -257,6 +257,11 @@ type DriverResponse struct {
 	Active          bool      `json:"active"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
+	// ProssimeFerieDa/A are the next upcoming motivo=ferie unavailability
+	// window (nil if none), computed on read only by DriverService.List —
+	// not persisted, not populated by Create/Update.
+	ProssimeFerieDa *string `json:"prossime_ferie_da"`
+	ProssimeFerieA  *string `json:"prossime_ferie_a"`
 }
 
 type ProductRequest struct {
@@ -382,7 +387,7 @@ type DriverUnavailabilityRequest struct {
 	AutistaNome string    `json:"autista_nome"`
 	DataDa      string    `json:"data_da" validate:"required"`
 	DataA       string    `json:"data_a" validate:"required"`
-	Motivo      string    `json:"motivo"`
+	Motivo      string    `json:"motivo" enums:"ferie,malattia,permesso,altro" validate:"omitempty,oneof=ferie malattia permesso altro"`
 	Note        string    `json:"note"`
 }
 
@@ -392,7 +397,7 @@ type DriverUnavailabilityResponse struct {
 	AutistaNome string    `json:"autista_nome"`
 	DataDa      string    `json:"data_da"`
 	DataA       string    `json:"data_a"`
-	Motivo      string    `json:"motivo"`
+	Motivo      string    `json:"motivo" enums:"ferie,malattia,permesso,altro"`
 	Note        string    `json:"note"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -415,8 +420,8 @@ type OrderItemResponseDTO struct {
 }
 
 // OrderRequest mirrors OrderCreate — used for both POST and PUT; state-machine
-// fields (stato, targa_motrice, autista_id, vettore_id, viaggio_id, fattura_id,
-// progressivo) are intentionally absent, exactly like the Python schema, so a
+// fields (stato, motrice_id, semirimorchio_id, autista_id, vettore_id, viaggio_id,
+// fattura_id, progressivo) are intentionally absent, exactly like the Python schema, so a
 // PUT can never touch them. Reference fields are ids only — the server no
 // longer stores a client-submitted denormalized name, it's always derived
 // from the live associated row via Preload.
@@ -443,12 +448,12 @@ type OrderRequest struct {
 }
 
 type OrderAssignRequest struct {
-	GarageID       string `json:"garage_id"`
-	TargaMotrice   string `json:"targa_motrice"`
-	TargaRimorchio string `json:"targa_rimorchio"`
-	AutistaID      string `json:"autista_id"`
-	VettoreID      string `json:"vettore_id"`
-	WashStationID  string `json:"wash_station_id"`
+	GarageID        string `json:"garage_id"`
+	MotriceID       string `json:"motrice_id"`
+	SemirimorchioID string `json:"semirimorchio_id"`
+	AutistaID       string `json:"autista_id"`
+	VettoreID       string `json:"vettore_id"`
+	WashStationID   string `json:"wash_station_id"`
 	// RouteWaypoints: la sequenza scelta dal manager tra le alternative
 	// proposte (POST /orders/{id}/route-alternatives). Opzionale — se
 	// assente l'ordine viene comunque assegnato, semplicemente senza un
@@ -548,8 +553,10 @@ type OrderResponse struct {
 	Stato                 string                   `json:"stato" enums:"PIANIFICABILE,PIANIFICATO,VIAGGIO,CHIUSO,SCARTATO"`
 	GarageID              string                   `json:"garage_id"`
 	Garage                *GarageResponse          `json:"garage"`
-	TargaMotrice          string                   `json:"targa_motrice"`
-	TargaRimorchio        string                   `json:"targa_rimorchio"`
+	MotriceID             string                   `json:"motrice_id"`
+	Motrice               *MotriceResponse         `json:"motrice"`
+	SemirimorchioID       string                   `json:"semirimorchio_id"`
+	Semirimorchio         *SemirimorchioResponse   `json:"semirimorchio"`
 	AutistaID             string                   `json:"autista_id"`
 	Autista               *DriverResponse          `json:"autista"`
 	VettoreID             string                   `json:"vettore_id"`
@@ -584,67 +591,59 @@ type OrderSourceSummary struct {
 	DataConsegna        string               `json:"data_consegna"`
 }
 
-// VehicleRequest mirrors VehicleCreate — telemetry fields (GPS/temperature)
-// are intentionally absent, exactly like the Python schema, so Create/Update
-// can never touch them (they're written by separate GPS/temperature endpoints).
-type VehicleRequest struct {
-	Targa          string  `json:"targa" validate:"required"`
-	TipoVeicolo    string  `json:"tipo_veicolo"`
-	Marca          string  `json:"marca"`
-	Modello        string  `json:"modello"`
-	Anno           int     `json:"anno"`
-	Scompartature  int     `json:"scompartature"`
-	PortataKg      float64 `json:"portata_kg"`
-	Note           string  `json:"note"`
-	GpsTrackerUrl  string  `json:"gps_tracker_url"`
-	GpsTrackerTipo string  `json:"gps_tracker_tipo"`
-	GpsApiKey      string  `json:"gps_api_key"`
+// MotriceRequest mirrors MotriceCreate — the tractor-unit half of the
+// former single Vehicle table (see Semirimorchio for the trailer half).
+type MotriceRequest struct {
+	Targa     string  `json:"targa" validate:"required"`
+	Marca     string  `json:"marca"`
+	Modello   string  `json:"modello"`
+	Anno      int     `json:"anno"`
+	PortataKg float64 `json:"portata_kg"`
+	Note      string  `json:"note"`
 }
 
-type VehicleResponse struct {
-	ID             uuid.UUID `json:"id"`
-	Targa          string    `json:"targa"`
-	TipoVeicolo    string    `json:"tipo_veicolo"`
-	Marca          string    `json:"marca"`
-	Modello        string    `json:"modello"`
-	Anno           int       `json:"anno"`
-	Scompartature  int       `json:"scompartature"`
-	PortataKg      float64   `json:"portata_kg"`
-	Note           string    `json:"note"`
-	GpsTrackerUrl  string    `json:"gps_tracker_url"`
-	GpsTrackerTipo string    `json:"gps_tracker_tipo"`
-	GpsApiKey      string    `json:"gps_api_key"`
-
-	LastLat       float64 `json:"last_lat"`
-	LastLng       float64 `json:"last_lng"`
-	LastSpeedKmh  float64 `json:"last_speed_kmh"`
-	LastHeading   float64 `json:"last_heading"`
-	LastGpsUpdate string  `json:"last_gps_update"`
-	GpsActive     bool    `json:"gps_active"`
-	GpsSource     string  `json:"gps_source"`
-
-	TempMin          *float64 `json:"temp_min"`
-	TempMax          *float64 `json:"temp_max"`
-	LastTempCelsius  *float64 `json:"last_temp_celsius"`
-	LastTempTs       string   `json:"last_temp_ts"`
-	LastTempSensorID string   `json:"last_temp_sensor_id"`
-	LastTempAlert    bool     `json:"last_temp_alert"`
-
+type MotriceResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Targa     string    `json:"targa"`
+	Marca     string    `json:"marca"`
+	Modello   string    `json:"modello"`
+	Anno      int       `json:"anno"`
+	PortataKg float64   `json:"portata_kg"`
+	Note      string    `json:"note"`
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type VehicleGPSUpdateRequest struct {
-	Lat       float64 `json:"lat" validate:"required"`
-	Lng       float64 `json:"lng" validate:"required"`
-	SpeedKmh  float64 `json:"speed_kmh"`
-	Heading   float64 `json:"heading"`
-	Timestamp string  `json:"timestamp"`
+// SemirimorchioRequest mirrors SemirimorchioCreate — the trailer half (see
+// Motrice for the tractor half).
+type SemirimorchioRequest struct {
+	Targa         string  `json:"targa" validate:"required"`
+	Tipo          string  `json:"tipo"`
+	Scompartature int     `json:"scompartature"`
+	PortataKg     float64 `json:"portata_kg"`
+	Note          string  `json:"note"`
 }
 
-type VehicleAvailabilityResponse struct {
-	VehicleResponse
+type SemirimorchioResponse struct {
+	ID            uuid.UUID `json:"id"`
+	Targa         string    `json:"targa"`
+	Tipo          string    `json:"tipo"`
+	Scompartature int       `json:"scompartature"`
+	PortataKg     float64   `json:"portata_kg"`
+	Note          string    `json:"note"`
+	Active        bool      `json:"active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type MotriceAvailabilityResponse struct {
+	MotriceResponse
+	Disponibilita string `json:"disponibilita"`
+}
+
+type SemirimorchioAvailabilityResponse struct {
+	SemirimorchioResponse
 	Disponibilita string `json:"disponibilita"`
 }
 
@@ -652,92 +651,6 @@ type DriverAvailabilityResponse struct {
 	DriverResponse
 	Disponibilita         string `json:"disponibilita"`
 	MotivoIndisponibilita string `json:"motivo_indisponibilita"`
-}
-
-type GPSUpdateResult struct {
-	OK        bool             `json:"ok"`
-	Targa     string           `json:"targa"`
-	GpsSource string           `json:"gps_source,omitempty"`
-	Position  GPSPositionShort `json:"position"`
-}
-
-type GPSPositionShort struct {
-	Lat float64 `json:"lat"`
-	Lng float64 `json:"lng"`
-}
-
-type GPSHistoryResponse struct {
-	VehicleID uuid.UUID `json:"vehicle_id"`
-	Targa     string    `json:"targa"`
-	Lat       float64   `json:"lat"`
-	Lng       float64   `json:"lng"`
-	SpeedKmh  float64   `json:"speed_kmh"`
-	Heading   float64   `json:"heading"`
-	Timestamp string    `json:"timestamp"`
-	GpsSource string    `json:"gps_source"`
-}
-
-type GPSLiveVehicle struct {
-	ID            uuid.UUID `json:"id"`
-	Targa         string    `json:"targa"`
-	Marca         string    `json:"marca"`
-	Modello       string    `json:"modello"`
-	TipoVeicolo   string    `json:"tipo_veicolo"`
-	LastLat       float64   `json:"last_lat"`
-	LastLng       float64   `json:"last_lng"`
-	LastSpeedKmh  float64   `json:"last_speed_kmh"`
-	LastHeading   float64   `json:"last_heading"`
-	LastGpsUpdate string    `json:"last_gps_update"`
-	GpsActive     bool      `json:"gps_active"`
-	GpsTrackerUrl string    `json:"gps_tracker_url"`
-	GpsSource     string    `json:"gps_source"`
-}
-
-// GPSWebhookPayload mirrors the normalized V1 webhook payload accepted by
-// POST /api/v1/webhooks/gps/{vendor}.
-type GPSWebhookPayload struct {
-	Targa     string  `json:"targa"`
-	VehicleID string  `json:"vehicle_id"`
-	Lat       float64 `json:"lat"`
-	Lng       float64 `json:"lng"`
-	SpeedKmh  float64 `json:"speed_kmh"`
-	Heading   float64 `json:"heading"`
-	Timestamp string  `json:"timestamp"`
-}
-
-type TemperatureReadingResponse struct {
-	VehicleID   uuid.UUID `json:"vehicle_id"`
-	Targa       string    `json:"targa"`
-	TempCelsius float64   `json:"temp_celsius"`
-	SensorID    string    `json:"sensor_id"`
-	Ts          string    `json:"ts"`
-	Source      string    `json:"source"`
-	OutOfRange  bool      `json:"out_of_range"`
-}
-
-type TemperatureWebhookRequest struct {
-	Targa       string  `json:"targa"`
-	VehicleID   string  `json:"vehicle_id"`
-	SensorID    string  `json:"sensor_id"`
-	TempCelsius float64 `json:"temp_celsius" validate:"required"`
-	Ts          string  `json:"ts"`
-}
-
-type TemperatureWebhookResult struct {
-	OK         bool `json:"ok"`
-	OutOfRange bool `json:"out_of_range"`
-	Alert      bool `json:"alert"`
-}
-
-type TemperatureThresholdsRequest struct {
-	TempMin *float64 `json:"temp_min"`
-	TempMax *float64 `json:"temp_max"`
-}
-
-type TemperatureThresholdsResult struct {
-	OK      bool     `json:"ok"`
-	TempMin *float64 `json:"temp_min"`
-	TempMax *float64 `json:"temp_max"`
 }
 
 type TripSegmentDTO struct {
@@ -759,28 +672,30 @@ type TripSegmentDTO struct {
 // total_km run unconditionally in create_trip), so they're omitted here as
 // dead-on-arrival fields rather than modeled and ignored.
 type TripRequest struct {
-	OrdiniIds      []string `json:"ordini_ids"`
-	TargaMotrice   string   `json:"targa_motrice"`
-	TargaRimorchio string   `json:"targa_rimorchio"`
-	AutistaID      string   `json:"autista_id"`
-	VettoreID      string   `json:"vettore_id"`
-	GarageID       string   `json:"garage_id"`
-	Note           string   `json:"note"`
-	DataPartenza   string   `json:"data_partenza"`
-	DataArrivo     string   `json:"data_arrivo"`
+	OrdiniIds       []string `json:"ordini_ids"`
+	MotriceID       string   `json:"motrice_id"`
+	SemirimorchioID string   `json:"semirimorchio_id"`
+	AutistaID       string   `json:"autista_id"`
+	VettoreID       string   `json:"vettore_id"`
+	GarageID        string   `json:"garage_id"`
+	Note            string   `json:"note"`
+	DataPartenza    string   `json:"data_partenza"`
+	DataArrivo      string   `json:"data_arrivo"`
 }
 
 type TripResponse struct {
-	ID             uuid.UUID        `json:"id"`
-	OrdiniIds      []string         `json:"ordini_ids"`
-	TargaMotrice   string           `json:"targa_motrice"`
-	TargaRimorchio string           `json:"targa_rimorchio"`
-	AutistaID      string           `json:"autista_id"`
-	Autista        *DriverResponse  `json:"autista"`
-	VettoreID      string           `json:"vettore_id"`
-	Vettore        *CarrierResponse `json:"vettore"`
-	GarageID       string           `json:"garage_id"`
-	Garage         *GarageResponse  `json:"garage"`
+	ID              uuid.UUID              `json:"id"`
+	OrdiniIds       []string               `json:"ordini_ids"`
+	MotriceID       string                 `json:"motrice_id"`
+	Motrice         *MotriceResponse       `json:"motrice"`
+	SemirimorchioID string                 `json:"semirimorchio_id"`
+	Semirimorchio   *SemirimorchioResponse `json:"semirimorchio"`
+	AutistaID       string                 `json:"autista_id"`
+	Autista         *DriverResponse        `json:"autista"`
+	VettoreID       string                 `json:"vettore_id"`
+	Vettore         *CarrierResponse       `json:"vettore"`
+	GarageID        string                 `json:"garage_id"`
+	Garage          *GarageResponse        `json:"garage"`
 	Segmenti       []TripSegmentDTO `json:"segmenti"`
 	KmTotali       float64          `json:"km_totali"`
 	CostoStimato   float64          `json:"costo_stimato"`
@@ -970,16 +885,17 @@ type MonthlyOrderTrend struct {
 }
 
 type DashboardStatsResponse struct {
-	TotalOrders    int64               `json:"total_orders"`
-	Pianificabili  int64               `json:"pianificabili"`
-	InViaggio      int64               `json:"in_viaggio"`
-	Chiusi         int64               `json:"chiusi"`
-	Fatturati      int64               `json:"fatturati"`
-	TotalCustomers int64               `json:"total_customers"`
-	TotalVehicles  int64               `json:"total_vehicles"`
-	TotalDrivers   int64               `json:"total_drivers"`
-	TotalRevenue   float64             `json:"total_revenue"`
-	MonthlyTrend   []MonthlyOrderTrend `json:"monthly_trend"`
+	TotalOrders       int64               `json:"total_orders"`
+	Pianificabili     int64               `json:"pianificabili"`
+	InViaggio         int64               `json:"in_viaggio"`
+	Chiusi            int64               `json:"chiusi"`
+	Fatturati         int64               `json:"fatturati"`
+	TotalCustomers    int64               `json:"total_customers"`
+	TotalMotrici      int64               `json:"total_motrici"`
+	TotalSemirimorchi int64               `json:"total_semirimorchi"`
+	TotalDrivers      int64               `json:"total_drivers"`
+	TotalRevenue      float64             `json:"total_revenue"`
+	MonthlyTrend      []MonthlyOrderTrend `json:"monthly_trend"`
 }
 
 type CustomerDashboardSummary struct {
@@ -1056,7 +972,7 @@ type MapRoute struct {
 	Cliente         *CustomerResponse `json:"cliente"`
 	Stato           string            `json:"stato"`
 	Tipologia       string            `json:"tipologia"`
-	TargaMotrice    string            `json:"targa_motrice"`
+	Motrice         *MotriceResponse  `json:"motrice"`
 	Autista         *DriverResponse   `json:"autista"`
 	DataRitiro      string            `json:"data_ritiro"`
 	DataConsegna    string            `json:"data_consegna"`
@@ -1070,14 +986,6 @@ type MapRoute struct {
 	DurationHours   float64           `json:"duration_hours"`
 	RemainingKm     float64           `json:"remaining_km"`
 	EtaHours        float64           `json:"eta_hours"`
-	GpsLive         bool              `json:"gps_live"`
-	GpsSpeedKmh     float64           `json:"gps_speed_kmh"`
-	GpsHeading      float64           `json:"gps_heading"`
-	GpsTrackerUrl   string            `json:"gps_tracker_url"`
-	GpsLastUpdate   string            `json:"gps_last_update"`
-	GpsSource       string            `json:"gps_source"`
-	LastTempCelsius *float64          `json:"last_temp_celsius"`
-	LastTempAlert   bool              `json:"last_temp_alert"`
 	Garage          *MapNamedPoint    `json:"garage"`
 	WashStation     *MapNamedPoint    `json:"wash_station"`
 }
@@ -1086,7 +994,6 @@ type MapStats struct {
 	InViaggio     int `json:"in_viaggio"`
 	Pianificabili int `json:"pianificabili"`
 	Chiusi        int `json:"chiusi"`
-	GpsLive       int `json:"gps_live"`
 }
 
 type MapTripsResponse struct {

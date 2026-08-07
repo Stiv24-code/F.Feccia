@@ -64,6 +64,8 @@ func PreloadAssociations(q *gorm.DB) *gorm.DB {
 		Preload("DestinazioneCarico").
 		Preload("DestinazioneScarico").
 		Preload("Garage").
+		Preload("Motrice").
+		Preload("Semirimorchio").
 		Preload("Autista").
 		Preload("Vettore").
 		Preload("WashStation").
@@ -279,6 +281,14 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	if err != nil {
 		return nil, err
 	}
+	motriceID, err := utils.ParseOptionalUUID(req.MotriceID)
+	if err != nil {
+		return nil, err
+	}
+	semirimorchioID, err := utils.ParseOptionalUUID(req.SemirimorchioID)
+	if err != nil {
+		return nil, err
+	}
 	autistaID, err := utils.ParseOptionalUUID(req.AutistaID)
 	if err != nil {
 		return nil, err
@@ -293,8 +303,8 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	}
 
 	order.GarageID = garageID
-	order.TargaMotrice = req.TargaMotrice
-	order.TargaRimorchio = req.TargaRimorchio
+	order.MotriceID = motriceID
+	order.SemirimorchioID = semirimorchioID
 	order.AutistaID = autistaID
 	order.VettoreID = vettoreID
 	order.WashStationID = washStationID
@@ -357,8 +367,8 @@ func (s *OrderService) Unassign(ctx context.Context, id uuid.UUID) (*dto.OrderRe
 
 	order.Stato = models.OrderStatoPianificabile
 	order.GarageID = nil
-	order.TargaMotrice = ""
-	order.TargaRimorchio = ""
+	order.MotriceID = nil
+	order.SemirimorchioID = nil
 	order.AutistaID = nil
 	order.VettoreID = nil
 	order.WashStationID = nil
@@ -498,15 +508,7 @@ func (s *OrderService) GetCMRPDF(ctx context.Context, id uuid.UUID) ([]byte, str
 		consignee = models.Customer{RagioneSociale: "-"}
 	}
 
-	var vehicle *models.Vehicle
-	if order.TargaMotrice != "" {
-		var v models.Vehicle
-		if err := s.db.WithContext(ctx).Where("targa = ?", order.TargaMotrice).First(&v).Error; err == nil {
-			vehicle = &v
-		}
-	}
-
-	pdfBytes, err := pdfgen.BuildCMRPDF(*order, consignee, nil, vehicle)
+	pdfBytes, err := pdfgen.BuildCMRPDF(*order, consignee, nil, order.Motrice, order.Semirimorchio)
 	if err != nil {
 		return nil, "", err
 	}
@@ -765,13 +767,33 @@ func washStationResponse(w *models.WashStation) *dto.WashStationResponse {
 	}
 }
 
+func motriceResponse(m *models.Motrice) *dto.MotriceResponse {
+	if m == nil {
+		return nil
+	}
+	return &dto.MotriceResponse{
+		ID: m.ID, Targa: m.Targa, Marca: m.Marca, Modello: m.Modello, Anno: m.Anno,
+		PortataKg: m.PortataKg, Note: m.Note, Active: m.Active, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
+	}
+}
+
+func semirimorchioResponse(r *models.Semirimorchio) *dto.SemirimorchioResponse {
+	if r == nil {
+		return nil
+	}
+	return &dto.SemirimorchioResponse{
+		ID: r.ID, Targa: r.Targa, Tipo: r.Tipo, Scompartature: r.Scompartature,
+		PortataKg: r.PortataKg, Note: r.Note, Active: r.Active, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+	}
+}
+
 func driverResponse(d *models.Driver) *dto.DriverResponse {
 	if d == nil {
 		return nil
 	}
 	return &dto.DriverResponse{
 		ID: d.ID, Nome: d.Nome, Cognome: d.Cognome, CodiceFiscale: d.CodiceFiscale,
-		Patente: d.Patente, ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
+		Patente: unmarshalStrings(d.Patente), ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
 		Email: d.Email, Note: d.Note, Active: d.Active, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
 	}
 }
@@ -836,8 +858,10 @@ func ToResponse(o models.Order) dto.OrderResponse {
 		Stato:                 string(o.Stato),
 		GarageID:              uuidPtrString(o.GarageID),
 		Garage:                garageResponse(o.Garage),
-		TargaMotrice:          o.TargaMotrice,
-		TargaRimorchio:        o.TargaRimorchio,
+		MotriceID:             uuidPtrString(o.MotriceID),
+		Motrice:               motriceResponse(o.Motrice),
+		SemirimorchioID:       uuidPtrString(o.SemirimorchioID),
+		Semirimorchio:         semirimorchioResponse(o.Semirimorchio),
 		AutistaID:             uuidPtrString(o.AutistaID),
 		Autista:               driverResponse(o.Autista),
 		VettoreID:             uuidPtrString(o.VettoreID),

@@ -20,9 +20,9 @@ func TestBuildCMRPDF_ProducesValidPDF(t *testing.T) {
 		RagioneSociale: "Destinatario Srl", Indirizzo: "Via Roma 1",
 		Citta: "Milano", Cap: "20100", Provincia: "MI", Nazione: "ITALIA", PartitaIva: "IT12345678901",
 	}
-	vehicle := &models.Vehicle{Targa: "AB123CD", Marca: "Iveco", Modello: "Daily"}
+	motrice := &models.Motrice{Targa: "AB123CD", Marca: "Iveco", Modello: "Daily"}
 
-	data, err := BuildCMRPDF(order, consignee, nil, vehicle)
+	data, err := BuildCMRPDF(order, consignee, nil, motrice, nil)
 	if err != nil {
 		t.Fatalf("BuildCMRPDF returned error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestBuildCMRPDF_HandlesNoItemsAndNoVehicle(t *testing.T) {
 	}
 	consignee := models.Customer{RagioneSociale: "Dest Srl"}
 
-	data, err := BuildCMRPDF(order, consignee, nil, nil)
+	data, err := BuildCMRPDF(order, consignee, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("BuildCMRPDF returned error: %v", err)
 	}

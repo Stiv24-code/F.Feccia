@@ -33,7 +33,7 @@ var DefaultSender = Sender{
 // BuildCMRPDF mirrors build_cmr_pdf: a "courtesy" rendering of the 24-box
 // CMR (Convention de Marchandises par Route, UNECE 1956) international
 // road transport waybill — not the official 4-copy carbon form.
-func BuildCMRPDF(order models.Order, consignee models.Customer, sender *Sender, vehicle *models.Vehicle) ([]byte, error) {
+func BuildCMRPDF(order models.Order, consignee models.Customer, sender *Sender, motrice *models.Motrice, semirimorchio *models.Semirimorchio) ([]byte, error) {
 	snd := DefaultSender
 	if sender != nil {
 		snd = *sender
@@ -87,7 +87,7 @@ func BuildCMRPDF(order models.Order, consignee models.Customer, sender *Sender, 
 	}
 	drawCMRGoodsTable(pdf, order.Items, totalWeight)
 
-	drawCMRBottomBlock(pdf, order, vehicle)
+	drawCMRBottomBlock(pdf, order, motrice, semirimorchio)
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
@@ -228,7 +228,7 @@ func drawCMRGoodsTable(pdf *fpdf.Fpdf, items []models.OrderItem, totalWeight flo
 	pdf.Ln(8)
 }
 
-func drawCMRBottomBlock(pdf *fpdf.Fpdf, order models.Order, vehicle *models.Vehicle) {
+func drawCMRBottomBlock(pdf *fpdf.Fpdf, order models.Order, motrice *models.Motrice, semirimorchio *models.Semirimorchio) {
 	y := pdf.GetY() + 2
 	cmrBox(pdf, 10, y, 95, 22, 13, "Istruzioni del mittente", order.Note, 8)
 	cmrBox(pdf, 105, y, 95, 22, 14, "Prescrizioni di affrancazione", "", 9)
@@ -236,8 +236,11 @@ func drawCMRBottomBlock(pdf *fpdf.Fpdf, order models.Order, vehicle *models.Vehi
 	y2 := y + 22
 	cmrBox(pdf, 10, y2, 95, 12, 15, "Rimborso", "", 9)
 	vehicleInfo := ""
-	if vehicle != nil {
-		vehicleInfo = fmt.Sprintf("Targa: %s\nMarca: %s %s", orDash(vehicle.Targa), vehicle.Marca, vehicle.Modello)
+	if motrice != nil {
+		vehicleInfo = fmt.Sprintf("Targa motrice: %s\nMarca: %s %s", orDash(motrice.Targa), motrice.Marca, motrice.Modello)
+	}
+	if semirimorchio != nil {
+		vehicleInfo = strings.TrimSpace(vehicleInfo + fmt.Sprintf("\nTarga rimorchio: %s", orDash(semirimorchio.Targa)))
 	}
 	if vehicleInfo == "" && order.Vettore != nil {
 		vehicleInfo = order.Vettore.RagioneSociale

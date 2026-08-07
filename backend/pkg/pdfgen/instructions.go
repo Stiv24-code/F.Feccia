@@ -82,9 +82,16 @@ func drawTripHeader(pdf *fpdf.Fpdf, trip models.Trip, driver *models.Driver) {
 	}
 	pdf.CellFormat(0, 4, safe(fmt.Sprintf("Autista: %s   Telefono: %s", orDash(autistaNome), autistaTelefono)), "", 1, "L", false, 0, "")
 
+	targaMotrice, targaRimorchio := "", ""
+	if trip.Motrice != nil {
+		targaMotrice = trip.Motrice.Targa
+	}
+	if trip.Semirimorchio != nil {
+		targaRimorchio = trip.Semirimorchio.Targa
+	}
 	pdf.CellFormat(0, 4, safe(fmt.Sprintf(
 		"Targa motrice: %s   Targa rimorchio: %s",
-		orDash(trip.TargaMotrice), orDash(trip.TargaRimorchio))), "", 1, "L", false, 0, "")
+		orDash(targaMotrice), orDash(targaRimorchio))), "", 1, "L", false, 0, "")
 
 	garageNome := ""
 	if trip.Garage != nil {

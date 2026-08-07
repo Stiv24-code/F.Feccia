@@ -21,11 +21,12 @@ import (
 	"fratelli-feccia/internal/services/invoices"
 	"fratelli-feccia/internal/services/mapview"
 	"fratelli-feccia/internal/services/masterdata"
+	"fratelli-feccia/internal/services/motrici"
 	"fratelli-feccia/internal/services/orders"
 	"fratelli-feccia/internal/services/pricelists"
 	"fratelli-feccia/internal/services/products"
+	"fratelli-feccia/internal/services/semirimorchi"
 	"fratelli-feccia/internal/services/trips"
-	"fratelli-feccia/internal/services/vehicles"
 	"fratelli-feccia/internal/services/washstations"
 	"fratelli-feccia/pkg/s3invoices"
 	"fratelli-feccia/pkg/utils"
@@ -97,6 +98,20 @@ type Driver interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
+type Motrice interface {
+	List(ctx context.Context, search string) ([]dto.MotriceResponse, error)
+	Create(ctx context.Context, req dto.MotriceRequest) (*dto.MotriceResponse, error)
+	Update(ctx context.Context, id uuid.UUID, req dto.MotriceRequest) (*dto.MotriceResponse, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type Semirimorchio interface {
+	List(ctx context.Context, search string) ([]dto.SemirimorchioResponse, error)
+	Create(ctx context.Context, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error)
+	Update(ctx context.Context, id uuid.UUID, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+}
+
 type Product interface {
 	List(ctx context.Context, search string) ([]dto.ProductResponse, error)
 	Create(ctx context.Context, req dto.ProductRequest) (*dto.ProductResponse, error)
@@ -151,23 +166,8 @@ type Order interface {
 	UpdateRoute(ctx context.Context, id uuid.UUID, waypoints []dto.RouteWaypointDTO) (*dto.OrderResponse, error)
 }
 
-type Vehicle interface {
-	List(ctx context.Context, search string) ([]dto.VehicleResponse, error)
-	Create(ctx context.Context, req dto.VehicleRequest) (*dto.VehicleResponse, error)
-	Update(ctx context.Context, id uuid.UUID, req dto.VehicleRequest) (*dto.VehicleResponse, error)
-	Delete(ctx context.Context, id uuid.UUID) error
-	UpdateGPSByID(ctx context.Context, idOrTarga string, req dto.VehicleGPSUpdateRequest) (*dto.GPSUpdateResult, error)
-	UpdateGPSByPlate(ctx context.Context, targa string, req dto.VehicleGPSUpdateRequest) (*dto.GPSUpdateResult, error)
-	GetGPSHistory(ctx context.Context, vehicleIDOrTarga string, limit int) ([]dto.GPSHistoryResponse, error)
-	GetAllGPSLive(ctx context.Context) ([]dto.GPSLiveVehicle, error)
-	IngestGPSWebhook(ctx context.Context, vendor string, payload dto.GPSWebhookPayload) (*dto.GPSUpdateResult, error)
-	IngestTemperatureWebhook(ctx context.Context, vendor string, payload dto.TemperatureWebhookRequest) (*dto.TemperatureWebhookResult, error)
-	GetTemperatureHistory(ctx context.Context, vehicleID uuid.UUID, limit int, onlyAlerts bool) ([]dto.TemperatureReadingResponse, error)
-	SetTemperatureThresholds(ctx context.Context, vehicleID uuid.UUID, req dto.TemperatureThresholdsRequest) (*dto.TemperatureThresholdsResult, error)
-}
-
 type Trip interface {
-	List(ctx context.Context, stato string, limit int) ([]dto.TripResponse, error)
+	List(ctx context.Context, stato string, autistaID uuid.UUID, limit int) ([]dto.TripResponse, error)
 	Create(ctx context.Context, req dto.TripRequest) (*dto.TripResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.TripDetailResponse, error)
 	RecomputeSegments(ctx context.Context, id uuid.UUID) (*dto.RecomputeSegmentsResult, error)
@@ -214,7 +214,8 @@ type Geocode interface {
 }
 
 type Availability interface {
-	VehicleAvailability(ctx context.Context, dataDa, dataA string) ([]dto.VehicleAvailabilityResponse, error)
+	MotriceAvailability(ctx context.Context, dataDa, dataA string) ([]dto.MotriceAvailabilityResponse, error)
+	SemirimorchioAvailability(ctx context.Context, dataDa, dataA string) ([]dto.SemirimorchioAvailabilityResponse, error)
 	DriverAvailability(ctx context.Context, dataDa, dataA string) ([]dto.DriverAvailabilityResponse, error)
 }
 
@@ -254,6 +255,14 @@ type Drivers struct {
 	Driver Driver
 }
 
+type Motrici struct {
+	Motrice Motrice
+}
+
+type Semirimorchi struct {
+	Semirimorchio Semirimorchio
+}
+
 type Products struct {
 	Product Product
 }
@@ -272,10 +281,6 @@ type DriverUnavailabilityGroup struct {
 
 type Orders struct {
 	Order Order
-}
-
-type Vehicles struct {
-	Vehicle Vehicle
 }
 
 type Trips struct {
@@ -324,7 +329,8 @@ type Service struct {
 	AnagraficheGroup
 	DriverUnavailabilityGroup
 	Orders
-	Vehicles
+	Motrici
+	Semirimorchi
 	Trips
 	PriceLists
 	Invoices
@@ -376,8 +382,11 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 		Orders: Orders{
 			Order: orders.NewOrderService(db, orsApiKey, orsBaseURL),
 		},
-		Vehicles: Vehicles{
-			Vehicle: vehicles.NewVehicleService(db),
+		Motrici: Motrici{
+			Motrice: motrici.NewMotriceService(db),
+		},
+		Semirimorchi: Semirimorchi{
+			Semirimorchio: semirimorchi.NewSemirimorchioService(db),
 		},
 		Trips: Trips{
 			Trip: trips.NewTripService(db, orsApiKey, orsBaseURL),

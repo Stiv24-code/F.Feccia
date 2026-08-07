@@ -345,7 +345,7 @@ export default function OrdersPage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Tariffa:</span><span className="font-medium">€ {formatEuro(selectedOrder.tariffa || 0)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tipologia:</span><Badge variant="outline" className="text-[10px]">{selectedOrder.tipologia}</Badge></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedOrder.stato} /></div>
-              {selectedOrder.targa_motrice && <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedOrder.targa_motrice}</span></div>}
+              {selectedOrder.motrice?.targa && <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedOrder.motrice.targa}</span></div>}
               {selectedOrder.autista && <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedOrder.autista.nome} {selectedOrder.autista.cognome}</span></div>}
               {selectedOrder.note && <div><span className="text-muted-foreground">Note:</span><p className="mt-1">{selectedOrder.note}</p></div>}
             </div>

@@ -2,9 +2,12 @@ package drivers
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"fratelli-feccia/internal/dto"
@@ -30,6 +33,8 @@ func escapeLike(term string) string {
 }
 
 // List searches nome OR cognome, mirroring backend/routers/drivers.py's `$or`.
+// Also attaches, per driver, the nearest upcoming motivo=ferie
+// DriverUnavailability window (if any) as ProssimeFerie{Da,A}.
 func (s *DriverService) List(ctx context.Context, search string) ([]dto.DriverResponse, error) {
 	query := s.db.WithContext(ctx).Model(&models.Driver{}).Where("active = ?", true)
 	if search != "" {
@@ -42,9 +47,46 @@ func (s *DriverService) List(ctx context.Context, search string) ([]dto.DriverRe
 		return nil, err
 	}
 
+	nextFerie, err := s.nextFeriePerDriver(ctx, drivers)
+	if err != nil {
+		return nil, err
+	}
+
 	result := make([]dto.DriverResponse, len(drivers))
 	for i, d := range drivers {
 		result[i] = ToResponse(d)
+		if next, ok := nextFerie[d.ID]; ok {
+			result[i].ProssimeFerieDa = &next.DataDa
+			result[i].ProssimeFerieA = &next.DataA
+		}
+	}
+	return result, nil
+}
+
+// nextFeriePerDriver batch-fetches the earliest still-upcoming motivo=ferie
+// unavailability window per driver in one query, rather than one query per
+// row from the List loop.
+func (s *DriverService) nextFeriePerDriver(ctx context.Context, drivers []models.Driver) (map[uuid.UUID]models.DriverUnavailability, error) {
+	result := map[uuid.UUID]models.DriverUnavailability{}
+	if len(drivers) == 0 {
+		return result, nil
+	}
+	ids := make([]uuid.UUID, len(drivers))
+	for i, d := range drivers {
+		ids[i] = d.ID
+	}
+
+	today := time.Now().UTC().Format("2006-01-02")
+	var windows []models.DriverUnavailability
+	if err := s.db.WithContext(ctx).
+		Where("autista_id IN ? AND motivo = ? AND data_a >= ?", ids, "ferie", today).
+		Order("data_da ASC").Find(&windows).Error; err != nil {
+		return nil, err
+	}
+	for _, w := range windows {
+		if _, seen := result[w.AutistaID]; !seen {
+			result[w.AutistaID] = w
+		}
 	}
 	return result, nil
 }
@@ -55,7 +97,7 @@ func (s *DriverService) Create(ctx context.Context, req dto.DriverRequest) (*dto
 		Nome:            req.Nome,
 		Cognome:         req.Cognome,
 		CodiceFiscale:   req.CodiceFiscale,
-		Patente:         req.Patente,
+		Patente:         marshalStrings(req.Patente),
 		ScadenzaPatente: req.ScadenzaPatente,
 		Telefono:        req.Telefono,
 		Email:           req.Email,
@@ -80,7 +122,7 @@ func (s *DriverService) Update(ctx context.Context, id uuid.UUID, req dto.Driver
 	d.Nome = req.Nome
 	d.Cognome = req.Cognome
 	d.CodiceFiscale = req.CodiceFiscale
-	d.Patente = req.Patente
+	d.Patente = marshalStrings(req.Patente)
 	d.ScadenzaPatente = req.ScadenzaPatente
 	d.Telefono = req.Telefono
 	d.Email = req.Email
@@ -98,13 +140,35 @@ func (s *DriverService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.db.WithContext(ctx).Model(&models.Driver{}).Where("id = ?", id).Update("active", false).Error
 }
 
+func marshalStrings(v []string) datatypes.JSON {
+	if v == nil {
+		v = []string{}
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return datatypes.JSON("[]")
+	}
+	return datatypes.JSON(b)
+}
+
+func unmarshalStrings(raw datatypes.JSON) []string {
+	out := []string{}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &out)
+	}
+	if out == nil {
+		out = []string{}
+	}
+	return out
+}
+
 func ToResponse(d models.Driver) dto.DriverResponse {
 	return dto.DriverResponse{
 		ID:              d.ID,
 		Nome:            d.Nome,
 		Cognome:         d.Cognome,
 		CodiceFiscale:   d.CodiceFiscale,
-		Patente:         d.Patente,
+		Patente:         unmarshalStrings(d.Patente),
 		ScadenzaPatente: d.ScadenzaPatente,
 		Telefono:        d.Telefono,
 		Email:           d.Email,

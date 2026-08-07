@@ -20,7 +20,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Driver{}, &models.Carrier{}, &models.Vehicle{}, &models.RouteCache{}, &models.Garage{}, &models.WashStation{}); err != nil {
+	if err := db.AutoMigrate(&models.Order{}, &models.OrderItem{}, &models.Customer{}, &models.Destination{}, &models.Product{}, &models.Driver{}, &models.Carrier{}, &models.Motrice{}, &models.RouteCache{}, &models.Garage{}, &models.WashStation{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
@@ -62,11 +62,11 @@ func makeDestination(t *testing.T, db *gorm.DB, nome string, lat, lng float64, a
 	return d.ID
 }
 
-func createOrder(t *testing.T, db *gorm.DB, stato string, caricoID, scaricoID *uuid.UUID, targa string) models.Order {
+func createOrder(t *testing.T, db *gorm.DB, stato string, caricoID, scaricoID *uuid.UUID, motriceID *uuid.UUID) models.Order {
 	t.Helper()
 	o := models.Order{
 		ID: uuid.New(), ClienteID: uuid.New(), Stato: models.OrderStato(stato),
-		DestinazioneCaricoID: caricoID, DestinazioneScaricoID: scaricoID, TargaMotrice: targa,
+		DestinazioneCaricoID: caricoID, DestinazioneScaricoID: scaricoID, MotriceID: motriceID,
 		DataRitiro: "2026-01-10", ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
 	if err := db.Create(&o).Error; err != nil {
@@ -75,7 +75,7 @@ func createOrder(t *testing.T, db *gorm.DB, stato string, caricoID, scaricoID *u
 	return o
 }
 
-func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
+func TestMapService_Trips_SimulatedPosition(t *testing.T) {
 	ors := fakeORS(t)
 	defer ors.Close()
 
@@ -83,9 +83,14 @@ func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
 	svc := NewMapService(db, "test-key", "")
 	svc.geo.ORSBaseURL = ors.URL
 
+	motrice := models.Motrice{ID: uuid.New(), Targa: "AB123CD", Active: true}
+	if err := db.Create(&motrice).Error; err != nil {
+		t.Fatalf("failed to seed motrice: %v", err)
+	}
+
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
-	createOrder(t, db, "VIAGGIO", &carico, &scarico, "AB123CD")
+	createOrder(t, db, "VIAGGIO", &carico, &scarico, &motrice.ID)
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
@@ -95,55 +100,17 @@ func TestMapService_Trips_SimulatedPositionWhenNoGPS(t *testing.T) {
 		t.Fatalf("expected 1 route, got %d", len(resp.Routes))
 	}
 	r := resp.Routes[0]
-	if r.GpsLive {
-		t.Fatal("expected simulated (non-live) position when no matching GPS vehicle exists")
+	if r.Motrice == nil || r.Motrice.Targa != "AB123CD" {
+		t.Fatalf("expected the route's motrice to be resolved, got %+v", r.Motrice)
 	}
 	if r.Progress != 0.6 {
-		t.Fatalf("expected progress 0.6 for VIAGGIO without GPS, got %v", r.Progress)
+		t.Fatalf("expected progress 0.6 for VIAGGIO, got %v", r.Progress)
 	}
 	if r.DistanceKm != 100 {
 		t.Fatalf("expected distance_km 100 from ORS stub, got %v", r.DistanceKm)
 	}
-	if resp.Stats.InViaggio != 1 || resp.Stats.GpsLive != 0 {
+	if resp.Stats.InViaggio != 1 {
 		t.Fatalf("unexpected stats: %+v", resp.Stats)
-	}
-}
-
-func TestMapService_Trips_UsesLiveGPSWhenActiveAndInViaggio(t *testing.T) {
-	ors := fakeORS(t)
-	defer ors.Close()
-
-	db := newTestDB(t)
-	svc := NewMapService(db, "test-key", "")
-	svc.geo.ORSBaseURL = ors.URL
-
-	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
-	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
-	createOrder(t, db, "VIAGGIO", &carico, &scarico, "AB123CD")
-	vehicle := models.Vehicle{
-		ID: uuid.New(), Targa: "AB123CD", Active: true,
-		LastLat: 45.39, LastLng: 9.35, LastSpeedKmh: 80, GpsActive: true, GpsSource: "webhook",
-	}
-	if err := db.Create(&vehicle).Error; err != nil {
-		t.Fatalf("failed to seed vehicle: %v", err)
-	}
-
-	resp, err := svc.Trips(context.Background())
-	if err != nil {
-		t.Fatalf("Trips returned error: %v", err)
-	}
-	if len(resp.Routes) != 1 {
-		t.Fatalf("expected 1 route, got %d", len(resp.Routes))
-	}
-	r := resp.Routes[0]
-	if !r.GpsLive {
-		t.Fatal("expected GPS-live position when an active vehicle matches the order's targa")
-	}
-	if r.CurrentPosition.Lat != 45.39 || r.CurrentPosition.Lng != 9.35 {
-		t.Fatalf("expected current position to match live GPS coords, got %+v", r.CurrentPosition)
-	}
-	if resp.Stats.GpsLive != 1 {
-		t.Fatalf("expected gps_live stat 1, got %d", resp.Stats.GpsLive)
 	}
 }
 
@@ -151,7 +118,7 @@ func TestMapService_Trips_SkipsOrderWithUnresolvableDestination(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewMapService(db, "test-key", "")
 
-	createOrder(t, db, "PIANIFICABILE", nil, nil, "")
+	createOrder(t, db, "PIANIFICABILE", nil, nil, nil)
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
@@ -174,7 +141,7 @@ func TestMapService_Trips_DegradesToStraightLineOnORSFailure(t *testing.T) {
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.19, false)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
-	createOrder(t, db, "CHIUSO", &carico, &scarico, "")
+	createOrder(t, db, "CHIUSO", &carico, &scarico, nil)
 
 	resp, err := svc.Trips(context.Background())
 	if err != nil {
@@ -204,7 +171,7 @@ func TestMapService_Trips_IncludesPOIAndGarages(t *testing.T) {
 
 	carico := makeDestination(t, db, "Milano (MI)", 45.4642, 9.1900, true)
 	scarico := makeDestination(t, db, "Lodi (LO)", 45.3138, 9.5032, false)
-	createOrder(t, db, "VIAGGIO", &carico, &scarico, "")
+	createOrder(t, db, "VIAGGIO", &carico, &scarico, nil)
 
 	lodiLat, lodiLng := 45.3138, 9.5032
 	rhoLat, rhoLng := 45.5306, 9.0393

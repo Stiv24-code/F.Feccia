@@ -26,14 +26,17 @@ import type {
   DtoDriverResponse,
   DtoGarageRequest,
   DtoGarageResponse,
+  DtoMotriceRequest,
+  DtoMotriceResponse,
   DtoOrderRequest,
   DtoOrderResponse,
   DtoProductRequest,
   DtoProductResponse,
   DtoRegisterRequest,
+  DtoSemirimorchioRequest,
+  DtoSemirimorchioResponse,
+  DtoTripResponse,
   DtoUpdateUserRequest,
-  DtoVehicleRequest,
-  DtoVehicleResponse,
   DtoWashStationRequest,
   DtoWashStationResponse,
 } from '@/api/data-contracts';
@@ -42,7 +45,7 @@ export const appApi = createApi({
   reducerPath: 'appApi',
   baseQuery: fakeBaseQuery(),
   tagTypes: [
-    'Customer', 'Dashboard', 'Destination', 'Vehicle', 'Driver',
+    'Customer', 'Dashboard', 'Destination', 'Motrice', 'Semirimorchio', 'Driver',
     'Carrier', 'Product', 'Garage', 'WashStation', 'Country', 'Bank', 'AccountingEntry', 'AdminUser',
     'MyAnagrafica', 'MyOrder',
   ],
@@ -94,21 +97,38 @@ export const appApi = createApi({
       invalidatesTags: ['Destination'],
     }),
 
-    getVehicles: builder.query<DtoVehicleResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1VehiclesList({ search: search || undefined })),
-      providesTags: ['Vehicle'],
+    getMotrici: builder.query<DtoMotriceResponse[], string | void>({
+      queryFn: (search) => toQueryResult(apiClient.v1MotriciList({ search: search || undefined })),
+      providesTags: ['Motrice'],
     }),
-    createVehicle: builder.mutation<DtoVehicleResponse, DtoVehicleRequest>({
-      queryFn: (body) => toQueryResult(apiClient.v1VehiclesCreate(body)),
-      invalidatesTags: ['Vehicle'],
+    createMotrice: builder.mutation<DtoMotriceResponse, DtoMotriceRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1MotriciCreate(body)),
+      invalidatesTags: ['Motrice'],
     }),
-    updateVehicle: builder.mutation<DtoVehicleResponse, { id: string; body: DtoVehicleRequest }>({
-      queryFn: ({ id, body }) => toQueryResult(apiClient.v1VehiclesUpdate(id, body)),
-      invalidatesTags: ['Vehicle'],
+    updateMotrice: builder.mutation<DtoMotriceResponse, { id: string; body: DtoMotriceRequest }>({
+      queryFn: ({ id, body }) => toQueryResult(apiClient.v1MotriciUpdate(id, body)),
+      invalidatesTags: ['Motrice'],
     }),
-    deleteVehicle: builder.mutation<void, string>({
-      queryFn: (id) => toQueryResult(apiClient.v1VehiclesDelete(id)),
-      invalidatesTags: ['Vehicle'],
+    deleteMotrice: builder.mutation<void, string>({
+      queryFn: (id) => toQueryResult(apiClient.v1MotriciDelete(id)),
+      invalidatesTags: ['Motrice'],
+    }),
+
+    getSemirimorchi: builder.query<DtoSemirimorchioResponse[], string | void>({
+      queryFn: (search) => toQueryResult(apiClient.v1SemirimorchiList({ search: search || undefined })),
+      providesTags: ['Semirimorchio'],
+    }),
+    createSemirimorchio: builder.mutation<DtoSemirimorchioResponse, DtoSemirimorchioRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1SemirimorchiCreate(body)),
+      invalidatesTags: ['Semirimorchio'],
+    }),
+    updateSemirimorchio: builder.mutation<DtoSemirimorchioResponse, { id: string; body: DtoSemirimorchioRequest }>({
+      queryFn: ({ id, body }) => toQueryResult(apiClient.v1SemirimorchiUpdate(id, body)),
+      invalidatesTags: ['Semirimorchio'],
+    }),
+    deleteSemirimorchio: builder.mutation<void, string>({
+      queryFn: (id) => toQueryResult(apiClient.v1SemirimorchiDelete(id)),
+      invalidatesTags: ['Semirimorchio'],
     }),
 
     getDrivers: builder.query<DtoDriverResponse[], string | void>({
@@ -118,6 +138,9 @@ export const appApi = createApi({
     createDriver: builder.mutation<DtoDriverResponse, DtoDriverRequest>({
       queryFn: (body) => toQueryResult(apiClient.v1DriversCreate(body)),
       invalidatesTags: ['Driver'],
+    }),
+    getDriverTrips: builder.query<DtoTripResponse[], string>({
+      queryFn: (autistaId) => toQueryResult(apiClient.v1TripsList({ autista_id: autistaId })),
     }),
     updateDriver: builder.mutation<DtoDriverResponse, { id: string; body: DtoDriverRequest }>({
       queryFn: ({ id, body }) => toQueryResult(apiClient.v1DriversUpdate(id, body)),
@@ -332,14 +355,19 @@ export const {
   useCreateDestinationMutation,
   useUpdateDestinationMutation,
   useDeleteDestinationMutation,
-  useGetVehiclesQuery,
-  useCreateVehicleMutation,
-  useUpdateVehicleMutation,
-  useDeleteVehicleMutation,
+  useGetMotriciQuery,
+  useCreateMotriceMutation,
+  useUpdateMotriceMutation,
+  useDeleteMotriceMutation,
+  useGetSemirimorchiQuery,
+  useCreateSemirimorchioMutation,
+  useUpdateSemirimorchioMutation,
+  useDeleteSemirimorchioMutation,
   useGetDriversQuery,
   useCreateDriverMutation,
   useUpdateDriverMutation,
   useDeleteDriverMutation,
+  useGetDriverTripsQuery,
   useGetCarriersQuery,
   useCreateCarrierMutation,
   useUpdateCarrierMutation,

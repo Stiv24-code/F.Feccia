@@ -199,7 +199,7 @@ export default function OrderDetailPage() {
             <div><p className="text-[10px] uppercase text-muted-foreground">Rif. cliente</p><p className="font-medium">{order.rif_ordine_cliente || '—'}</p></div>
             <div><p className="text-[10px] uppercase text-muted-foreground">Punto di partenza</p><p className="font-medium">{order.garage?.nome || '—'}</p></div>
             <div><p className="text-[10px] uppercase text-muted-foreground">Punto di lavaggio</p><p className="font-medium">{order.wash_station?.nome || '—'}</p></div>
-            <div><p className="text-[10px] uppercase text-muted-foreground">Mezzo</p><p className="font-medium font-mono">{order.targa_motrice || '—'}</p></div>
+            <div><p className="text-[10px] uppercase text-muted-foreground">Mezzo</p><p className="font-medium font-mono">{order.motrice?.targa || '—'}</p></div>
             <div><p className="text-[10px] uppercase text-muted-foreground">Autista</p><p className="font-medium">{order.autista ? `${order.autista.nome} ${order.autista.cognome}` : '—'}</p></div>
             <div><p className="text-[10px] uppercase text-muted-foreground">Vettore</p><p className="font-medium">{order.vettore?.ragione_sociale || '—'}</p></div>
           </div>
@@ -253,12 +253,12 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label>Motrice</Label>
-                      <p className="text-sm font-medium font-mono">{order.targa_motrice || '—'}</p>
+                      <p className="text-sm font-medium font-mono">{order.motrice?.targa || '—'}</p>
                     </div>
-                    {order.targa_rimorchio && (
+                    {order.semirimorchio?.targa && (
                       <div className="space-y-1.5">
                         <Label>Rimorchio</Label>
-                        <p className="text-sm font-medium font-mono">{order.targa_rimorchio}</p>
+                        <p className="text-sm font-medium font-mono">{order.semirimorchio.targa}</p>
                       </div>
                     )}
                   </>

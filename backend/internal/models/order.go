@@ -82,8 +82,10 @@ type Order struct {
 	Stato                 OrderStato     `gorm:"type:varchar(20);not null;default:PIANIFICABILE;index" json:"stato"`
 	GarageID              *uuid.UUID     `gorm:"type:uuid" json:"garage_id"`
 	Garage                *Garage        `gorm:"foreignKey:GarageID;references:ID" json:"-"`
-	TargaMotrice          string         `gorm:"type:varchar(20)" json:"targa_motrice"`
-	TargaRimorchio        string         `gorm:"type:varchar(20)" json:"targa_rimorchio"`
+	MotriceID             *uuid.UUID     `gorm:"type:uuid" json:"motrice_id"`
+	Motrice               *Motrice       `gorm:"foreignKey:MotriceID;references:ID" json:"-"`
+	SemirimorchioID       *uuid.UUID     `gorm:"type:uuid" json:"semirimorchio_id"`
+	Semirimorchio         *Semirimorchio `gorm:"foreignKey:SemirimorchioID;references:ID" json:"-"`
 	AutistaID             *uuid.UUID     `gorm:"type:uuid" json:"autista_id"`
 	Autista               *Driver        `gorm:"foreignKey:AutistaID;references:ID" json:"-"`
 	VettoreID             *uuid.UUID     `gorm:"type:uuid" json:"vettore_id"`

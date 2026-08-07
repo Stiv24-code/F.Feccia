@@ -22,11 +22,20 @@ func NewTripHandler(service services.Trip) *TripHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param stato query string false "Filter by stato"
+// @Param autista_id query string false "Filter by driver (UUID) — viaggi assegnati a un autista"
 // @Param limit query int false "Max results (default 200)"
 // @Success 200 {array} dto.TripResponse
 // @Router /api/v1/trips [get]
 func (h *TripHandler) ListTrips(c *fiber.Ctx) error {
-	items, err := h.Service.List(utils.RequestContext(c), c.Query("stato"), c.QueryInt("limit", 0))
+	autistaID, err := utils.ParseOptionalUUID(c.Query("autista_id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid autista_id")
+	}
+	var autistaIDValue uuid.UUID
+	if autistaID != nil {
+		autistaIDValue = *autistaID
+	}
+	items, err := h.Service.List(utils.RequestContext(c), c.Query("stato"), autistaIDValue, c.QueryInt("limit", 0))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getTrips, createTrip, getTrip, startTrip, completeTrip, recomputeTripSegments, downloadTripInstructionsPdf, getOrders, getVehicles, getDrivers, getCarriers, getGarages } from '@/lib/api';
+import { getTrips, createTrip, getTrip, startTrip, completeTrip, recomputeTripSegments, downloadTripInstructionsPdf, getOrders, getMotrici, getSemirimorchi, getDrivers, getCarriers, getGarages } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { DtoTripResponse, DtoTripDetailResponse, DtoTripRequest, DtoOrderResponse, DtoVehicleResponse, DtoDriverResponse, DtoCarrierResponse, DtoGarageResponse } from '@/api/data-contracts';
+import type { DtoTripResponse, DtoTripDetailResponse, DtoTripRequest, DtoOrderResponse, DtoMotriceResponse, DtoSemirimorchioResponse, DtoDriverResponse, DtoCarrierResponse, DtoGarageResponse } from '@/api/data-contracts';
 import { FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { logger } from '@/lib/logger';
 import { Plus, Eye, PlayCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 const emptyForm: DtoTripRequest = {
-  targa_motrice: '', targa_rimorchio: '', autista_id: '',
+  motrice_id: '', semirimorchio_id: '', autista_id: '',
   vettore_id: '', garage_id: '',
   note: '', data_partenza: '', data_arrivo: '',
 };
@@ -35,7 +35,8 @@ export default function TripsPage() {
 
   // Lookup data
   const [planOrders, setPlanOrders] = useState<DtoOrderResponse[]>([]);
-  const [vehicles, setVehicles] = useState<DtoVehicleResponse[]>([]);
+  const [motrici, setMotrici] = useState<DtoMotriceResponse[]>([]);
+  const [semirimorchi, setSemirimorchi] = useState<DtoSemirimorchioResponse[]>([]);
   const [drivers, setDrivers] = useState<DtoDriverResponse[]>([]);
   const [carriers, setCarriers] = useState<DtoCarrierResponse[]>([]);
   const [garages, setGarages] = useState<DtoGarageResponse[]>([]);
@@ -52,8 +53,8 @@ export default function TripsPage() {
   const openNew = () => {
     setForm(emptyForm);
     setSelectedOrderIds([]);
-    Promise.all([getOrders({ stato: 'PIANIFICABILE' }), getVehicles(), getDrivers(), getCarriers(), getGarages()]).then(([o, v, d, c, g]) => {
-      setPlanOrders(o.data); setVehicles(v.data); setDrivers(d.data); setCarriers(c.data); setGarages(g.data);
+    Promise.all([getOrders({ stato: 'PIANIFICABILE' }), getMotrici(), getSemirimorchi(), getDrivers(), getCarriers(), getGarages()]).then(([o, m, s, d, c, g]) => {
+      setPlanOrders(o.data); setMotrici(m.data); setSemirimorchi(s.data); setDrivers(d.data); setCarriers(c.data); setGarages(g.data);
     });
     setNewDialogOpen(true);
   };
@@ -112,10 +113,6 @@ export default function TripsPage() {
   const inCorsoCount = useMemo(() => trips.filter(t => t.stato === 'IN_CORSO').length, [trips]);
   const completatiCount = useMemo(() => trips.filter(t => t.stato === 'COMPLETATO').length, [trips]);
 
-  // Liste pre-filtrate per il dialog nuovo viaggio
-  const motriciFiltrate = useMemo(() => vehicles.filter(v => v.tipo_veicolo === 'motrice'), [vehicles]);
-  const rimorchiFiltrati = useMemo(() => vehicles.filter(v => v.tipo_veicolo !== 'motrice'), [vehicles]);
-
   return (
     <div className="space-y-3" data-testid="trips-page">
       <div className="flex justify-between items-center">
@@ -153,8 +150,8 @@ export default function TripsPage() {
               ) : trips.map(t => (
                 <TableRow key={t.id} className="hover:bg-muted/60">
                   <TableCell className="py-2 font-mono text-xs">{t.id?.substring(0, 8)}</TableCell>
-                  <TableCell className="py-2 font-mono">{t.targa_motrice || '-'}</TableCell>
-                  <TableCell className="py-2 font-mono">{t.targa_rimorchio || '-'}</TableCell>
+                  <TableCell className="py-2 font-mono">{t.motrice?.targa || '-'}</TableCell>
+                  <TableCell className="py-2 font-mono">{t.semirimorchio?.targa || '-'}</TableCell>
                   <TableCell className="py-2">{t.autista ? `${t.autista.nome} ${t.autista.cognome}` : '-'}</TableCell>
                   <TableCell className="py-2">{t.garage?.nome || '-'}</TableCell>
                   <TableCell className="py-2">{t.ordini_ids?.length || 0}</TableCell>
@@ -195,8 +192,8 @@ export default function TripsPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Motrice</Label><Select value={form.targa_motrice} onValueChange={v => setForm({ ...form, targa_motrice: v })}><SelectTrigger><SelectValue placeholder="Motrice" /></SelectTrigger><SelectContent>{motriciFiltrate.map(v => <SelectItem key={v.id} value={v.targa || ''}>{v.targa}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-1.5"><Label>Rimorchio</Label><Select value={form.targa_rimorchio} onValueChange={v => setForm({ ...form, targa_rimorchio: v })}><SelectTrigger><SelectValue placeholder="Rimorchio" /></SelectTrigger><SelectContent>{rimorchiFiltrati.map(v => <SelectItem key={v.id} value={v.targa || ''}>{v.targa}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1.5"><Label>Motrice</Label><Select value={form.motrice_id} onValueChange={v => setForm({ ...form, motrice_id: v })}><SelectTrigger><SelectValue placeholder="Motrice" /></SelectTrigger><SelectContent>{motrici.map(v => <SelectItem key={v.id} value={v.id || ''}>{v.targa}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1.5"><Label>Rimorchio</Label><Select value={form.semirimorchio_id} onValueChange={v => setForm({ ...form, semirimorchio_id: v })}><SelectTrigger><SelectValue placeholder="Rimorchio" /></SelectTrigger><SelectContent>{semirimorchi.map(v => <SelectItem key={v.id} value={v.id || ''}>{v.targa}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Autista</Label><Select value={form.autista_id} onValueChange={setDriver}><SelectTrigger><SelectValue placeholder="Autista" /></SelectTrigger><SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome} {d.cognome}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Vettore</Label><Select value={form.vettore_id} onValueChange={setVettore}><SelectTrigger><SelectValue placeholder="Vettore" /></SelectTrigger><SelectContent>{carriers.map(c => <SelectItem key={c.id} value={c.id || ''}>{c.ragione_sociale}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label>Garage Base</Label><Select value={form.garage_id} onValueChange={setGarage}><SelectTrigger><SelectValue placeholder="Garage" /></SelectTrigger><SelectContent>{garages.map(g => <SelectItem key={g.id} value={g.id || ''}>{g.nome}</SelectItem>)}</SelectContent></Select></div>
@@ -219,8 +216,8 @@ export default function TripsPage() {
           <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio Viaggio</DialogTitle></DialogHeader>
           {selectedTrip && (
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedTrip.targa_motrice || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Rimorchio:</span><span className="font-mono">{selectedTrip.targa_rimorchio || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedTrip.motrice?.targa || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Rimorchio:</span><span className="font-mono">{selectedTrip.semirimorchio?.targa || '-'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedTrip.autista ? `${selectedTrip.autista.nome} ${selectedTrip.autista.cognome}` : '-'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Garage:</span><span>{selectedTrip.garage?.nome || '-'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedTrip.stato} /></div>

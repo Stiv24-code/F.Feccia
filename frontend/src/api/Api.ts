@@ -35,10 +35,6 @@ import {
   DtoDriverResponse,
   DtoDriverUnavailabilityRequest,
   DtoDriverUnavailabilityResponse,
-  DtoGPSHistoryResponse,
-  DtoGPSLiveVehicle,
-  DtoGPSUpdateResult,
-  DtoGPSWebhookPayload,
   DtoGarageRequest,
   DtoGarageResponse,
   DtoGeocodeResultDTO,
@@ -49,6 +45,9 @@ import {
   DtoLoginRequest,
   DtoLoginResult,
   DtoMapTripsResponse,
+  DtoMotriceAvailabilityResponse,
+  DtoMotriceRequest,
+  DtoMotriceResponse,
   DtoOKResult,
   DtoOrderAssignRequest,
   DtoOrderRequest,
@@ -69,22 +68,16 @@ import {
   DtoProductResponse,
   DtoRecomputeSegmentsResult,
   DtoRegisterRequest,
+  DtoSemirimorchioAvailabilityResponse,
+  DtoSemirimorchioRequest,
+  DtoSemirimorchioResponse,
   DtoTariffLookupResult,
-  DtoTemperatureReadingResponse,
-  DtoTemperatureThresholdsRequest,
-  DtoTemperatureThresholdsResult,
-  DtoTemperatureWebhookRequest,
-  DtoTemperatureWebhookResult,
   DtoTransportCategoryRequest,
   DtoTransportCategoryResponse,
   DtoTripDetailResponse,
   DtoTripRequest,
   DtoTripResponse,
   DtoUpdateUserRequest,
-  DtoVehicleAvailabilityResponse,
-  DtoVehicleGPSUpdateRequest,
-  DtoVehicleRequest,
-  DtoVehicleResponse,
   DtoVehicleTypeRequest,
   DtoVehicleTypeResponse,
   DtoWashStationRequest,
@@ -511,12 +504,12 @@ export class Api<SecurityDataType = unknown> {
    * No description
    *
    * @tags Availability
-   * @name V1AvailabilityVehiclesList
-   * @summary Vehicle availability for a date range
-   * @request GET:/api/v1/availability/vehicles
+   * @name V1AvailabilityMotriciList
+   * @summary Motrice availability for a date range
+   * @request GET:/api/v1/availability/motrici
    * @secure
    */
-  v1AvailabilityVehiclesList = (
+  v1AvailabilityMotriciList = (
     query: {
       /** Range start (YYYY-MM-DD) */
       data_da: string;
@@ -525,8 +518,34 @@ export class Api<SecurityDataType = unknown> {
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoVehicleAvailabilityResponse[], any>({
-      path: `/api/v1/availability/vehicles`,
+    this.http.request<DtoMotriceAvailabilityResponse[], any>({
+      path: `/api/v1/availability/motrici`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Availability
+   * @name V1AvailabilitySemirimorchiList
+   * @summary Semirimorchio availability for a date range
+   * @request GET:/api/v1/availability/semirimorchi
+   * @secure
+   */
+  v1AvailabilitySemirimorchiList = (
+    query: {
+      /** Range start (YYYY-MM-DD) */
+      data_da: string;
+      /** Range end (YYYY-MM-DD) */
+      data_a: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoSemirimorchioAvailabilityResponse[], any>({
+      path: `/api/v1/availability/semirimorchi`,
       method: "GET",
       query: query,
       secure: true,
@@ -1615,6 +1634,88 @@ export class Api<SecurityDataType = unknown> {
   /**
    * No description
    *
+   * @tags Motrici
+   * @name V1MotriciList
+   * @summary List motrici
+   * @request GET:/api/v1/motrici
+   * @secure
+   */
+  v1MotriciList = (
+    query?: {
+      /** Filter by targa */
+      search?: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoMotriceResponse[], any>({
+      path: `/api/v1/motrici`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Motrici
+   * @name V1MotriciCreate
+   * @summary Create motrice
+   * @request POST:/api/v1/motrici
+   * @secure
+   */
+  v1MotriciCreate = (motrice: DtoMotriceRequest, params: RequestParams = {}) =>
+    this.http.request<DtoMotriceResponse, Record<string, string>>({
+      path: `/api/v1/motrici`,
+      method: "POST",
+      body: motrice,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Motrici
+   * @name V1MotriciUpdate
+   * @summary Update motrice (full replace)
+   * @request PUT:/api/v1/motrici/{id}
+   * @secure
+   */
+  v1MotriciUpdate = (
+    id: string,
+    motrice: DtoMotriceRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoMotriceResponse, Record<string, string>>({
+      path: `/api/v1/motrici/${id}`,
+      method: "PUT",
+      body: motrice,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Motrici
+   * @name V1MotriciDelete
+   * @summary Delete motrice (logical, sets active=false)
+   * @request DELETE:/api/v1/motrici/{id}
+   * @secure
+   */
+  v1MotriciDelete = (id: string, params: RequestParams = {}) =>
+    this.http.request<void, Record<string, string>>({
+      path: `/api/v1/motrici/${id}`,
+      method: "DELETE",
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
    * @tags Orders
    * @name V1OrdersList
    * @summary List orders
@@ -2196,6 +2297,91 @@ export class Api<SecurityDataType = unknown> {
   /**
    * No description
    *
+   * @tags Semirimorchi
+   * @name V1SemirimorchiList
+   * @summary List semirimorchi
+   * @request GET:/api/v1/semirimorchi
+   * @secure
+   */
+  v1SemirimorchiList = (
+    query?: {
+      /** Filter by targa */
+      search?: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoSemirimorchioResponse[], any>({
+      path: `/api/v1/semirimorchi`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Semirimorchi
+   * @name V1SemirimorchiCreate
+   * @summary Create semirimorchio
+   * @request POST:/api/v1/semirimorchi
+   * @secure
+   */
+  v1SemirimorchiCreate = (
+    semirimorchio: DtoSemirimorchioRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoSemirimorchioResponse, Record<string, string>>({
+      path: `/api/v1/semirimorchi`,
+      method: "POST",
+      body: semirimorchio,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Semirimorchi
+   * @name V1SemirimorchiUpdate
+   * @summary Update semirimorchio (full replace)
+   * @request PUT:/api/v1/semirimorchi/{id}
+   * @secure
+   */
+  v1SemirimorchiUpdate = (
+    id: string,
+    semirimorchio: DtoSemirimorchioRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoSemirimorchioResponse, Record<string, string>>({
+      path: `/api/v1/semirimorchi/${id}`,
+      method: "PUT",
+      body: semirimorchio,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Semirimorchi
+   * @name V1SemirimorchiDelete
+   * @summary Delete semirimorchio (logical, sets active=false)
+   * @request DELETE:/api/v1/semirimorchi/{id}
+   * @secure
+   */
+  v1SemirimorchiDelete = (id: string, params: RequestParams = {}) =>
+    this.http.request<void, Record<string, string>>({
+      path: `/api/v1/semirimorchi/${id}`,
+      method: "DELETE",
+      secure: true,
+      ...params,
+    });
+  /**
+   * No description
+   *
    * @tags Masterdata
    * @name V1TransportCategoriesList
    * @summary List transport categories
@@ -2245,6 +2431,8 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by stato */
       stato?: string;
+      /** Filter by driver (UUID) — viaggi assegnati a un autista */
+      autista_id?: string;
       /** Max results (default 200) */
       limit?: number;
     },
@@ -2428,226 +2616,6 @@ export class Api<SecurityDataType = unknown> {
   /**
    * No description
    *
-   * @tags Vehicles
-   * @name V1VehiclesList
-   * @summary List vehicles
-   * @request GET:/api/v1/vehicles
-   * @secure
-   */
-  v1VehiclesList = (
-    query?: {
-      /** Filter by targa */
-      search?: string;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoVehicleResponse[], any>({
-      path: `/api/v1/vehicles`,
-      method: "GET",
-      query: query,
-      secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesCreate
-   * @summary Create vehicle
-   * @request POST:/api/v1/vehicles
-   * @secure
-   */
-  v1VehiclesCreate = (vehicle: DtoVehicleRequest, params: RequestParams = {}) =>
-    this.http.request<DtoVehicleResponse, Record<string, string>>({
-      path: `/api/v1/vehicles`,
-      method: "POST",
-      body: vehicle,
-      secure: true,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesGpsLiveList
-   * @summary Live GPS positions for all active vehicles
-   * @request GET:/api/v1/vehicles/gps-live
-   * @secure
-   */
-  v1VehiclesGpsLiveList = (params: RequestParams = {}) =>
-    this.http.request<DtoGPSLiveVehicle[], any>({
-      path: `/api/v1/vehicles/gps-live`,
-      method: "GET",
-      secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesGpsPositionByPlateCreate
-   * @summary Update vehicle GPS position by targa
-   * @request POST:/api/v1/vehicles/gps-position-by-plate/{targa}
-   * @secure
-   */
-  v1VehiclesGpsPositionByPlateCreate = (
-    targa: string,
-    position: DtoVehicleGPSUpdateRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoGPSUpdateResult, Record<string, string>>({
-      path: `/api/v1/vehicles/gps-position-by-plate/${targa}`,
-      method: "POST",
-      body: position,
-      secure: true,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesUpdate
-   * @summary Update vehicle (full replace of the create-able fields)
-   * @request PUT:/api/v1/vehicles/{id}
-   * @secure
-   */
-  v1VehiclesUpdate = (
-    id: string,
-    vehicle: DtoVehicleRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoVehicleResponse, Record<string, string>>({
-      path: `/api/v1/vehicles/${id}`,
-      method: "PUT",
-      body: vehicle,
-      secure: true,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesDelete
-   * @summary Delete vehicle (logical, sets active=false)
-   * @request DELETE:/api/v1/vehicles/{id}
-   * @secure
-   */
-  v1VehiclesDelete = (id: string, params: RequestParams = {}) =>
-    this.http.request<void, any>({
-      path: `/api/v1/vehicles/${id}`,
-      method: "DELETE",
-      secure: true,
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesGpsHistoryList
-   * @summary GPS history for a vehicle
-   * @request GET:/api/v1/vehicles/{id}/gps-history
-   * @secure
-   */
-  v1VehiclesGpsHistoryList = (
-    id: string,
-    query?: {
-      /** Max results (default 100) */
-      limit?: number;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoGPSHistoryResponse[], any>({
-      path: `/api/v1/vehicles/${id}/gps-history`,
-      method: "GET",
-      query: query,
-      secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesGpsPositionCreate
-   * @summary Update vehicle GPS position (by id or targa)
-   * @request POST:/api/v1/vehicles/{id}/gps-position
-   * @secure
-   */
-  v1VehiclesGpsPositionCreate = (
-    id: string,
-    position: DtoVehicleGPSUpdateRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoGPSUpdateResult, Record<string, string>>({
-      path: `/api/v1/vehicles/${id}/gps-position`,
-      method: "POST",
-      body: position,
-      secure: true,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesTemperatureList
-   * @summary Temperature history for a vehicle
-   * @request GET:/api/v1/vehicles/{id}/temperature
-   * @secure
-   */
-  v1VehiclesTemperatureList = (
-    id: string,
-    query?: {
-      /** Max results (default 200) */
-      limit?: number;
-      /** Only out-of-range readings */
-      only_alerts?: boolean;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoTemperatureReadingResponse[], any>({
-      path: `/api/v1/vehicles/${id}/temperature`,
-      method: "GET",
-      query: query,
-      secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1VehiclesTemperatureThresholdsPartialUpdate
-   * @summary Set temperature thresholds for a vehicle
-   * @request PATCH:/api/v1/vehicles/{id}/temperature-thresholds
-   * @secure
-   */
-  v1VehiclesTemperatureThresholdsPartialUpdate = (
-    id: string,
-    thresholds: DtoTemperatureThresholdsRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoTemperatureThresholdsResult, Record<string, string>>({
-      path: `/api/v1/vehicles/${id}/temperature-thresholds`,
-      method: "PATCH",
-      body: thresholds,
-      secure: true,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
    * @tags WashStations
    * @name V1WashStationsList
    * @summary List wash stations
@@ -2728,48 +2696,6 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/wash-stations/${id}`,
       method: "DELETE",
       secure: true,
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1WebhooksGpsCreate
-   * @summary GPS provider webhook ingestion
-   * @request POST:/api/v1/webhooks/gps/{vendor}
-   */
-  v1WebhooksGpsCreate = (
-    vendor: string,
-    payload: DtoGPSWebhookPayload,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoGPSUpdateResult, Record<string, string>>({
-      path: `/api/v1/webhooks/gps/${vendor}`,
-      method: "POST",
-      body: payload,
-      type: ContentType.Json,
-      format: "json",
-      ...params,
-    });
-  /**
-   * No description
-   *
-   * @tags Vehicles
-   * @name V1WebhooksTemperatureCreate
-   * @summary Temperature sensor webhook ingestion
-   * @request POST:/api/v1/webhooks/temperature/{vendor}
-   */
-  v1WebhooksTemperatureCreate = (
-    vendor: string,
-    payload: DtoTemperatureWebhookRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoTemperatureWebhookResult, Record<string, string>>({
-      path: `/api/v1/webhooks/temperature/${vendor}`,
-      method: "POST",
-      body: payload,
-      type: ContentType.Json,
-      format: "json",
       ...params,
     });
 }

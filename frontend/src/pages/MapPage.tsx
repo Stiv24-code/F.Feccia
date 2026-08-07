@@ -22,11 +22,11 @@ L.Icon.Default.mergeOptions({
 });
 
 // Icone custom
-const createIcon = (color: string, size = 28, isLive = false) => L.divIcon({
+const createIcon = (color: string, size = 28) => L.divIcon({
   className: '',
-  html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid ${isLive ? '#22D3EE' : 'white'};box-shadow:0 2px 8px rgba(0,0,0,0.3)${isLive ? ',0 0 12px rgba(34,211,238,0.5)' : ''};display:flex;align-items:center;justify-content:center;${isLive ? 'animation:pulse 2s infinite;' : ''}">
+  html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
     <svg width="${size * 0.5}" height="${size * 0.5}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-  </div>${isLive ? '<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}</style>' : ''}`,
+  </div>`,
   iconSize: [size, size],
   iconAnchor: [size / 2, size / 2],
   popupAnchor: [0, -size / 2],
@@ -73,15 +73,12 @@ const POPUP_STYLES = {
   container: { minWidth: 220 },
   header: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 },
   title: { margin: 0, fontWeight: 700, fontSize: 14, flex: 1 },
-  gpsBadge: { background: '#22D3EE', color: '#0B1220', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10 },
   subtitle: { margin: 0, fontSize: 12, color: '#666' },
   hr: { margin: '6px 0', border: 'none', borderTop: '1px solid #eee' },
   route: { margin: '2px 0', fontSize: 12 },
   detail: { margin: '2px 0', fontSize: 11, color: '#888' },
-  gpsInfo: { margin: '2px 0', fontSize: 11, color: '#0E7A81', fontWeight: 600 },
   progressBg: { marginTop: 6, background: '#f0f0f0', borderRadius: 6, height: 6, overflow: 'hidden' },
   progressLabel: { margin: '4px 0 0', fontSize: 10, color: '#999' },
-  trackerLink: { display: 'block', marginTop: 6, fontSize: 10, color: '#0E7A81', textDecoration: 'underline' },
 };
 
 // Componente per auto-fit bounds
@@ -122,7 +119,7 @@ export default function MapPage() {
     return (data.routes || []).filter(r => {
       if (!showPianificabili && r.stato === 'PIANIFICABILE') return false;
       if (!showChiusi && r.stato === 'CHIUSO') return false;
-      if (filterVeicolo && r.targa_motrice !== filterVeicolo) return false;
+      if (filterVeicolo && r.motrice?.targa !== filterVeicolo) return false;
       if (!r.carico || !r.scarico) return false;
       if (!r.carico.lat || !r.carico.lng || !r.scarico.lat || !r.scarico.lng) return false;
       if (isNaN(r.carico.lat) || isNaN(r.scarico.lat)) return false;
@@ -131,7 +128,7 @@ export default function MapPage() {
   }, [data, showPianificabili, showChiusi, filterVeicolo]);
 
   const inViaggio = useMemo(() => filteredRoutes.filter(r => r.stato === 'VIAGGIO'), [filteredRoutes]);
-  const uniqueVehicles = useMemo(() => data ? Array.from(new Set((data.routes || []).map(r => r.targa_motrice).filter(Boolean))) : [], [data]);
+  const uniqueVehicles = useMemo(() => data ? Array.from(new Set((data.routes || []).map(r => r.motrice?.targa).filter(Boolean))) : [], [data]);
 
   if (loading) {
     return (
@@ -150,7 +147,6 @@ export default function MapPage() {
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className="status-viaggio border text-xs font-medium">{data.stats?.in_viaggio || 0} in viaggio</Badge>
-          {(data.stats?.gps_live || 0) > 0 && <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 border text-xs font-medium">{data.stats?.gps_live} GPS live</Badge>}
           <Badge className="status-pianificabile border text-xs font-medium">{data.stats?.pianificabili || 0} da pianificare</Badge>
           <Badge className="status-chiuso border text-xs font-medium">{data.stats?.chiusi || 0} chiusi</Badge>
         </div>
@@ -357,49 +353,22 @@ export default function MapPage() {
                   {isActive && route.current_position?.lat != null && route.current_position?.lng != null && (
                     <Marker
                       position={[route.current_position.lat, route.current_position.lng]}
-                      icon={createIcon(color, isSelected ? 36 : 30, route.gps_live)}
+                      icon={createIcon(color, isSelected ? 36 : 30)}
                       eventHandlers={{ click: () => setSelectedRoute(route) }}
                     >
                       <Popup className="custom-popup">
                         <div style={POPUP_STYLES.container}>
                           <div style={POPUP_STYLES.header}>
-                            <p style={POPUP_STYLES.title}>{route.targa_motrice || 'Mezzo'}</p>
-                            {route.gps_live && route.gps_source === 'simulated' && (
-                              <span style={{ ...POPUP_STYLES.gpsBadge, background: '#FEF2C0', color: '#7A4D00' }}>DEMO</span>
-                            )}
-                            {route.gps_live && route.gps_source && route.gps_source !== 'simulated' && (
-                              <span style={POPUP_STYLES.gpsBadge}>GPS {route.gps_source.replace(/^provider_/, '').toUpperCase()}</span>
-                            )}
-                            {route.gps_live && !route.gps_source && <span style={POPUP_STYLES.gpsBadge}>GPS LIVE</span>}
-                            {route.last_temp_alert && (
-                              <span style={{ ...POPUP_STYLES.gpsBadge, background: '#FEE2E2', color: '#991B1B' }}>
-                                TEMP ALERT
-                              </span>
-                            )}
+                            <p style={POPUP_STYLES.title}>{route.motrice?.targa || 'Mezzo'}</p>
                           </div>
-                          {route.last_temp_celsius != null && (
-                            <p style={POPUP_STYLES.detail}>
-                              Temperatura: <strong>{route.last_temp_celsius.toFixed(1)} °C</strong>
-                              {route.last_temp_alert ? ' (fuori soglia)' : ''}
-                            </p>
-                          )}
                           <p style={POPUP_STYLES.subtitle}>{route.autista ? `${route.autista.nome} ${route.autista.cognome}` : 'N/A'}</p>
                           <hr style={POPUP_STYLES.hr} />
                           <p style={POPUP_STYLES.detail}>{route.cliente?.ragione_sociale} • {route.progressivo}</p>
                           {(route.distance_km || 0) > 0 && <p style={POPUP_STYLES.detail}>{route.distance_km} km totali • {route.duration_hours}h stimate</p>}
-                          {route.gps_live && (route.gps_speed_kmh || 0) > 0 && (
-                            <p style={POPUP_STYLES.gpsInfo}>Velocità: {Math.round(route.gps_speed_kmh || 0)} km/h</p>
-                          )}
-                          {(route.remaining_km || 0) > 0 && (
-                            <p style={POPUP_STYLES.gpsInfo}>Rimanenti: {route.remaining_km} km • ETA ~{route.eta_hours}h</p>
-                          )}
                           <div style={POPUP_STYLES.progressBg}>
-                            <div style={{ width: `${(route.progress || 0) * 100}%`, height: '100%', background: route.gps_live ? '#22D3EE' : color, borderRadius: 6 }} />
+                            <div style={{ width: `${(route.progress || 0) * 100}%`, height: '100%', background: color, borderRadius: 6 }} />
                           </div>
-                          <p style={POPUP_STYLES.progressLabel}>{Math.round((route.progress || 0) * 100)}% completato{route.gps_live ? ' (GPS)' : ' (stimato)'}</p>
-                          {route.gps_tracker_url && (
-                            <a href={route.gps_tracker_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 6, fontSize: 10, color: '#0E7A81', textDecoration: 'underline' }}>Apri tracker GPS →</a>
-                          )}
+                          <p style={POPUP_STYLES.progressLabel}>{Math.round((route.progress || 0) * 100)}% completato (stimato)</p>
                         </div>
                       </Popup>
                     </Marker>
@@ -431,16 +400,13 @@ export default function MapPage() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-mono text-xs font-medium">{route.progressivo}</span>
-                      <div className="flex items-center gap-1.5">
-                        {route.gps_live && <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-semibold"><span className="h-1.5 w-1.5 rounded-full bg-cyan-500 animate-pulse" />LIVE</span>}
-                        <StatusBadge stato={route.stato} />
-                      </div>
+                      <StatusBadge stato={route.stato} />
                     </div>
                     <p className="text-xs font-medium truncate">→</p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      {route.targa_motrice && (
+                      {route.motrice?.targa && (
                         <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono">
-                          <Truck className="h-2.5 w-2.5" /> {route.targa_motrice}
+                          <Truck className="h-2.5 w-2.5" /> {route.motrice.targa}
                         </span>
                       )}
                       {route.autista && (
@@ -454,14 +420,13 @@ export default function MapPage() {
                     <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(route.progress || 0) * 100}%`, backgroundColor: route.gps_live ? '#22D3EE' : statusColors.VIAGGIO }}
+                        style={{ width: `${(route.progress || 0) * 100}%`, backgroundColor: statusColors.VIAGGIO }}
                       />
                     </div>
                     <div className="flex justify-between mt-1">
                       <span className="text-[10px] text-muted-foreground">
                         {(route.remaining_km || 0) > 0 ? `${route.remaining_km} km rimasti` : route.cliente?.ragione_sociale}
                         {(route.eta_hours || 0) > 0 ? ` • ETA ~${route.eta_hours}h` : ''}
-                        {route.gps_live && (route.gps_speed_kmh || 0) > 0 ? ` • ${Math.round(route.gps_speed_kmh || 0)} km/h` : ''}
                       </span>
                       <span className="text-[10px] text-muted-foreground tabular-nums">€ {formatEuro(route.tariffa || 0)}</span>
                     </div>
@@ -484,15 +449,11 @@ export default function MapPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Tratta:</span><span className="truncate ml-2">→</span></div>
                 {selectedRoute.garage && <div className="flex justify-between"><span className="text-muted-foreground">Partenza:</span><span className="truncate ml-2">{selectedRoute.garage.nome}</span></div>}
                 {selectedRoute.wash_station && <div className="flex justify-between"><span className="text-muted-foreground">Lavaggio:</span><span className="truncate ml-2">{selectedRoute.wash_station.nome}</span></div>}
-                <div className="flex justify-between"><span className="text-muted-foreground">Mezzo:</span><span className="font-mono">{selectedRoute.targa_motrice || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Mezzo:</span><span className="font-mono">{selectedRoute.motrice?.targa || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedRoute.autista ? `${selectedRoute.autista.nome} ${selectedRoute.autista.cognome}` : '—'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Distanza:</span><span className="tabular-nums">{selectedRoute.distance_km} km • {selectedRoute.duration_hours}h</span></div>
                 {(selectedRoute.remaining_km || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Rimanenti:</span><span className="tabular-nums font-medium">{selectedRoute.remaining_km} km • ETA ~{selectedRoute.eta_hours}h</span></div>}
-                {selectedRoute.gps_live && <div className="flex justify-between"><span className="text-muted-foreground">GPS:</span><span className="text-cyan-600 font-medium">{Math.round(selectedRoute.gps_speed_kmh || 0)} km/h — LIVE</span></div>}
                 <div className="flex justify-between"><span className="text-muted-foreground">Tariffa:</span><span className="font-medium">€ {selectedRoute.tariffa?.toLocaleString('it-IT')}</span></div>
-                {selectedRoute.gps_tracker_url && (
-                  <a href={selectedRoute.gps_tracker_url} target="_blank" rel="noopener noreferrer" className="block mt-1 text-primary hover:underline text-[10px]">Apri portale GPS tracker →</a>
-                )}
               </div>
             </div>
           )}

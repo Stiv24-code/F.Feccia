@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { assignOrder, getVehicles, getDrivers, getCarriers, getVehicleAvailability, getDriverAvailability, getOrderRouteAlternatives } from '@/lib/api';
+import { assignOrder, getMotrici, getSemirimorchi, getDrivers, getCarriers, getMotriceAvailability, getSemirimorchioAvailability, getDriverAvailability, getOrderRouteAlternatives } from '@/lib/api';
 import { useGetGaragesQuery, useGetWashStationsQuery } from '@/store/api/appApi';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type {
   DtoOrderResponse,
   DtoOrderAssignRequest,
-  DtoVehicleResponse,
+  DtoMotriceResponse,
+  DtoSemirimorchioResponse,
   DtoDriverResponse,
   DtoCarrierResponse,
-  DtoVehicleAvailabilityResponse,
+  DtoMotriceAvailabilityResponse,
+  DtoSemirimorchioAvailabilityResponse,
   DtoDriverAvailabilityResponse,
   DtoRouteAlternativeDTO,
   DtoRouteWaypointResponseDTO,
@@ -32,7 +34,7 @@ const waypointByTipo = (waypoints: DtoRouteWaypointResponseDTO[] | undefined, ti
 
 const EMPTY_FORM: DtoOrderAssignRequest = {
   garage_id: '',
-  targa_motrice: '', targa_rimorchio: '', autista_id: '',
+  motrice_id: '', semirimorchio_id: '', autista_id: '',
   vettore_id: '',
   wash_station_id: '',
 };
@@ -58,10 +60,12 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
   const [form, setForm] = useState<DtoOrderAssignRequest>(EMPTY_FORM);
   const [transportMode, setTransportMode] = useState<TransportMode>('proprio');
   const [saving, setSaving] = useState(false);
-  const [vehicles, setVehicles] = useState<DtoVehicleResponse[]>([]);
+  const [motrici, setMotrici] = useState<DtoMotriceResponse[]>([]);
+  const [semirimorchi, setSemirimorchi] = useState<DtoSemirimorchioResponse[]>([]);
   const [drivers, setDrivers] = useState<DtoDriverResponse[]>([]);
   const [carriers, setCarriers] = useState<DtoCarrierResponse[]>([]);
-  const [availVehicles, setAvailVehicles] = useState<DtoVehicleAvailabilityResponse[]>([]);
+  const [availMotrici, setAvailMotrici] = useState<DtoMotriceAvailabilityResponse[]>([]);
+  const [availSemirimorchi, setAvailSemirimorchi] = useState<DtoSemirimorchioAvailabilityResponse[]>([]);
   const [availDrivers, setAvailDrivers] = useState<DtoDriverAvailabilityResponse[]>([]);
   const [routeAlternatives, setRouteAlternatives] = useState<DtoRouteAlternativeDTO[]>([]);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
@@ -74,18 +78,19 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     if (!order) return;
     setForm(EMPTY_FORM);
     setTransportMode('proprio');
-    setAvailVehicles([]);
+    setAvailMotrici([]);
+    setAvailSemirimorchi([]);
     setAvailDrivers([]);
     setRouteAlternatives([]);
     setSelectedRouteIdx(0);
-    Promise.all([getVehicles(), getDrivers(), getCarriers()]).then(([v, d, c]) => {
-      setVehicles(v.data); setDrivers(d.data); setCarriers(c.data);
+    Promise.all([getMotrici(), getSemirimorchi(), getDrivers(), getCarriers()]).then(([m, s, d, c]) => {
+      setMotrici(m.data); setSemirimorchi(s.data); setDrivers(d.data); setCarriers(c.data);
     }).catch(err => logger.error('Errore caricamento lookup assegna:', err));
     const da = order.data_ritiro || '';
     const a = order.data_consegna || order.data_ritiro || '';
     if (da && a) {
-      Promise.all([getVehicleAvailability(da, a), getDriverAvailability(da, a)]).then(([vRes, dRes]) => {
-        setAvailVehicles(vRes.data); setAvailDrivers(dRes.data);
+      Promise.all([getMotriceAvailability(da, a), getSemirimorchioAvailability(da, a), getDriverAvailability(da, a)]).then(([mRes, sRes, dRes]) => {
+        setAvailMotrici(mRes.data); setAvailSemirimorchi(sRes.data); setAvailDrivers(dRes.data);
       }).catch(err => logger.error('Disponibilità fetch error:', err));
     }
   }, [order]);
@@ -120,12 +125,12 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     if (mode === 'proprio') {
       setForm(f => ({ ...f, vettore_id: '' }));
     } else {
-      setForm(f => ({ ...f, targa_motrice: '', targa_rimorchio: '', autista_id: '' }));
+      setForm(f => ({ ...f, motrice_id: '', semirimorchio_id: '', autista_id: '' }));
     }
   };
 
-  const assignMotrici = useMemo(() => (availVehicles.length > 0 ? availVehicles : vehicles).filter(v => v.tipo_veicolo === 'motrice'), [availVehicles, vehicles]);
-  const assignRimorchi = useMemo(() => (availVehicles.length > 0 ? availVehicles : vehicles).filter(v => v.tipo_veicolo !== 'motrice'), [availVehicles, vehicles]);
+  const assignMotrici = useMemo(() => availMotrici.length > 0 ? availMotrici : motrici, [availMotrici, motrici]);
+  const assignRimorchi = useMemo(() => availSemirimorchi.length > 0 ? availSemirimorchi : semirimorchi, [availSemirimorchi, semirimorchi]);
   const assignDriverList = useMemo(() => availDrivers.length > 0 ? availDrivers : drivers, [availDrivers, drivers]);
   const disponibilitaLabel = useMemo(() => formatDataBreve(order?.data_ritiro), [order]);
 
@@ -273,15 +278,15 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
               </div>
               <div className="space-y-1.5">
                 <Label>Motrice</Label>
-                <Select value={form.targa_motrice} onValueChange={v => setForm(f => ({ ...f, targa_motrice: v }))}>
+                <Select value={form.motrice_id} onValueChange={v => setForm(f => ({ ...f, motrice_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Motrice" /></SelectTrigger>
                   <SelectContent>
                     {assignMotrici.map(v => (
-                      <SelectItem key={v.id} value={v.targa || ''}>
+                      <SelectItem key={v.id} value={v.id || ''}>
                         <span className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoVehicleAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
                           {v.targa} - {v.marca}
-                          {(v as DtoVehicleAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
+                          {(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
                         </span>
                       </SelectItem>
                     ))}
@@ -290,15 +295,15 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
               </div>
               <div className="space-y-1.5">
                 <Label>Rimorchio</Label>
-                <Select value={form.targa_rimorchio} onValueChange={v => setForm(f => ({ ...f, targa_rimorchio: v }))}>
+                <Select value={form.semirimorchio_id} onValueChange={v => setForm(f => ({ ...f, semirimorchio_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Rimorchio" /></SelectTrigger>
                   <SelectContent>
                     {assignRimorchi.map(v => (
-                      <SelectItem key={v.id} value={v.targa || ''}>
+                      <SelectItem key={v.id} value={v.id || ''}>
                         <span className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoVehicleAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                          {v.targa} - {v.tipo_veicolo}
-                          {(v as DtoVehicleAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                          {v.targa} - {v.tipo}
+                          {(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
                         </span>
                       </SelectItem>
                     ))}

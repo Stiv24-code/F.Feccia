@@ -16,12 +16,13 @@ import (
 	invoices_handlers "fratelli-feccia/internal/handlers/invoices"
 	mapview_handlers "fratelli-feccia/internal/handlers/mapview"
 	masterdata_handlers "fratelli-feccia/internal/handlers/masterdata"
+	motrici_handlers "fratelli-feccia/internal/handlers/motrici"
 	orders_handlers "fratelli-feccia/internal/handlers/orders"
 	pricelists_handlers "fratelli-feccia/internal/handlers/pricelists"
 	products_handlers "fratelli-feccia/internal/handlers/products"
+	semirimorchi_handlers "fratelli-feccia/internal/handlers/semirimorchi"
 	trips_handlers "fratelli-feccia/internal/handlers/trips"
 	users_handlers "fratelli-feccia/internal/handlers/users"
-	vehicles_handlers "fratelli-feccia/internal/handlers/vehicles"
 	washstations_handlers "fratelli-feccia/internal/handlers/washstations"
 	"fratelli-feccia/internal/services"
 	"fratelli-feccia/pkg/audit"
@@ -43,7 +44,8 @@ type Handler struct {
 	Anagrafiche          *anagrafiche_handlers.AnagraficheHandler
 	DriverUnavailability *driverunavailability_handlers.DriverUnavailabilityHandler
 	Orders               *orders_handlers.OrderHandler
-	Vehicles             *vehicles_handlers.VehicleHandler
+	Motrici              *motrici_handlers.MotriceHandler
+	Semirimorchi         *semirimorchi_handlers.SemirimorchioHandler
 	Trips                *trips_handlers.TripHandler
 	PriceLists           *pricelists_handlers.PriceListHandler
 	Invoices             *invoices_handlers.InvoiceHandler
@@ -69,7 +71,8 @@ func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg ut
 		Anagrafiche:          anagrafiche_handlers.NewAnagraficheHandler(services.AnagraficheGroup.Anagrafiche),
 		DriverUnavailability: driverunavailability_handlers.NewDriverUnavailabilityHandler(services.DriverUnavailabilityGroup.DriverUnavailability),
 		Orders:               orders_handlers.NewOrderHandler(services.Orders.Order),
-		Vehicles:             vehicles_handlers.NewVehicleHandler(services.Vehicles.Vehicle),
+		Motrici:              motrici_handlers.NewMotriceHandler(services.Motrici.Motrice),
+		Semirimorchi:         semirimorchi_handlers.NewSemirimorchioHandler(services.Semirimorchi.Semirimorchio),
 		Trips:                trips_handlers.NewTripHandler(services.Trips.Trip),
 		PriceLists:           pricelists_handlers.NewPriceListHandler(services.PriceLists.PriceList),
 		Invoices:             invoices_handlers.NewInvoiceHandler(services.Invoices.Invoice),

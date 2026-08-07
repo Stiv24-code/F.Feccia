@@ -1,15 +1,15 @@
 // Package mapview ports backend/routers/map.py: aggregates active orders,
-// resolved coordinates, OSRM road routes and live/simulated GPS positions
-// for the live map view. Named "mapview" (not "map") to avoid shadowing the
-// Go builtin.
+// resolved coordinates and OSRM road routes for the live map view. Named
+// "mapview" (not "map") to avoid shadowing the Go builtin.
 package mapview
 
 import (
 	"context"
-	"math"
+	"encoding/json"
 	"sort"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"fratelli-feccia/internal/dto"
@@ -32,7 +32,7 @@ func NewMapService(db *gorm.DB, orsApiKey, orsBaseURL string) *MapService {
 func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 	var activeOrders []models.Order
 	if err := s.db.WithContext(ctx).
-		Preload("Cliente").Preload("Autista").Preload("DestinazioneCarico").Preload("DestinazioneScarico").
+		Preload("Cliente").Preload("Autista").Preload("Motrice").Preload("DestinazioneCarico").Preload("DestinazioneScarico").
 		Preload("Garage").Preload("WashStation").
 		Where("stato IN ?", []string{"VIAGGIO", "PIANIFICABILE", "CHIUSO"}).
 		Order("created_at DESC").Limit(activeOrdersLimit).Find(&activeOrders).Error; err != nil {
@@ -42,15 +42,6 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 	destMap, err := s.buildDestinationMap(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	var vehicles []models.Vehicle
-	if err := s.db.WithContext(ctx).Where("active = ? AND last_lat <> 0", true).Find(&vehicles).Error; err != nil {
-		return nil, err
-	}
-	gpsVehicles := make(map[string]models.Vehicle, len(vehicles))
-	for _, v := range vehicles {
-		gpsVehicles[v.Targa] = v
 	}
 
 	routes := make([]dto.MapRoute, 0, len(activeOrders))
@@ -71,7 +62,7 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 			roadPoints = [][2]float64{{carico.Lat, carico.Lng}, {scarico.Lat, scarico.Lng}}
 		}
 
-		route := buildMapRoute(o, carico, scarico, roadPoints, totalKm, totalHours, gpsVehicles)
+		route := buildMapRoute(o, carico, scarico, roadPoints, totalKm, totalHours)
 		routes = append(routes, route)
 	}
 
@@ -110,9 +101,6 @@ func (s *MapService) Trips(ctx context.Context) (*dto.MapTripsResponse, error) {
 			stats.Pianificabili++
 		case "CHIUSO":
 			stats.Chiusi++
-		}
-		if r.GpsLive {
-			stats.GpsLive++
 		}
 	}
 
@@ -162,72 +150,19 @@ func resolveOrderEndpoints(o models.Order, destMap map[string]geo.NamedPoint) (c
 	return carico, scarico, true
 }
 
-func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints [][2]float64, totalKm, totalHours float64, gpsVehicles map[string]models.Vehicle) dto.MapRoute {
-	targa := o.TargaMotrice
-	gpsData, hasGps := gpsVehicles[targa]
-
-	var gpsLive bool
-	var gpsSpeed, gpsHeading, curLat, curLng, progress, remainingKm, etaHours float64
-	var gpsTrackerUrl, gpsLastUpdate, gpsSource string
-	var lastTempCelsius *float64
-	var lastTempAlert bool
-
-	if hasGps {
-		gpsSource = gpsData.GpsSource
-		lastTempCelsius = gpsData.LastTempCelsius
-		lastTempAlert = gpsData.LastTempAlert
+func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints [][2]float64, totalKm, totalHours float64) dto.MapRoute {
+	var progress float64
+	switch o.Stato {
+	case "VIAGGIO":
+		progress = 0.6
+	case "CHIUSO":
+		progress = 1.0
+	default:
+		progress = 0.0
 	}
-
-	if hasGps && gpsData.LastLat != 0 && gpsData.GpsActive && o.Stato == models.OrderStatoViaggio {
-		curLat, curLng = gpsData.LastLat, gpsData.LastLng
-		gpsLive = true
-		gpsSpeed = gpsData.LastSpeedKmh
-		gpsHeading = gpsData.LastHeading
-		gpsTrackerUrl = gpsData.GpsTrackerUrl
-		gpsLastUpdate = gpsData.LastGpsUpdate
-
-		if len(roadPoints) > 1 {
-			minDist := math.Inf(1)
-			bestIdx := 0
-			for idx, pt := range roadPoints {
-				d := math.Hypot(pt[0]-curLat, pt[1]-curLng)
-				if d < minDist {
-					minDist = d
-					bestIdx = idx
-				}
-			}
-			denom := float64(len(roadPoints) - 1)
-			if denom < 1 {
-				denom = 1
-			}
-			progress = float64(bestIdx) / denom
-			remainingKm = roundTo1(totalKm * (1 - progress))
-			avgSpeed := gpsSpeed
-			if avgSpeed <= 10 {
-				avgSpeed = 70
-			}
-			if avgSpeed > 0 {
-				etaHours = roundTo1(remainingKm / avgSpeed)
-			}
-		} else {
-			progress = 0.5
-		}
-	} else {
-		switch o.Stato {
-		case "VIAGGIO":
-			progress = 0.6
-		case "CHIUSO":
-			progress = 1.0
-		default:
-			progress = 0.0
-		}
-		curLat, curLng = geo.ComputeVehiclePosition(roadPoints, carico, scarico, progress)
-		remainingKm = roundTo1(totalKm * (1 - progress))
-		etaHours = roundTo1(totalHours * (1 - progress))
-		if hasGps {
-			gpsTrackerUrl = gpsData.GpsTrackerUrl
-		}
-	}
+	curLat, curLng := geo.ComputeVehiclePosition(roadPoints, carico, scarico, progress)
+	remainingKm := roundTo1(totalKm * (1 - progress))
+	etaHours := roundTo1(totalHours * (1 - progress))
 
 	mapRoadPoints := make([]dto.MapPoint, len(roadPoints))
 	for i, p := range roadPoints {
@@ -236,15 +171,12 @@ func buildMapRoute(o models.Order, carico, scarico geo.NamedPoint, roadPoints []
 
 	return dto.MapRoute{
 		ID: o.ID, Progressivo: o.Progressivo, Cliente: customerResponse(o.Cliente), Stato: string(o.Stato),
-		Tipologia: o.Tipologia, TargaMotrice: targa, Autista: driverResponse(o.Autista),
+		Tipologia: o.Tipologia, Motrice: motriceResponse(o.Motrice), Autista: driverResponse(o.Autista),
 		DataRitiro: o.DataRitiro, DataConsegna: o.DataConsegna, Tariffa: o.Tariffa,
 		Carico: dto.MapPoint{Lat: carico.Lat, Lng: carico.Lng}, Scarico: dto.MapPoint{Lat: scarico.Lat, Lng: scarico.Lng},
 		CurrentPosition: dto.MapPoint{Lat: curLat, Lng: curLng}, Progress: progress,
 		RoadPoints: mapRoadPoints, DistanceKm: totalKm, DurationHours: totalHours,
 		RemainingKm: remainingKm, EtaHours: etaHours,
-		GpsLive: gpsLive, GpsSpeedKmh: gpsSpeed, GpsHeading: gpsHeading,
-		GpsTrackerUrl: gpsTrackerUrl, GpsLastUpdate: gpsLastUpdate, GpsSource: gpsSource,
-		LastTempCelsius: lastTempCelsius, LastTempAlert: lastTempAlert,
 		Garage: garageNamedPoint(o.Garage), WashStation: washStationNamedPoint(o.WashStation),
 	}
 }
@@ -286,7 +218,28 @@ func driverResponse(d *models.Driver) *dto.DriverResponse {
 	}
 	return &dto.DriverResponse{
 		ID: d.ID, Nome: d.Nome, Cognome: d.Cognome, CodiceFiscale: d.CodiceFiscale,
-		Patente: d.Patente, ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
+		Patente: unmarshalStrings(d.Patente), ScadenzaPatente: d.ScadenzaPatente, Telefono: d.Telefono,
 		Email: d.Email, Note: d.Note, Active: d.Active, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
 	}
+}
+
+func motriceResponse(m *models.Motrice) *dto.MotriceResponse {
+	if m == nil {
+		return nil
+	}
+	return &dto.MotriceResponse{
+		ID: m.ID, Targa: m.Targa, Marca: m.Marca, Modello: m.Modello, Anno: m.Anno,
+		PortataKg: m.PortataKg, Note: m.Note, Active: m.Active, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
+	}
+}
+
+func unmarshalStrings(raw datatypes.JSON) []string {
+	out := []string{}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &out)
+	}
+	if out == nil {
+		out = []string{}
+	}
+	return out
 }

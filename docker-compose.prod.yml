@@ -37,10 +37,12 @@ services:
       DB_SSLMODE: disable
       JWT_ACCESS_SECRET: ${GO_JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${GO_JWT_REFRESH_SECRET}
-      IS_LOCAL: "false"
+      IS_LOCAL: "true"
       SECURE_COOKIES: "true"
       CORS_ORIGINS: ${CORS_ORIGINS}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       ORS_API_KEY: ${ORS_API_KEY:-}
       ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
     ports:

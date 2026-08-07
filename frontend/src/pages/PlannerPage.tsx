@@ -74,7 +74,7 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
               <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_carico?.nome}</TableCell>
               <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_scarico?.nome}</TableCell>
               <TableCell className="py-2 max-w-[120px] truncate">{o.cliente?.ragione_sociale}</TableCell>
-              <TableCell className="py-2 font-mono">{o.targa_motrice || '—'}</TableCell>
+              <TableCell className="py-2 font-mono">{o.motrice?.targa || '—'}</TableCell>
               <TableCell className="py-2">{driverFullName(o) || '—'}</TableCell>
               <TableCell className="py-2"><StatusBadge stato={o.stato} /></TableCell>
               <TableCell className="py-2" onClick={e => e.stopPropagation()}>
@@ -190,7 +190,7 @@ export default function PlannerPage() {
       const autistaNome = driverFullName(o);
       if (driverFilter && autistaNome !== driverFilter) return false;
       if (q) {
-        const hay = `${o.progressivo || ''} ${o.cliente?.ragione_sociale || ''} ${o.destinazione_carico?.nome || ''} ${o.destinazione_scarico?.nome || ''} ${autistaNome} ${o.targa_motrice || ''}`.toLowerCase();
+        const hay = `${o.progressivo || ''} ${o.cliente?.ragione_sociale || ''} ${o.destinazione_carico?.nome || ''} ${o.destinazione_scarico?.nome || ''} ${autistaNome} ${o.motrice?.targa || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

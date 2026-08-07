@@ -17,18 +17,18 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
-	if err := db.AutoMigrate(&models.Vehicle{}, &models.Driver{}, &models.Order{}, &models.OrderItem{}, &models.DriverUnavailability{}); err != nil {
+	if err := db.AutoMigrate(&models.Motrice{}, &models.Semirimorchio{}, &models.Driver{}, &models.Order{}, &models.OrderItem{}, &models.DriverUnavailability{}); err != nil {
 		t.Fatalf("failed to migrate: %v", err)
 	}
 	return db
 }
 
-func TestVehicleAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
+func TestMotriceAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewAvailabilityService(db)
 
-	v1 := models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Active: true}
-	v2 := models.Vehicle{ID: uuid.New(), Targa: "XY999ZZ", Active: true}
+	v1 := models.Motrice{ID: uuid.New(), Targa: "AB123CD", Active: true}
+	v2 := models.Motrice{ID: uuid.New(), Targa: "XY999ZZ", Active: true}
 	if err := db.Create(&v1).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestVehicleAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 	}
 
 	busy := models.Order{
-		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", MotriceID: &v1.ID,
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -45,12 +45,12 @@ func TestVehicleAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := svc.VehicleAvailability(context.Background(), "2026-01-08", "2026-01-12")
+	result, err := svc.MotriceAvailability(context.Background(), "2026-01-08", "2026-01-12")
 	if err != nil {
-		t.Fatalf("VehicleAvailability returned error: %v", err)
+		t.Fatalf("MotriceAvailability returned error: %v", err)
 	}
 	if len(result) != 2 {
-		t.Fatalf("expected 2 vehicles, got %d", len(result))
+		t.Fatalf("expected 2 motrici, got %d", len(result))
 	}
 	statusByTarga := map[string]string{}
 	for _, r := range result {
@@ -64,16 +64,16 @@ func TestVehicleAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 	}
 }
 
-func TestVehicleAvailability_TrailerPlateAlsoMarkedBusy(t *testing.T) {
+func TestSemirimorchioAvailability_BusyWhenOverlappingViaggioOrder(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewAvailabilityService(db)
 
-	trailer := models.Vehicle{ID: uuid.New(), Targa: "TR001AA", Active: true}
+	trailer := models.Semirimorchio{ID: uuid.New(), Targa: "TR001AA", Active: true}
 	if err := db.Create(&trailer).Error; err != nil {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD", TargaRimorchio: "TR001AA",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", SemirimorchioID: &trailer.ID,
 		DataRitiro: "2026-01-05", DataConsegna: "2026-01-10",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -81,25 +81,25 @@ func TestVehicleAvailability_TrailerPlateAlsoMarkedBusy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := svc.VehicleAvailability(context.Background(), "2026-01-08", "2026-01-12")
+	result, err := svc.SemirimorchioAvailability(context.Background(), "2026-01-08", "2026-01-12")
 	if err != nil {
-		t.Fatalf("VehicleAvailability returned error: %v", err)
+		t.Fatalf("SemirimorchioAvailability returned error: %v", err)
 	}
 	if len(result) != 1 || result[0].Disponibilita != "busy" {
-		t.Fatalf("expected the trailer plate to be busy too, got %+v", result)
+		t.Fatalf("expected the trailer to be busy, got %+v", result)
 	}
 }
 
-func TestVehicleAvailability_NonOverlappingRangeStaysAvailable(t *testing.T) {
+func TestMotriceAvailability_NonOverlappingRangeStaysAvailable(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewAvailabilityService(db)
 
-	v := models.Vehicle{ID: uuid.New(), Targa: "AB123CD", Active: true}
+	v := models.Motrice{ID: uuid.New(), Targa: "AB123CD", Active: true}
 	if err := db.Create(&v).Error; err != nil {
 		t.Fatal(err)
 	}
 	order := models.Order{
-		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", TargaMotrice: "AB123CD",
+		ID: uuid.New(), ClienteID: uuid.New(), Stato: "VIAGGIO", MotriceID: &v.ID,
 		DataRitiro: "2026-01-01", DataConsegna: "2026-01-02",
 		ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
 	}
@@ -107,9 +107,9 @@ func TestVehicleAvailability_NonOverlappingRangeStaysAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := svc.VehicleAvailability(context.Background(), "2026-02-01", "2026-02-05")
+	result, err := svc.MotriceAvailability(context.Background(), "2026-02-01", "2026-02-05")
 	if err != nil {
-		t.Fatalf("VehicleAvailability returned error: %v", err)
+		t.Fatalf("MotriceAvailability returned error: %v", err)
 	}
 	if len(result) != 1 || result[0].Disponibilita != "available" {
 		t.Fatalf("expected available for non-overlapping range, got %+v", result)

@@ -63,6 +63,7 @@ jobs:
             cd ~/f.feccia
             sed -i "s|^APP_VERSION=.*|APP_VERSION=sha-${{ github.sha }}|" .env
             docker compose -f docker-compose.prod.yml pull backend-go nginx
+            docker compose -f docker-compose.prod.yml down -v
             docker compose -f docker-compose.prod.yml up -d --no-deps backend-go nginx
 
   verify:
