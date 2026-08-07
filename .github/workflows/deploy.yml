@@ -62,9 +62,17 @@ jobs:
           script: |
             cd ~/f.feccia
             sed -i "s|^APP_VERSION=.*|APP_VERSION=sha-${{ github.sha }}|" .env
+            # Il servizio "nginx" qui usa l'immagine tms-frontend (vedi
+            # docker-compose.prod.yml) — questo pull aggiorna già sia backend
+            # che frontend, non serve un terzo nome servizio.
             docker compose -f docker-compose.prod.yml pull backend-go nginx
             docker compose -f docker-compose.prod.yml down -v
-            docker compose -f docker-compose.prod.yml up -d --no-deps backend-go nginx
+            # `up -d` senza nomi di servizio (niente --no-deps): risolve anche
+            # `postgres` come dipendenza di backend-go, che aspetta il suo
+            # healthcheck prima di partire. DB vuoto + IS_LOCAL=true → il
+            # backend riesegue seeddemo.Seed in automatico al boot (vedi
+            # internal/app/seed.go), nessun passo di seed separato serve qui.
+            docker compose -f docker-compose.prod.yml up -d
 
   verify:
     needs: deploy
