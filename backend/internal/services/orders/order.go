@@ -200,8 +200,8 @@ func (s *OrderService) GetByID(ctx context.Context, id uuid.UUID) (*dto.OrderRes
 }
 
 // Update is a full replace of the "create-able" fields only — it never
-// touches stato/targa_motrice/autista_id/vettore_id/viaggio_id/fattura_id/
-// progressivo, exactly like Python's update_order (which parses the request
+// touches stato/motrice_id/semirimorchio_id/autista_id/vettore_id/viaggio_id/
+// fattura_id/progressivo, exactly like Python's update_order (which parses the request
 // body as OrderCreate, a schema that doesn't include those fields at all).
 func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRequest) (*dto.OrderResponse, error) {
 	var order models.Order
