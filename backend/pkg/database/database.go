@@ -3,10 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"fratelli-feccia/config"
 	"fratelli-feccia/internal/models"
 	"fratelli-feccia/pkg/utils"
+	"log/slog"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -119,9 +119,23 @@ func Migrate(db *gorm.DB) error {
 		&models.Invoice{},
 		&models.InvoiceLine{},
 		&models.AuditLog{},
+		&models.InboundOrder{},
+		&models.PdfTemplate{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
+	}
+
+	// Dedup rule for inbound orders (ported from OrderMesh): one row per
+	// (ref, client), case/space-insensitive. AutoMigrate cannot express
+	// expression indexes, and btrim is Postgres-only — fine, since Migrate
+	// only ever runs against Postgres (unit tests use SQLite with their own
+	// AutoMigrate and never reach this path).
+	if db.Dialector.Name() == "postgres" {
+		if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS inbound_orders_ref_client_key
+			ON inbound_orders (lower(btrim(ref)), lower(btrim(client)))`).Error; err != nil {
+			return fmt.Errorf("failed to create inbound_orders dedup index: %w", err)
+		}
 	}
 
 	slog.Info("Database migration completed successfully")

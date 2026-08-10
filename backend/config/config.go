@@ -13,6 +13,71 @@ type Config struct {
 	Swagger  SwaggerConfig  `json:"swagger"`
 	S3       S3Config       `json:"s3"`
 	Routing  RoutingConfig  `json:"routing"`
+	Inbound  InboundConfig  `json:"inbound"`
+}
+
+// InboundConfig holds the order-ingestion settings ported from OrderMesh:
+// mailbox scraping (IMAP or Microsoft Graph), SMTP acceptance mails, PDF
+// template import and the optional Claude vision fallback. Everything is
+// optional, following S3Config/RoutingConfig's "disabled if empty" pattern:
+// no SMTP host means no acceptance mails, no mailbox means no scraping, no
+// Anthropic key means no vision fallback — never a startup blocker.
+type InboundConfig struct {
+	SMTPHost string `json:"smtp_host"`
+	SMTPPort string `json:"smtp_port"`
+	SMTPUser string `json:"-"`
+	SMTPPass string `json:"-"`
+	MailFrom string `json:"mail_from"`
+
+	// AcceptMode: "test" -> acceptance mails go to TestRecipient;
+	// "production" -> acceptance mails go to the order's sender address.
+	AcceptMode    string `json:"accept_mode"`
+	TestRecipient string `json:"test_recipient"`
+
+	IMAPHost string `json:"imap_host"`
+	IMAPPort string `json:"imap_port"`
+	IMAPUser string `json:"-"`
+	IMAPPass string `json:"-"`
+
+	// MailBackend: "imap", "graph" or "auto" (graph for Microsoft 365 hosts,
+	// imap otherwise). Exchange Online rejects password auth on IMAP, so
+	// office365/outlook mailboxes must go through Microsoft Graph.
+	MailBackend   string `json:"mail_backend"`
+	GraphClientID string `json:"graph_client_id"`
+	GraphTenant   string `json:"graph_tenant"`
+	// App-only (client credentials) mode: with GraphClientSecret set the
+	// service authenticates as the application itself — no interactive
+	// sign-in. GraphMailbox is the mailbox to read (defaults to IMAPUser).
+	GraphClientSecret string `json:"-"`
+	GraphMailbox      string `json:"graph_mailbox"`
+
+	// SubjectFilter: only mails whose subject contains this marker are
+	// parsed as inbound orders.
+	SubjectFilter     string `json:"subject_filter"`
+	ScrapeIntervalMin int    `json:"scrape_interval_min"`
+
+	// DataDir is where the Microsoft Graph token is persisted (a mounted
+	// volume in Docker) — only used by the delegated sign-in flow.
+	DataDir string `json:"data_dir"`
+
+	// AnthropicAPIKey enables the Claude vision fallback for scanned PDFs.
+	AnthropicAPIKey string `json:"-"`
+}
+
+func (c InboundConfig) SMTPConfigured() bool { return c.SMTPHost != "" }
+func (c InboundConfig) IMAPConfigured() bool { return c.IMAPHost != "" }
+
+// Backend resolves MailBackend, mapping "auto" onto the mailbox host.
+func (c InboundConfig) Backend() string {
+	switch c.MailBackend {
+	case "imap", "graph":
+		return c.MailBackend
+	}
+	h := strings.ToLower(c.IMAPHost)
+	if h == "" || strings.Contains(h, "office365") || strings.Contains(h, "outlook") {
+		return "graph"
+	}
+	return "imap"
 }
 
 // RoutingConfig holds the OpenRouteService settings used for truck-aware
@@ -102,11 +167,43 @@ func Load() *Config {
 			ORSApiKey:  getEnv("ORS_API_KEY", ""),
 			ORSBaseURL: getEnv("ORS_BASE_URL", "https://api.openrouteservice.org"),
 		},
+		Inbound: InboundConfig{
+			SMTPHost:          getEnv("SMTP_HOST", ""),
+			SMTPPort:          getEnv("SMTP_PORT", "587"),
+			SMTPUser:          getEnv("SMTP_USER", ""),
+			SMTPPass:          getEnv("SMTP_PASS", ""),
+			MailFrom:          getEnv("MAIL_FROM", ""),
+			AcceptMode:        getEnv("ACCEPT_MODE", "test"),
+			TestRecipient:     getEnv("TEST_RECIPIENT", ""),
+			IMAPHost:          getEnv("IMAP_HOST", ""),
+			IMAPPort:          getEnv("IMAP_PORT", "993"),
+			IMAPUser:          getEnv("IMAP_USER", ""),
+			IMAPPass:          getEnv("IMAP_PASS", ""),
+			MailBackend:       getEnv("MAIL_BACKEND", "auto"),
+			GraphClientID:     getEnv("GRAPH_CLIENT_ID", ""),
+			GraphTenant:       getEnv("GRAPH_TENANT", "organizations"),
+			GraphClientSecret: getEnv("GRAPH_CLIENT_SECRET", ""),
+			GraphMailbox:      getEnv("GRAPH_MAILBOX", os.Getenv("IMAP_USER")),
+			SubjectFilter:     getEnv("SUBJECT_FILTER", "[ORDINE]"),
+			ScrapeIntervalMin: getEnvInt("SCRAPE_INTERVAL_MIN", 5),
+			DataDir:           getEnv("DATA_DIR", "data"),
+			AnthropicAPIKey:   getEnv("ANTHROPIC_API_KEY", ""),
+		},
+	}
+
+	// A scrape interval below one minute makes no sense (and 0 would make the
+	// ticker panic later) — fall back to the default like OrderMesh did.
+	if cfg.Inbound.ScrapeIntervalMin < 1 {
+		cfg.Inbound.ScrapeIntervalMin = 5
 	}
 
 	os.Unsetenv("DB_PASSWORD")
 	os.Unsetenv("JWT_ACCESS_SECRET")
 	os.Unsetenv("JWT_REFRESH_SECRET")
+	os.Unsetenv("SMTP_PASS")
+	os.Unsetenv("IMAP_PASS")
+	os.Unsetenv("GRAPH_CLIENT_SECRET")
+	os.Unsetenv("ANTHROPIC_API_KEY")
 
 	validateConfig(cfg)
 

@@ -13,11 +13,14 @@ import (
 	export_handlers "fratelli-feccia/internal/handlers/export"
 	garages_handlers "fratelli-feccia/internal/handlers/garages"
 	geocode_handlers "fratelli-feccia/internal/handlers/geocode"
+	inboundorders_handlers "fratelli-feccia/internal/handlers/inboundorders"
 	invoices_handlers "fratelli-feccia/internal/handlers/invoices"
 	mapview_handlers "fratelli-feccia/internal/handlers/mapview"
 	masterdata_handlers "fratelli-feccia/internal/handlers/masterdata"
 	motrici_handlers "fratelli-feccia/internal/handlers/motrici"
 	orders_handlers "fratelli-feccia/internal/handlers/orders"
+	pdfimport_handlers "fratelli-feccia/internal/handlers/pdfimport"
+	pdftemplates_handlers "fratelli-feccia/internal/handlers/pdftemplates"
 	pricelists_handlers "fratelli-feccia/internal/handlers/pricelists"
 	products_handlers "fratelli-feccia/internal/handlers/products"
 	semirimorchi_handlers "fratelli-feccia/internal/handlers/semirimorchi"
@@ -54,6 +57,9 @@ type Handler struct {
 	Availability         *availability_handlers.AvailabilityHandler
 	Export               *export_handlers.ExportHandler
 	Geocode              *geocode_handlers.GeocodeHandler
+	PdfTemplates         *pdftemplates_handlers.PdfTemplateHandler
+	PdfImport            *pdfimport_handlers.PdfImportHandler
+	InboundOrders        *inboundorders_handlers.InboundOrderHandler
 }
 
 func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg utils.JWTConfig) *Handler {
@@ -81,5 +87,8 @@ func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg ut
 		Availability:         availability_handlers.NewAvailabilityHandler(services.AvailabilityGroup.Availability),
 		Export:               export_handlers.NewExportHandler(services.ExportGroup.Export),
 		Geocode:              geocode_handlers.NewGeocodeHandler(services.GeocodeGroup.Geocode),
+		PdfTemplates:         pdftemplates_handlers.NewPdfTemplateHandler(services.PdfTemplates.PdfTemplate),
+		PdfImport:            pdfimport_handlers.NewPdfImportHandler(services.PdfTemplates.PdfTemplate, services.PdfEngineGroup.PdfEngine),
+		InboundOrders:        inboundorders_handlers.NewInboundOrderHandler(services.InboundOrders.InboundOrder, services.MailScraperGroup.MailScraper, services.PdfEngineGroup.PdfEngine),
 	}
 }
