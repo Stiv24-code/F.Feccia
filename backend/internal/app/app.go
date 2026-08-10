@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"fratelli-feccia/config"
+	"fratelli-feccia/internal/services"
 	"fratelli-feccia/pkg/audit"
 	"fratelli-feccia/pkg/database"
 	"fratelli-feccia/pkg/jobs"
@@ -27,6 +29,7 @@ type App struct {
 	DB                *gorm.DB
 	Router            *fiber.App
 	Config            *config.Config
+	Services          *services.Service
 	jwtCfg            utils.JWTConfig
 	Telemetry         telemetry.TelemetryProviders
 	TelemetryShutdown telemetry.Shutdown
@@ -85,6 +88,7 @@ func (a *App) Start() {
 
 	jobs.StartCleanupJob(bgCtx, a.DB)
 	jobs.StartAuditRetentionJob(bgCtx, a.DB)
+	a.startMailScrapeJob(bgCtx)
 
 	addr := fmt.Sprintf("%s:%s", a.Config.Server.Host, a.Config.Server.Port)
 	slog.Info("Service starting", "name", a.Name, "address", addr)
@@ -99,4 +103,21 @@ func (a *App) Start() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
 	a.shutdown(sig, cancelBg)
+}
+
+// startMailScrapeJob mirrors OrderMesh's startup: the periodic mailbox read
+// runs only when the scraping backend is actually usable; otherwise say why,
+// so a missing `graphlogin` shows up in the logs instead of failing silently
+// every N minutes.
+func (a *App) startMailScrapeJob(ctx context.Context) {
+	scraper := a.Services.MailScraperGroup.MailScraper
+	if scraper.MailboxReady() {
+		interval := time.Duration(a.Config.Inbound.ScrapeIntervalMin) * time.Minute
+		jobs.StartMailScrapeJob(ctx, scraper, interval)
+		slog.Info("scrape automatico attivo", "interval", interval, "backend", scraper.Backend())
+	} else if scraper.Backend() == "graph" {
+		slog.Info("backend Graph non autenticato: esegui `go run ./cmd/graphlogin` (o imposta GRAPH_CLIENT_SECRET) per attivare lo scraping")
+	} else {
+		slog.Info("IMAP non configurato: scraping disattivato")
+	}
 }

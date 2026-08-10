@@ -16,7 +16,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg config.S3Config, routingCfg config.RoutingConfig) {
+// SetupRoutes wires services, handlers and routes; it returns the service
+// container so the app can reach long-running collaborators (e.g. the mail
+// scraper driving the periodic scrape job).
+func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg config.S3Config, routingCfg config.RoutingConfig, inboundCfg config.InboundConfig) *services.Service {
 	s3Client, err := s3invoices.NewClient(context.Background(), s3Cfg)
 	if err != nil {
 		// Non-fatal: mirrors Python's own resilience posture (S3 archival is
@@ -25,7 +28,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 		s3Client, _ = s3invoices.NewClient(context.Background(), config.S3Config{})
 	}
 
-	svc := services.NewService(db, jwtCfg, s3Client, routingCfg.ORSApiKey, routingCfg.ORSBaseURL)
+	svc := services.NewService(db, jwtCfg, s3Client, routingCfg.ORSApiKey, routingCfg.ORSBaseURL, inboundCfg)
 	handlers := app_handlers.NewHandler(svc, audit.NewLogger(db), jwtCfg)
 
 	api := app.Group("/api/v1")
@@ -73,4 +76,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, jwtCfg utils.JWTConfig, s3Cfg conf
 	registerMapRoutes(authAll, handlers)
 	registerAvailabilityRoutes(authAll, handlers)
 	registerExportRoutes(authAll, handlers)
+	registerPdfTemplateRoutes(authAll, handlers)
+	registerInboundOrderRoutes(authAll, handlers)
+
+	return svc
 }

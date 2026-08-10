@@ -38,6 +38,11 @@ import {
   DtoGarageRequest,
   DtoGarageResponse,
   DtoGeocodeResultDTO,
+  DtoInboundConfigResponse,
+  DtoInboundOrderActionResponse,
+  DtoInboundOrderRequest,
+  DtoInboundOrderResponse,
+  DtoInboundScrapeResponse,
   DtoInvoiceFinalizeResult,
   DtoInvoicePDFURLResult,
   DtoInvoiceRequest,
@@ -57,6 +62,11 @@ import {
   DtoOrderRouteAlternativesResponse,
   DtoOrderRouteUpdateRequest,
   DtoPatchUserRequest,
+  DtoPdfExtractionResponse,
+  DtoPdfRenderResponse,
+  DtoPdfTemplateMatchResponse,
+  DtoPdfTemplateRequest,
+  DtoPdfTemplateResponse,
   DtoPriceListItemAddResult,
   DtoPriceListItemDeleteResult,
   DtoPriceListItemRequestDTO,
@@ -1348,6 +1358,130 @@ export class Api<SecurityDataType = unknown> {
   /**
    * No description
    *
+   * @tags InboundOrders
+   * @name V1InboundConfigList
+   * @summary Runtime status of the inbound pipeline (SMTP, mailbox, poppler, vision)
+   * @request GET:/api/v1/inbound-config
+   * @secure
+   */
+  v1InboundConfigList = (params: RequestParams = {}) =>
+    this.http.request<DtoInboundConfigResponse, any>({
+      path: `/api/v1/inbound-config`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersList
+   * @summary List inbound orders (acceptance dashboard)
+   * @request GET:/api/v1/inbound-orders
+   * @secure
+   */
+  v1InboundOrdersList = (params: RequestParams = {}) =>
+    this.http.request<DtoInboundOrderResponse[], any>({
+      path: `/api/v1/inbound-orders`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description 409 when an order with the same (ref, client) already exists — mailbox re-reads and double submissions never duplicate.
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersCreate
+   * @summary Confirm an inbound-order draft (e.g. from /pdf/import)
+   * @request POST:/api/v1/inbound-orders
+   * @secure
+   */
+  v1InboundOrdersCreate = (
+    order: DtoInboundOrderRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoInboundOrderResponse, Record<string, string>>({
+      path: `/api/v1/inbound-orders`,
+      method: "POST",
+      body: order,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Runs one scrape of the configured mailbox (Microsoft Graph or IMAP). 502 when the mailbox is unreachable or not authenticated.
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersScrapeCreate
+   * @summary Read the orders mailbox now and store the new orders
+   * @request POST:/api/v1/inbound-orders/scrape
+   * @secure
+   */
+  v1InboundOrdersScrapeCreate = (params: RequestParams = {}) =>
+    this.http.request<DtoInboundScrapeResponse, Record<string, string>>({
+      path: `/api/v1/inbound-orders/scrape`,
+      method: "POST",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description The mail is sent BEFORE the status change: on send failure (502) the order stays pending for a retry. Without SMTP the order is accepted anyway and the response says no mail was sent.
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersAcceptCreate
+   * @summary Accept an inbound order (+ confirmation mail when SMTP is configured)
+   * @request POST:/api/v1/inbound-orders/{id}/accept
+   * @secure
+   */
+  v1InboundOrdersAcceptCreate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoInboundOrderActionResponse, Record<string, string>>({
+      path: `/api/v1/inbound-orders/${id}/accept`,
+      method: "POST",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersModifyCreate
+   * @summary Mark an inbound order as under revision (the UI opens a mailto: to the sender)
+   * @request POST:/api/v1/inbound-orders/{id}/modify
+   * @secure
+   */
+  v1InboundOrdersModifyCreate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoInboundOrderResponse, Record<string, string>>({
+      path: `/api/v1/inbound-orders/${id}/modify`,
+      method: "POST",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags InboundOrders
+   * @name V1InboundOrdersResetCreate
+   * @summary Reset an inbound order to pending
+   * @request POST:/api/v1/inbound-orders/{id}/reset
+   * @secure
+   */
+  v1InboundOrdersResetCreate = (id: string, params: RequestParams = {}) =>
+    this.http.request<DtoInboundOrderResponse, Record<string, string>>({
+      path: `/api/v1/inbound-orders/${id}/reset`,
+      method: "POST",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
    * @tags Invoices
    * @name V1InvoicesList
    * @summary List invoices
@@ -2007,6 +2141,200 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/orders/${id}/unassign`,
       method: "PATCH",
       secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags PdfTemplates
+   * @name V1PdfTemplatesList
+   * @summary List PDF templates
+   * @request GET:/api/v1/pdf-templates
+   * @secure
+   */
+  v1PdfTemplatesList = (params: RequestParams = {}) =>
+    this.http.request<DtoPdfTemplateResponse[], any>({
+      path: `/api/v1/pdf-templates`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags PdfTemplates
+   * @name V1PdfTemplatesCreate
+   * @summary Create PDF template
+   * @request POST:/api/v1/pdf-templates
+   * @secure
+   */
+  v1PdfTemplatesCreate = (
+    template: DtoPdfTemplateRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfTemplateResponse, Record<string, string>>({
+      path: `/api/v1/pdf-templates`,
+      method: "POST",
+      body: template,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags PdfTemplates
+   * @name V1PdfTemplatesMatchList
+   * @summary Best template for a mail sender (exact address beats domain); match is null when nothing matches
+   * @request GET:/api/v1/pdf-templates/match
+   * @secure
+   */
+  v1PdfTemplatesMatchList = (
+    query: {
+      /** Sender address, e.g. ordini@cliente.it */
+      sender: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfTemplateMatchResponse, any>({
+      path: `/api/v1/pdf-templates/match`,
+      method: "GET",
+      query: query,
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags PdfTemplates
+   * @name V1PdfTemplatesUpdate
+   * @summary Update PDF template (full replace)
+   * @request PUT:/api/v1/pdf-templates/{id}
+   * @secure
+   */
+  v1PdfTemplatesUpdate = (
+    id: string,
+    template: DtoPdfTemplateRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfTemplateResponse, Record<string, string>>({
+      path: `/api/v1/pdf-templates/${id}`,
+      method: "PUT",
+      body: template,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags PdfTemplates
+   * @name V1PdfTemplatesDelete
+   * @summary Delete PDF template
+   * @request DELETE:/api/v1/pdf-templates/{id}
+   * @secure
+   */
+  v1PdfTemplatesDelete = (id: string, params: RequestParams = {}) =>
+    this.http.request<void, Record<string, string>>({
+      path: `/api/v1/pdf-templates/${id}`,
+      method: "DELETE",
+      secure: true,
+      ...params,
+    });
+  /**
+   * @description Multipart {file, template_id?, sender?}. Template resolution: explicit template_id wins, otherwise the best sender match. Nothing is persisted — the returned draft is confirmed via POST /inbound-orders.
+   *
+   * @tags PdfImport
+   * @name V1PdfImportCreate
+   * @summary Extract an inbound-order draft from a PDF using a saved template
+   * @request POST:/api/v1/pdf/import
+   * @secure
+   */
+  v1PdfImportCreate = (
+    data: {
+      /**
+       * PDF file (max 25 MB)
+       * @format binary
+       */
+      file: File;
+      /** Template ID (UUID); wins over sender matching */
+      template_id?: string;
+      /** Sender address used to preselect the template */
+      sender?: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfExtractionResponse, Record<string, string>>({
+      path: `/api/v1/pdf/import`,
+      method: "POST",
+      body: data,
+      secure: true,
+      type: ContentType.FormData,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Multipart upload; returns per-page PNG (base64) and detected text blocks in normalized coordinates.
+   *
+   * @tags PdfImport
+   * @name V1PdfRenderCreate
+   * @summary Render PDF pages + text blocks for the template editor
+   * @request POST:/api/v1/pdf/render
+   * @secure
+   */
+  v1PdfRenderCreate = (
+    data: {
+      /**
+       * PDF file (max 25 MB)
+       * @format binary
+       */
+      file: File;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfRenderResponse, Record<string, string>>({
+      path: `/api/v1/pdf/render`,
+      method: "POST",
+      body: data,
+      secure: true,
+      type: ContentType.FormData,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Multipart {file, template: JSON, sender?}. Nothing is persisted — returns the draft the template would produce.
+   *
+   * @tags PdfImport
+   * @name V1PdfTestCreate
+   * @summary Dry-run a (possibly unsaved) template against a PDF
+   * @request POST:/api/v1/pdf/test
+   * @secure
+   */
+  v1PdfTestCreate = (
+    data: {
+      /**
+       * PDF file (max 25 MB)
+       * @format binary
+       */
+      file: File;
+      /** Template JSON (dto.PdfTemplateRequest shape) */
+      template: string;
+      /** Sender address for the draft */
+      sender?: string;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoPdfExtractionResponse, Record<string, string>>({
+      path: `/api/v1/pdf/test`,
+      method: "POST",
+      body: data,
+      secure: true,
+      type: ContentType.FormData,
       format: "json",
       ...params,
     });

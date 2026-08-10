@@ -2674,6 +2674,309 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/inbound-config": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Runtime status of the inbound pipeline (SMTP, mailbox, poppler, vision)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundConfigResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/inbound-orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "List inbound orders (acceptance dashboard)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.InboundOrderResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "409 when an order with the same (ref, client) already exists — mailbox re-reads and double submissions never duplicate.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Confirm an inbound-order draft (e.g. from /pdf/import)",
+                "parameters": [
+                    {
+                        "description": "Order data",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/inbound-orders/scrape": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs one scrape of the configured mailbox (Microsoft Graph or IMAP). 502 when the mailbox is unreachable or not authenticated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Read the orders mailbox now and store the new orders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundScrapeResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/inbound-orders/{id}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The mail is sent BEFORE the status change: on send failure (502) the order stays pending for a retry. Without SMTP the order is accepted anyway and the response says no mail was sent.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Accept an inbound order (+ confirmation mail when SMTP is configured)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderActionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/inbound-orders/{id}/modify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Mark an inbound order as under revision (the UI opens a mailto: to the sender)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/inbound-orders/{id}/reset": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "InboundOrders"
+                ],
+                "summary": "Reset an inbound order to pending",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/invoices": {
             "get": {
                 "security": [
@@ -4255,6 +4558,416 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf-templates": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfTemplates"
+                ],
+                "summary": "List PDF templates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.PdfTemplateResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfTemplates"
+                ],
+                "summary": "Create PDF template",
+                "parameters": [
+                    {
+                        "description": "Template data",
+                        "name": "template",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf-templates/match": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfTemplates"
+                ],
+                "summary": "Best template for a mail sender (exact address beats domain); match is null when nothing matches",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sender address, e.g. ordini@cliente.it",
+                        "name": "sender",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfTemplateMatchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf-templates/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfTemplates"
+                ],
+                "summary": "Update PDF template (full replace)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Template data",
+                        "name": "template",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "PdfTemplates"
+                ],
+                "summary": "Delete PDF template",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Multipart {file, template_id?, sender?}. Template resolution: explicit template_id wins, otherwise the best sender match. Nothing is persisted — the returned draft is confirmed via POST /inbound-orders.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfImport"
+                ],
+                "summary": "Extract an inbound-order draft from a PDF using a saved template",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF file (max 25 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Template ID (UUID); wins over sender matching",
+                        "name": "template_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sender address used to preselect the template",
+                        "name": "sender",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfExtractionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf/render": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Multipart upload; returns per-page PNG (base64) and detected text blocks in normalized coordinates.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfImport"
+                ],
+                "summary": "Render PDF pages + text blocks for the template editor",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF file (max 25 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfRenderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pdf/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Multipart {file, template: JSON, sender?}. Nothing is persisted — returns the draft the template would produce.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PdfImport"
+                ],
+                "summary": "Dry-run a (possibly unsaved) template against a PDF",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "PDF file (max 25 MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Template JSON (dto.PdfTemplateRequest shape)",
+                        "name": "template",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sender address for the draft",
+                        "name": "sender",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PdfExtractionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -6848,6 +7561,238 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.InboundConfigResponse": {
+            "type": "object",
+            "properties": {
+                "accept_mode": {
+                    "type": "string"
+                },
+                "backend": {
+                    "type": "string"
+                },
+                "mailbox_ready": {
+                    "type": "boolean"
+                },
+                "pdf_ready": {
+                    "type": "boolean"
+                },
+                "scrape_interval_min": {
+                    "type": "integer"
+                },
+                "smtp_ready": {
+                    "type": "boolean"
+                },
+                "subject_filter": {
+                    "type": "string"
+                },
+                "test_recipient": {
+                    "type": "string"
+                },
+                "vision_ready": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.InboundOrderActionResponse": {
+            "type": "object",
+            "properties": {
+                "mail": {
+                    "type": "string"
+                },
+                "order": {
+                    "$ref": "#/definitions/dto.InboundOrderResponse"
+                }
+            }
+        },
+        "dto.InboundOrderDraftDTO": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "type": "string"
+                },
+                "delivery_date": {
+                    "type": "string"
+                },
+                "delivery_place": {
+                    "type": "string"
+                },
+                "kg": {
+                    "type": "integer"
+                },
+                "load_date": {
+                    "type": "string"
+                },
+                "load_place": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "product": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "string"
+                },
+                "received_at": {
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "sender_email": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "template_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.InboundOrderRequest": {
+            "type": "object",
+            "required": [
+                "client"
+            ],
+            "properties": {
+                "client": {
+                    "type": "string"
+                },
+                "delivery_date": {
+                    "type": "string"
+                },
+                "delivery_place": {
+                    "type": "string"
+                },
+                "kg": {
+                    "type": "integer"
+                },
+                "load_date": {
+                    "type": "string"
+                },
+                "load_place": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "portal": {
+                    "type": "boolean"
+                },
+                "product": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "string"
+                },
+                "received_at": {
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "sender_email": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string",
+                    "enum": [
+                        "seed",
+                        "mail",
+                        "pdf"
+                    ]
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "accepted",
+                        "modify"
+                    ]
+                },
+                "template_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.InboundOrderResponse": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "delivery_date": {
+                    "type": "string"
+                },
+                "delivery_place": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kg": {
+                    "type": "integer"
+                },
+                "load_date": {
+                    "type": "string"
+                },
+                "load_place": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "portal": {
+                    "type": "boolean"
+                },
+                "product": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "string"
+                },
+                "received_at": {
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "sender_email": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.InboundScrapeResponse": {
+            "type": "object",
+            "properties": {
+                "added": {
+                    "type": "integer"
+                },
+                "scanned": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.InvoiceFinalizeResult": {
             "type": "object",
             "properties": {
@@ -7713,6 +8658,209 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "profile_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PdfExtractedValueDTO": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "number"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PdfExtractionResponse": {
+            "type": "object",
+            "properties": {
+                "extraction": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/dto.PdfExtractedValueDTO"
+                    }
+                },
+                "order": {
+                    "$ref": "#/definitions/dto.InboundOrderDraftDTO"
+                },
+                "template": {
+                    "$ref": "#/definitions/dto.PdfTemplateRef"
+                },
+                "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.PdfRenderBlockDTO": {
+            "type": "object",
+            "properties": {
+                "bounds_norm": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number",
+                        "format": "float64"
+                    }
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PdfRenderPageDTO": {
+            "type": "object",
+            "properties": {
+                "blocks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PdfRenderBlockDTO"
+                    }
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "image_b64": {
+                    "type": "string"
+                },
+                "page_num": {
+                    "type": "integer"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PdfRenderResponse": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "page_count": {
+                    "type": "integer"
+                },
+                "pages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PdfRenderPageDTO"
+                    }
+                }
+            }
+        },
+        "dto.PdfTemplateFieldDTO": {
+            "type": "object",
+            "required": [
+                "target"
+            ],
+            "properties": {
+                "h": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "target": {
+                    "type": "string"
+                },
+                "w": {
+                    "type": "number"
+                },
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.PdfTemplateMatchResponse": {
+            "type": "object",
+            "properties": {
+                "match": {
+                    "$ref": "#/definitions/dto.PdfTemplateResponse"
+                }
+            }
+        },
+        "dto.PdfTemplateRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PdfTemplateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "client": {
+                    "description": "Client is the default client name for orders imported with this template.",
+                    "type": "string"
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PdfTemplateFieldDTO"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "senders": {
+                    "description": "Senders holds full addresses or \"@domain\" patterns used to preselect\nthe template from a mail sender.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "dto.PdfTemplateResponse": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PdfTemplateFieldDTO"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "senders": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

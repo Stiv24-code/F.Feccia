@@ -770,6 +770,160 @@ definitions:
       provincia:
         type: string
     type: object
+  dto.InboundConfigResponse:
+    properties:
+      accept_mode:
+        type: string
+      backend:
+        type: string
+      mailbox_ready:
+        type: boolean
+      pdf_ready:
+        type: boolean
+      scrape_interval_min:
+        type: integer
+      smtp_ready:
+        type: boolean
+      subject_filter:
+        type: string
+      test_recipient:
+        type: string
+      vision_ready:
+        type: boolean
+    type: object
+  dto.InboundOrderActionResponse:
+    properties:
+      mail:
+        type: string
+      order:
+        $ref: '#/definitions/dto.InboundOrderResponse'
+    type: object
+  dto.InboundOrderDraftDTO:
+    properties:
+      client:
+        type: string
+      delivery_date:
+        type: string
+      delivery_place:
+        type: string
+      kg:
+        type: integer
+      load_date:
+        type: string
+      load_place:
+        type: string
+      notes:
+        type: string
+      product:
+        type: string
+      rate:
+        type: string
+      received_at:
+        type: string
+      ref:
+        type: string
+      sender_email:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      template_id:
+        type: string
+    type: object
+  dto.InboundOrderRequest:
+    properties:
+      client:
+        type: string
+      delivery_date:
+        type: string
+      delivery_place:
+        type: string
+      kg:
+        type: integer
+      load_date:
+        type: string
+      load_place:
+        type: string
+      notes:
+        type: string
+      portal:
+        type: boolean
+      product:
+        type: string
+      rate:
+        type: string
+      received_at:
+        type: string
+      ref:
+        type: string
+      sender_email:
+        type: string
+      source:
+        enum:
+        - seed
+        - mail
+        - pdf
+        type: string
+      status:
+        enum:
+        - pending
+        - accepted
+        - modify
+        type: string
+      template_id:
+        type: string
+    required:
+    - client
+    type: object
+  dto.InboundOrderResponse:
+    properties:
+      client:
+        type: string
+      created_at:
+        type: string
+      delivery_date:
+        type: string
+      delivery_place:
+        type: string
+      id:
+        type: string
+      kg:
+        type: integer
+      load_date:
+        type: string
+      load_place:
+        type: string
+      notes:
+        type: string
+      portal:
+        type: boolean
+      product:
+        type: string
+      rate:
+        type: string
+      received_at:
+        type: string
+      ref:
+        type: string
+      sender_email:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      template_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.InboundScrapeResponse:
+    properties:
+      added:
+        type: integer
+      scanned:
+        type: integer
+    type: object
   dto.InvoiceFinalizeResult:
     properties:
       ok:
@@ -1346,6 +1500,142 @@ definitions:
       name:
         type: string
       profile_id:
+        type: string
+    type: object
+  dto.PdfExtractedValueDTO:
+    properties:
+      confidence:
+        type: number
+      method:
+        type: string
+      value:
+        type: string
+    type: object
+  dto.PdfExtractionResponse:
+    properties:
+      extraction:
+        additionalProperties:
+          $ref: '#/definitions/dto.PdfExtractedValueDTO'
+        type: object
+      order:
+        $ref: '#/definitions/dto.InboundOrderDraftDTO'
+      template:
+        $ref: '#/definitions/dto.PdfTemplateRef'
+      values:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  dto.PdfRenderBlockDTO:
+    properties:
+      bounds_norm:
+        additionalProperties:
+          format: float64
+          type: number
+        type: object
+      text:
+        type: string
+    type: object
+  dto.PdfRenderPageDTO:
+    properties:
+      blocks:
+        items:
+          $ref: '#/definitions/dto.PdfRenderBlockDTO'
+        type: array
+      height:
+        type: integer
+      image_b64:
+        type: string
+      page_num:
+        type: integer
+      width:
+        type: integer
+    type: object
+  dto.PdfRenderResponse:
+    properties:
+      filename:
+        type: string
+      page_count:
+        type: integer
+      pages:
+        items:
+          $ref: '#/definitions/dto.PdfRenderPageDTO'
+        type: array
+    type: object
+  dto.PdfTemplateFieldDTO:
+    properties:
+      h:
+        type: number
+      id:
+        type: string
+      label:
+        type: string
+      page:
+        type: integer
+      target:
+        type: string
+      w:
+        type: number
+      x:
+        type: number
+      "y":
+        type: number
+    required:
+    - target
+    type: object
+  dto.PdfTemplateMatchResponse:
+    properties:
+      match:
+        $ref: '#/definitions/dto.PdfTemplateResponse'
+    type: object
+  dto.PdfTemplateRef:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.PdfTemplateRequest:
+    properties:
+      client:
+        description: Client is the default client name for orders imported with this
+          template.
+        type: string
+      fields:
+        items:
+          $ref: '#/definitions/dto.PdfTemplateFieldDTO'
+        type: array
+      name:
+        type: string
+      senders:
+        description: |-
+          Senders holds full addresses or "@domain" patterns used to preselect
+          the template from a mail sender.
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    type: object
+  dto.PdfTemplateResponse:
+    properties:
+      client:
+        type: string
+      created_at:
+        type: string
+      fields:
+        items:
+          $ref: '#/definitions/dto.PdfTemplateFieldDTO'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      senders:
+        items:
+          type: string
+        type: array
+      updated_at:
         type: string
     type: object
   dto.PriceListItemAddResult:
@@ -3667,6 +3957,200 @@ paths:
       summary: Forward-geocode an address (Destination/Garage/WashStation forms)
       tags:
       - Geocode
+  /api/v1/inbound-config:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InboundConfigResponse'
+      security:
+      - BearerAuth: []
+      summary: Runtime status of the inbound pipeline (SMTP, mailbox, poppler, vision)
+      tags:
+      - InboundOrders
+  /api/v1/inbound-orders:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.InboundOrderResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List inbound orders (acceptance dashboard)
+      tags:
+      - InboundOrders
+    post:
+      consumes:
+      - application/json
+      description: 409 when an order with the same (ref, client) already exists —
+        mailbox re-reads and double submissions never duplicate.
+      parameters:
+      - description: Order data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InboundOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.InboundOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Confirm an inbound-order draft (e.g. from /pdf/import)
+      tags:
+      - InboundOrders
+  /api/v1/inbound-orders/{id}/accept:
+    post:
+      description: 'The mail is sent BEFORE the status change: on send failure (502)
+        the order stays pending for a retry. Without SMTP the order is accepted anyway
+        and the response says no mail was sent.'
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InboundOrderActionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Accept an inbound order (+ confirmation mail when SMTP is configured)
+      tags:
+      - InboundOrders
+  /api/v1/inbound-orders/{id}/modify:
+    post:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InboundOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 'Mark an inbound order as under revision (the UI opens a mailto: to
+        the sender)'
+      tags:
+      - InboundOrders
+  /api/v1/inbound-orders/{id}/reset:
+    post:
+      parameters:
+      - description: Order ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InboundOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reset an inbound order to pending
+      tags:
+      - InboundOrders
+  /api/v1/inbound-orders/scrape:
+    post:
+      description: Runs one scrape of the configured mailbox (Microsoft Graph or IMAP).
+        502 when the mailbox is unreachable or not authenticated.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InboundScrapeResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Read the orders mailbox now and store the new orders
+      tags:
+      - InboundOrders
   /api/v1/invoices:
     get:
       parameters:
@@ -4669,6 +5153,270 @@ paths:
       summary: Unassign order (PIANIFICATO -> PIANIFICABILE)
       tags:
       - Orders
+  /api/v1/pdf-templates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.PdfTemplateResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List PDF templates
+      tags:
+      - PdfTemplates
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Template data
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PdfTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PdfTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create PDF template
+      tags:
+      - PdfTemplates
+  /api/v1/pdf-templates/{id}:
+    delete:
+      parameters:
+      - description: Template ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete PDF template
+      tags:
+      - PdfTemplates
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Template ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Template data
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PdfTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PdfTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update PDF template (full replace)
+      tags:
+      - PdfTemplates
+  /api/v1/pdf-templates/match:
+    get:
+      parameters:
+      - description: Sender address, e.g. ordini@cliente.it
+        in: query
+        name: sender
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PdfTemplateMatchResponse'
+      security:
+      - BearerAuth: []
+      summary: Best template for a mail sender (exact address beats domain); match
+        is null when nothing matches
+      tags:
+      - PdfTemplates
+  /api/v1/pdf/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Multipart {file, template_id?, sender?}. Template resolution:
+        explicit template_id wins, otherwise the best sender match. Nothing is persisted
+        — the returned draft is confirmed via POST /inbound-orders.'
+      parameters:
+      - description: PDF file (max 25 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Template ID (UUID); wins over sender matching
+        in: formData
+        name: template_id
+        type: string
+      - description: Sender address used to preselect the template
+        in: formData
+        name: sender
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PdfExtractionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Extract an inbound-order draft from a PDF using a saved template
+      tags:
+      - PdfImport
+  /api/v1/pdf/render:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Multipart upload; returns per-page PNG (base64) and detected text
+        blocks in normalized coordinates.
+      parameters:
+      - description: PDF file (max 25 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PdfRenderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Render PDF pages + text blocks for the template editor
+      tags:
+      - PdfImport
+  /api/v1/pdf/test:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Multipart {file, template: JSON, sender?}. Nothing is persisted
+        — returns the draft the template would produce.'
+      parameters:
+      - description: PDF file (max 25 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Template JSON (dto.PdfTemplateRequest shape)
+        in: formData
+        name: template
+        required: true
+        type: string
+      - description: Sender address for the draft
+        in: formData
+        name: sender
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PdfExtractionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Dry-run a (possibly unsaved) template against a PDF
+      tags:
+      - PdfImport
   /api/v1/pricelists:
     get:
       parameters:

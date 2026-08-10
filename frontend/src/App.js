@@ -27,6 +27,8 @@ const CountriesPage = lazy(() => import('@/pages/anagrafiche/CountriesPage'));
 const BanksPage = lazy(() => import('@/pages/anagrafiche/BanksPage'));
 const AccountingEntriesPage = lazy(() => import('@/pages/anagrafiche/AccountingEntriesPage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
+const InboundOrdersPage = lazy(() => import('@/pages/InboundOrdersPage'));
+const PdfTemplatesPage = lazy(() => import('@/pages/PdfTemplatesPage'));
 const PlannerPage = lazy(() => import('@/pages/PlannerPage'));
 const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage'));
 const TripsPage = lazy(() => import('@/pages/TripsPage'));
@@ -74,6 +76,8 @@ function StaffRoutes() {
           <Route path="anagrafiche/voci-contabili" element={<AccountingEntriesPage />} />
           <Route path="listini" element={<PriceListsPage />} />
           <Route path="ordini" element={<OrdersPage />} />
+          <Route path="ordini-in-ingresso" element={<InboundOrdersPage />} />
+          <Route path="ordini-in-ingresso/template" element={<PdfTemplatesPage />} />
           <Route path="planner" element={<PlannerPage />} />
           <Route path="planner/ordini/:id" element={<OrderDetailPage />} />
           <Route path="planner/dnd" element={<PlannerDnDPage />} />

@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
   Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
-  Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon
+  Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon, Inbox
 } from 'lucide-react';
 
 // Se `roles` è presente, la voce è visibile solo agli utenti con quel ruolo.
@@ -35,6 +35,12 @@ const navItems = [
   },
   { label: 'Listini', path: '/listini', icon: ListOrdered },
   { label: 'Raccolta Ordini', path: '/ordini', icon: ClipboardList },
+  {
+    label: 'Ordini in Ingresso', icon: Inbox, children: [
+      { label: 'Accettazione', path: '/ordini-in-ingresso', icon: Inbox },
+      { label: 'Template PDF', path: '/ordini-in-ingresso/template', icon: FileText },
+    ]
+  },
   { label: 'Planner', path: '/planner', icon: CalendarRange, roles: ['admin', 'planner'] },
   { label: 'Planner Drag&Drop', path: '/planner/dnd', icon: CalendarRange, roles: ['admin', 'planner'] },
   { label: 'Gestione Viaggi', path: '/viaggi', icon: Route, roles: ['admin', 'planner'] },
@@ -194,6 +200,8 @@ const AppShell = ({ children }) => {
     if (path.includes('lavaggi')) return 'Punti di Lavaggio';
     if (path.includes('garage')) return 'Garage / Parcheggio';
     if (path.includes('listini')) return 'Listini';
+    // prima del generico 'ordini': 'ordini-in-ingresso' lo conterrebbe
+    if (path.includes('ordini-in-ingresso')) return path.includes('template') ? 'Template PDF per cliente' : 'Ordini in Ingresso';
     if (path.includes('ordini')) return 'Raccolta Ordini';
     if (path.includes('planner')) return 'Planner';
     if (path.includes('viaggi')) return 'Gestione Viaggi';

@@ -4,6 +4,7 @@ package services
 
 import (
 	"context"
+	"fratelli-feccia/config"
 	"fratelli-feccia/internal/dto"
 	admin "fratelli-feccia/internal/services/admin_panel"
 	"fratelli-feccia/internal/services/anagrafiche"
@@ -18,11 +19,16 @@ import (
 	"fratelli-feccia/internal/services/export"
 	"fratelli-feccia/internal/services/garages"
 	"fratelli-feccia/internal/services/geocode"
+	"fratelli-feccia/internal/services/inboundorders"
 	"fratelli-feccia/internal/services/invoices"
+	"fratelli-feccia/internal/services/mailer"
+	"fratelli-feccia/internal/services/mailscraper"
 	"fratelli-feccia/internal/services/mapview"
 	"fratelli-feccia/internal/services/masterdata"
 	"fratelli-feccia/internal/services/motrici"
 	"fratelli-feccia/internal/services/orders"
+	"fratelli-feccia/internal/services/pdfengine"
+	"fratelli-feccia/internal/services/pdftemplates"
 	"fratelli-feccia/internal/services/pricelists"
 	"fratelli-feccia/internal/services/products"
 	"fratelli-feccia/internal/services/semirimorchi"
@@ -223,6 +229,38 @@ type Export interface {
 	OrdersExcel(ctx context.Context, filter export.OrdersFilter) ([]byte, error)
 }
 
+type PdfTemplate interface {
+	List(ctx context.Context) ([]dto.PdfTemplateResponse, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*dto.PdfTemplateResponse, error)
+	Create(ctx context.Context, req dto.PdfTemplateRequest) (*dto.PdfTemplateResponse, error)
+	Update(ctx context.Context, id uuid.UUID, req dto.PdfTemplateRequest) (*dto.PdfTemplateResponse, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+	Match(ctx context.Context, sender string) (*dto.PdfTemplateResponse, error)
+}
+
+type InboundOrder interface {
+	List(ctx context.Context) ([]dto.InboundOrderResponse, error)
+	Create(ctx context.Context, req dto.InboundOrderRequest) (*dto.InboundOrderResponse, error)
+	Accept(ctx context.Context, id uuid.UUID) (*dto.InboundOrderActionResponse, error)
+	Modify(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error)
+	Reset(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error)
+}
+
+type MailScraper interface {
+	Scrape(ctx context.Context) (added, scanned int, err error)
+	MailboxReady() bool
+	Backend() string
+	Status() dto.InboundConfigResponse
+}
+
+type PdfEngine interface {
+	Ready() bool
+	VisionReady() bool
+	Render(ctx context.Context, filename string, pdf []byte) (*dto.PdfRenderResponse, error)
+	Extract(ctx context.Context, pdf []byte, tpl dto.PdfTemplateResponse) (map[string]dto.PdfExtractedValueDTO, error)
+	BuildDraft(tpl dto.PdfTemplateResponse, values map[string]dto.PdfExtractedValueDTO, sender, filename string) (dto.InboundOrderDraftDTO, map[string]string)
+}
+
 type Admin struct {
 	Admin AdminService
 }
@@ -315,6 +353,22 @@ type GeocodeGroup struct {
 	Geocode Geocode
 }
 
+type PdfTemplates struct {
+	PdfTemplate PdfTemplate
+}
+
+type InboundOrders struct {
+	InboundOrder InboundOrder
+}
+
+type MailScraperGroup struct {
+	MailScraper MailScraper
+}
+
+type PdfEngineGroup struct {
+	PdfEngine PdfEngine
+}
+
 type Service struct {
 	Admin
 	Authentication
@@ -339,9 +393,23 @@ type Service struct {
 	AvailabilityGroup
 	ExportGroup
 	GeocodeGroup
+	PdfTemplates
+	PdfEngineGroup
+	InboundOrders
+	MailScraperGroup
 }
 
-func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string) *Service {
+func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string, inboundCfg config.InboundConfig) *Service {
+	// The acceptance mailer only exists when SMTP is configured; a nil seam
+	// means Accept works without sending mail ("SMTP non configurato").
+	var acceptanceMailer inboundorders.AcceptanceMailer
+	if inboundCfg.SMTPConfigured() {
+		acceptanceMailer = mailer.NewMailerService(inboundCfg)
+	}
+	// The scraper shares the inbound-orders instance as its order sink
+	// (AddIfNew), so both API and scraper apply the same dedup rule.
+	inboundOrderSvc := inboundorders.NewInboundOrderService(db, acceptanceMailer)
+
 	return &Service{
 		Admin: Admin{
 			Admin: admin.NewAdminService(db, jwtConf),
@@ -411,6 +479,18 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 		},
 		GeocodeGroup: GeocodeGroup{
 			Geocode: geocode.NewGeocodeService(orsApiKey, orsBaseURL),
+		},
+		PdfTemplates: PdfTemplates{
+			PdfTemplate: pdftemplates.NewPdfTemplateService(db),
+		},
+		PdfEngineGroup: PdfEngineGroup{
+			PdfEngine: pdfengine.NewPdfEngineService(inboundCfg.AnthropicAPIKey),
+		},
+		InboundOrders: InboundOrders{
+			InboundOrder: inboundOrderSvc,
+		},
+		MailScraperGroup: MailScraperGroup{
+			MailScraper: mailscraper.NewMailScraperService(inboundCfg, inboundOrderSvc),
 		},
 	}
 }

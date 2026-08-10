@@ -28,7 +28,9 @@ func newFiberApp() *fiber.App {
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
-		BodyLimit:    10 * 1024 * 1024,
+		// 26 MB: the PDF import endpoints (/api/v1/pdf/*) accept uploads up
+		// to 25 MB (see internal/handlers/pdfimport), plus multipart overhead.
+		BodyLimit: 26 * 1024 * 1024,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
