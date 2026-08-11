@@ -45,6 +45,33 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       ORS_API_KEY: ${ORS_API_KEY:-}
       ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
+      # ── Ingestion ordini (OrderMesh) — tutto opzionale: senza credenziali
+      # restano attivi dashboard, template e import PDF dal layer testo.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # test: conferme al solo TEST_RECIPIENT. Passare a `production` solo al
+      # go-live, altrimenti le conferme partono verso i clienti reali.
+      ACCEPT_MODE: ${ACCEPT_MODE:-test}
+      TEST_RECIPIENT: ${TEST_RECIPIENT:-}
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASS: ${IMAP_PASS:-}
+      MAIL_BACKEND: ${MAIL_BACKEND:-auto}
+      GRAPH_CLIENT_ID: ${GRAPH_CLIENT_ID:-}
+      GRAPH_TENANT: ${GRAPH_TENANT:-organizations}
+      # Qui si usa il flusso app-only (client secret + mailbox): non serve
+      # `graph-login` né persistere DATA_DIR/graph_token.json, che il
+      # `docker compose down -v` del workflow di deploy cancellerebbe a ogni
+      # rilascio fermando lo scraping.
+      GRAPH_CLIENT_SECRET: ${GRAPH_CLIENT_SECRET:-}
+      GRAPH_MAILBOX: ${GRAPH_MAILBOX:-}
+      SUBJECT_FILTER: ${SUBJECT_FILTER:-[ORDINE]}
+      SCRAPE_INTERVAL_MIN: ${SCRAPE_INTERVAL_MIN:-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "${GO_BACKEND_PORT:-8081}:8080"
     healthcheck:

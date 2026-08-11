@@ -696,14 +696,14 @@ type TripResponse struct {
 	Vettore         *CarrierResponse       `json:"vettore"`
 	GarageID        string                 `json:"garage_id"`
 	Garage          *GarageResponse        `json:"garage"`
-	Segmenti       []TripSegmentDTO `json:"segmenti"`
-	KmTotali       float64          `json:"km_totali"`
-	CostoStimato   float64          `json:"costo_stimato"`
-	Stato          string           `json:"stato"`
-	Note           string           `json:"note"`
-	DataPartenza   string           `json:"data_partenza"`
-	DataArrivo     string           `json:"data_arrivo"`
-	CreatedAt      time.Time        `json:"created_at"`
+	Segmenti        []TripSegmentDTO       `json:"segmenti"`
+	KmTotali        float64                `json:"km_totali"`
+	CostoStimato    float64                `json:"costo_stimato"`
+	Stato           string                 `json:"stato"`
+	Note            string                 `json:"note"`
+	DataPartenza    string                 `json:"data_partenza"`
+	DataArrivo      string                 `json:"data_arrivo"`
+	CreatedAt       time.Time              `json:"created_at"`
 }
 
 // TripDetailResponse is returned only by GET /trips/{id}, which additionally
@@ -1023,4 +1023,192 @@ type CustomerResponse struct {
 	Active              bool      `json:"active"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// ── PDF templates + import ordini da PDF (porting OrderMesh) ──────────────
+
+// PdfTemplateFieldDTO maps a rectangular zone of the PDF onto one inbound
+// order field. Bounds are normalized 0..1 relative to the page, independent
+// from render resolution. Target must be one of
+// models.InboundOrderFieldTargets.
+type PdfTemplateFieldDTO struct {
+	ID     string  `json:"id"`
+	Target string  `json:"target" validate:"required"`
+	Label  string  `json:"label"`
+	Page   int     `json:"page"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	W      float64 `json:"w"`
+	H      float64 `json:"h"`
+}
+
+type PdfTemplateRequest struct {
+	Name string `json:"name" validate:"required"`
+	// Client is the default client name for orders imported with this template.
+	Client string `json:"client"`
+	// Senders holds full addresses or "@domain" patterns used to preselect
+	// the template from a mail sender.
+	Senders []string              `json:"senders"`
+	Fields  []PdfTemplateFieldDTO `json:"fields"`
+}
+
+type PdfTemplateResponse struct {
+	ID        uuid.UUID             `json:"id"`
+	Name      string                `json:"name"`
+	Client    string                `json:"client"`
+	Senders   []string              `json:"senders"`
+	Fields    []PdfTemplateFieldDTO `json:"fields"`
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
+}
+
+// PdfTemplateMatchResponse wraps the best template for a sender; Match is
+// null when nothing matches (the UI then asks for a manual choice).
+type PdfTemplateMatchResponse struct {
+	Match *PdfTemplateResponse `json:"match"`
+}
+
+// PdfRenderBlockDTO is one detected text block with normalized bounds — the
+// clickable suggestion in the template editor.
+type PdfRenderBlockDTO struct {
+	Text       string             `json:"text"`
+	BoundsNorm map[string]float64 `json:"bounds_norm"`
+}
+
+type PdfRenderPageDTO struct {
+	PageNum  int                 `json:"page_num"`
+	ImageB64 string              `json:"image_b64"`
+	Width    int                 `json:"width"`
+	Height   int                 `json:"height"`
+	Blocks   []PdfRenderBlockDTO `json:"blocks"`
+}
+
+type PdfRenderResponse struct {
+	Filename  string             `json:"filename"`
+	PageCount int                `json:"page_count"`
+	Pages     []PdfRenderPageDTO `json:"pages"`
+}
+
+// PdfExtractedValueDTO is the outcome of reading one template zone: Method
+// says how ("poppler-text", "claude-vision", "empty", "page-out-of-range",
+// "render-error", "skipped-too-small") so the UI can flag uncertain zones.
+type PdfExtractedValueDTO struct {
+	Value      string  `json:"value"`
+	Confidence float64 `json:"confidence"`
+	Method     string  `json:"method"`
+}
+
+// InboundOrderDraftDTO is the order draft built from a PDF extraction —
+// NOT persisted: the operator reviews it in the UI and confirms via
+// POST /inbound-orders. Field names mirror models.InboundOrder.
+type InboundOrderDraftDTO struct {
+	Client        string     `json:"client"`
+	SenderEmail   string     `json:"sender_email"`
+	Ref           string     `json:"ref"`
+	Product       string     `json:"product"`
+	Kg            int        `json:"kg"`
+	LoadDate      string     `json:"load_date"`
+	LoadPlace     string     `json:"load_place"`
+	DeliveryDate  string     `json:"delivery_date"`
+	DeliveryPlace string     `json:"delivery_place"`
+	Rate          string     `json:"rate"`
+	Notes         string     `json:"notes"`
+	Status        string     `json:"status"`
+	Source        string     `json:"source"`
+	TemplateID    *uuid.UUID `json:"template_id,omitempty"`
+	ReceivedAt    time.Time  `json:"received_at"`
+}
+
+// PdfTemplateRef identifies which template produced an import result.
+type PdfTemplateRef struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// PdfExtractionResponse is the shared response of POST /pdf/test and
+// POST /pdf/import: the draft order, the merged value per target field and
+// the raw per-zone extraction detail. Template is set on /pdf/import only.
+type PdfExtractionResponse struct {
+	Order      InboundOrderDraftDTO            `json:"order"`
+	Values     map[string]string               `json:"values"`
+	Extraction map[string]PdfExtractedValueDTO `json:"extraction"`
+	Template   *PdfTemplateRef                 `json:"template,omitempty"`
+}
+
+// ── Inbound orders (dashboard di accettazione, porting OrderMesh) ─────────
+
+// InboundOrderRequest confirms a draft (typically from /pdf/import) as an
+// inbound order. Client plus at least one of ref/product are required —
+// the service enforces the ref-or-product half. Status/Source/ReceivedAt
+// are optional and default to pending/pdf/now, mirroring OrderMesh's
+// POST /api/orders.
+type InboundOrderRequest struct {
+	Client        string     `json:"client" validate:"required"`
+	SenderEmail   string     `json:"sender_email"`
+	Ref           string     `json:"ref"`
+	Product       string     `json:"product"`
+	Kg            int        `json:"kg"`
+	LoadDate      string     `json:"load_date"`
+	LoadPlace     string     `json:"load_place"`
+	DeliveryDate  string     `json:"delivery_date"`
+	DeliveryPlace string     `json:"delivery_place"`
+	Rate          string     `json:"rate"`
+	Notes         string     `json:"notes"`
+	Portal        bool       `json:"portal"`
+	Status        string     `json:"status" validate:"omitempty,oneof=pending accepted modify"`
+	Source        string     `json:"source" validate:"omitempty,oneof=seed mail pdf"`
+	TemplateID    *uuid.UUID `json:"template_id"`
+	ReceivedAt    *time.Time `json:"received_at"`
+}
+
+type InboundOrderResponse struct {
+	ID            uuid.UUID  `json:"id"`
+	Client        string     `json:"client"`
+	SenderEmail   string     `json:"sender_email"`
+	Ref           string     `json:"ref"`
+	Product       string     `json:"product"`
+	Kg            int        `json:"kg"`
+	LoadDate      string     `json:"load_date"`
+	LoadPlace     string     `json:"load_place"`
+	DeliveryDate  string     `json:"delivery_date"`
+	DeliveryPlace string     `json:"delivery_place"`
+	Rate          string     `json:"rate"`
+	Notes         string     `json:"notes"`
+	Portal        bool       `json:"portal"`
+	Status        string     `json:"status"`
+	Source        string     `json:"source"`
+	TemplateID    *uuid.UUID `json:"template_id,omitempty"`
+	ReceivedAt    time.Time  `json:"received_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+}
+
+// InboundOrderActionResponse is returned by the accept action: the updated
+// order plus a human-readable note about the confirmation mail ("inviata
+// a ...", or why none was sent) — mirrors OrderMesh's {order, mail} shape.
+type InboundOrderActionResponse struct {
+	Order InboundOrderResponse `json:"order"`
+	Mail  string               `json:"mail,omitempty"`
+}
+
+// InboundScrapeResponse reports one mailbox read: how many order mails were
+// examined and how many new orders were stored.
+type InboundScrapeResponse struct {
+	Added   int `json:"added"`
+	Scanned int `json:"scanned"`
+}
+
+// InboundConfigResponse mirrors OrderMesh's GET /api/config: the runtime
+// readiness of every optional piece of the inbound pipeline, so the UI can
+// enable/disable the scan and import actions accordingly.
+type InboundConfigResponse struct {
+	AcceptMode        string `json:"accept_mode"`
+	TestRecipient     string `json:"test_recipient"`
+	SmtpReady         bool   `json:"smtp_ready"`
+	MailboxReady      bool   `json:"mailbox_ready"`
+	Backend           string `json:"backend"`
+	SubjectFilter     string `json:"subject_filter"`
+	ScrapeIntervalMin int    `json:"scrape_interval_min"`
+	PdfReady          bool   `json:"pdf_ready"`
+	VisionReady       bool   `json:"vision_ready"`
 }

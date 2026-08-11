@@ -1,1 +1,103 @@
 /* App-level styles - minimal, tokens are in index.css */
+
+/* ── Stage editor template PDF (porting OrderMesh) ──
+   Zone disegnabili sopra l'immagine di pagina: blocchi di testo rilevati
+   (tratteggio, clic → nuovo campo), zone mappate (verdi, trascinabili,
+   ridimensionabili dall'angolo; ambra quando selezionate) e rubber band. */
+.stage {
+  position: relative;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  overflow: hidden;
+  background: hsl(var(--muted));
+  user-select: none;
+  touch-action: none;
+}
+.stage img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.stage-blk {
+  position: absolute;
+  border: 1px dashed hsl(var(--primary) / 0.7);
+  background: hsl(var(--primary) / 0.07);
+  cursor: copy;
+  border-radius: 2px;
+}
+.stage-blk:hover {
+  background: hsl(var(--primary) / 0.22);
+}
+
+.stage-zone {
+  position: absolute;
+  border: 2px solid #059669; /* emerald-600 */
+  background: rgba(5, 150, 105, 0.14);
+  cursor: move;
+  border-radius: 2px;
+}
+.stage-zone.sel {
+  border-color: #d97706; /* amber-600 */
+  background: rgba(217, 119, 6, 0.16);
+  z-index: 3;
+}
+.stage-zone .tag {
+  position: absolute;
+  top: -20px;
+  left: -2px;
+  background: #059669;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.stage-zone.sel .tag {
+  background: #d97706;
+}
+.stage-zone .rsz {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: hsl(var(--card));
+  border: 2px solid #059669;
+  border-radius: 50%;
+  cursor: nwse-resize;
+}
+.stage-zone.sel .rsz {
+  border-color: #d97706;
+}
+
+.stage-rubber {
+  position: absolute;
+  border: 1.5px dashed #d97706;
+  background: rgba(217, 119, 6, 0.1);
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ── Filebox upload (dialog import PDF) ── */
+.filebox {
+  border: 1.5px dashed hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 16px;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.filebox:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+.filebox.hasfile {
+  border-style: solid;
+  border-color: #059669;
+  color: #059669;
+  font-weight: 600;
+}

@@ -116,6 +116,111 @@ func TestLoad_UsesEnvironmentOverrides(t *testing.T) {
 	}
 }
 
+func TestLoad_InboundDefaults(t *testing.T) {
+	// Manipulates many env vars; avoid running in parallel with other env tests.
+	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("JWT_ACCESS_SECRET", "access_secret")
+	t.Setenv("JWT_REFRESH_SECRET", "refresh_secret")
+
+	for _, k := range []string{
+		"SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "MAIL_FROM",
+		"ACCEPT_MODE", "TEST_RECIPIENT",
+		"IMAP_HOST", "IMAP_PORT", "IMAP_USER", "IMAP_PASS",
+		"MAIL_BACKEND", "GRAPH_CLIENT_ID", "GRAPH_TENANT", "GRAPH_CLIENT_SECRET", "GRAPH_MAILBOX",
+		"SUBJECT_FILTER", "SCRAPE_INTERVAL_MIN", "DATA_DIR", "ANTHROPIC_API_KEY",
+	} {
+		_ = os.Unsetenv(k)
+	}
+
+	cfg := Load()
+
+	in := cfg.Inbound
+	if in.SMTPPort != "587" {
+		t.Fatalf("expected SMTP port %q, got %q", "587", in.SMTPPort)
+	}
+	if in.IMAPPort != "993" {
+		t.Fatalf("expected IMAP port %q, got %q", "993", in.IMAPPort)
+	}
+	if in.AcceptMode != "test" {
+		t.Fatalf("expected accept mode %q, got %q", "test", in.AcceptMode)
+	}
+	if in.MailBackend != "auto" {
+		t.Fatalf("expected mail backend %q, got %q", "auto", in.MailBackend)
+	}
+	if in.GraphTenant != "organizations" {
+		t.Fatalf("expected graph tenant %q, got %q", "organizations", in.GraphTenant)
+	}
+	if in.SubjectFilter != "[ORDINE]" {
+		t.Fatalf("expected subject filter %q, got %q", "[ORDINE]", in.SubjectFilter)
+	}
+	if in.ScrapeIntervalMin != 5 {
+		t.Fatalf("expected scrape interval 5, got %d", in.ScrapeIntervalMin)
+	}
+	if in.DataDir != "data" {
+		t.Fatalf("expected data dir %q, got %q", "data", in.DataDir)
+	}
+	if in.SMTPConfigured() {
+		t.Fatalf("expected SMTPConfigured()==false with no SMTP_HOST")
+	}
+	if in.IMAPConfigured() {
+		t.Fatalf("expected IMAPConfigured()==false with no IMAP_HOST")
+	}
+}
+
+func TestLoad_InboundOverridesAndSecretUnset(t *testing.T) {
+	// Manipulates many env vars; avoid running in parallel with other env tests.
+	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("JWT_ACCESS_SECRET", "access_secret")
+	t.Setenv("JWT_REFRESH_SECRET", "refresh_secret")
+
+	t.Setenv("SMTP_HOST", "smtp.example.com")
+	t.Setenv("SMTP_PASS", "smtp_secret")
+	t.Setenv("IMAP_HOST", "imap.example.com")
+	t.Setenv("IMAP_USER", "orders@example.com")
+	_ = os.Unsetenv("GRAPH_MAILBOX")
+	t.Setenv("SCRAPE_INTERVAL_MIN", "0") // below floor -> falls back to 5
+
+	cfg := Load()
+
+	in := cfg.Inbound
+	if in.SMTPHost != "smtp.example.com" || !in.SMTPConfigured() {
+		t.Fatalf("expected SMTP host override, got %q", in.SMTPHost)
+	}
+	if in.SMTPPass != "smtp_secret" {
+		t.Fatalf("expected SMTP pass to be loaded, got %q", in.SMTPPass)
+	}
+	if in.GraphMailbox != "orders@example.com" {
+		t.Fatalf("expected graph mailbox to default to IMAP_USER, got %q", in.GraphMailbox)
+	}
+	if in.ScrapeIntervalMin != 5 {
+		t.Fatalf("expected scrape interval floor 5, got %d", in.ScrapeIntervalMin)
+	}
+	// Secrets are wiped from the process env after load, like DB_PASSWORD.
+	if v := os.Getenv("SMTP_PASS"); v != "" {
+		t.Fatalf("expected SMTP_PASS to be unset after Load, got %q", v)
+	}
+}
+
+func TestInboundConfig_BackendResolution(t *testing.T) {
+	cases := []struct {
+		name     string
+		cfg      InboundConfig
+		expected string
+	}{
+		{"explicit imap wins over ms host", InboundConfig{MailBackend: "imap", IMAPHost: "outlook.office365.com"}, "imap"},
+		{"explicit graph", InboundConfig{MailBackend: "graph"}, "graph"},
+		{"auto with office365 host", InboundConfig{MailBackend: "auto", IMAPHost: "outlook.office365.com"}, "graph"},
+		{"auto with outlook host", InboundConfig{MailBackend: "auto", IMAPHost: "imap.OUTLOOK.com"}, "graph"},
+		{"auto with generic host", InboundConfig{MailBackend: "auto", IMAPHost: "imaps.aruba.it"}, "imap"},
+		{"auto with no host", InboundConfig{MailBackend: "auto"}, "graph"},
+	}
+	for _, tc := range cases {
+		if got := tc.cfg.Backend(); got != tc.expected {
+			t.Errorf("%s: expected backend %q, got %q", tc.name, tc.expected, got)
+		}
+	}
+}
+
 // Test that validateConfig/os.Exit(1) is called when required envs (DB_PASSWORD) are missing.
 // We use a subprocess so that os.Exit(1) doesn't stop the whole test suite.
 func TestValidateConfig_MissingPassword_Exits(t *testing.T) {

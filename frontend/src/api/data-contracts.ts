@@ -449,6 +449,87 @@ export interface DtoGeocodeResultDTO {
   provincia?: string;
 }
 
+export interface DtoInboundConfigResponse {
+  accept_mode?: string;
+  backend?: string;
+  mailbox_ready?: boolean;
+  pdf_ready?: boolean;
+  scrape_interval_min?: number;
+  smtp_ready?: boolean;
+  subject_filter?: string;
+  test_recipient?: string;
+  vision_ready?: boolean;
+}
+
+export interface DtoInboundOrderActionResponse {
+  mail?: string;
+  order?: DtoInboundOrderResponse;
+}
+
+export interface DtoInboundOrderDraftDTO {
+  client?: string;
+  delivery_date?: string;
+  delivery_place?: string;
+  kg?: number;
+  load_date?: string;
+  load_place?: string;
+  notes?: string;
+  product?: string;
+  rate?: string;
+  received_at?: string;
+  ref?: string;
+  sender_email?: string;
+  source?: string;
+  status?: string;
+  template_id?: string;
+}
+
+export interface DtoInboundOrderRequest {
+  client: string;
+  delivery_date?: string;
+  delivery_place?: string;
+  kg?: number;
+  load_date?: string;
+  load_place?: string;
+  notes?: string;
+  portal?: boolean;
+  product?: string;
+  rate?: string;
+  received_at?: string;
+  ref?: string;
+  sender_email?: string;
+  source?: "seed" | "mail" | "pdf";
+  status?: "pending" | "accepted" | "modify";
+  template_id?: string;
+}
+
+export interface DtoInboundOrderResponse {
+  client?: string;
+  created_at?: string;
+  delivery_date?: string;
+  delivery_place?: string;
+  id?: string;
+  kg?: number;
+  load_date?: string;
+  load_place?: string;
+  notes?: string;
+  portal?: boolean;
+  product?: string;
+  rate?: string;
+  received_at?: string;
+  ref?: string;
+  sender_email?: string;
+  source?: string;
+  status?: string;
+  template_id?: string;
+  updated_at?: string;
+}
+
+export interface DtoInboundScrapeResponse {
+  added?: number;
+  scanned?: number;
+}
+
 export interface DtoInvoiceFinalizeResult {
   ok?: boolean;
   pdf_archived?: boolean;
@@ -755,6 +836,80 @@ export interface DtoPatchUserRequest {
   active?: boolean;
   name?: string;
   profile_id?: string;
+}
+
+export interface DtoPdfExtractedValueDTO {
+  confidence?: number;
+  method?: string;
+  value?: string;
+}
+
+export interface DtoPdfExtractionResponse {
+  extraction?: Record<string, DtoPdfExtractedValueDTO>;
+  order?: DtoInboundOrderDraftDTO;
+  template?: DtoPdfTemplateRef;
+  values?: Record<string, string>;
+}
+
+export interface DtoPdfRenderBlockDTO {
+  bounds_norm?: Record<string, number>;
+  text?: string;
+}
+
+export interface DtoPdfRenderPageDTO {
+  blocks?: DtoPdfRenderBlockDTO[];
+  height?: number;
+  image_b64?: string;
+  page_num?: number;
+  width?: number;
+}
+
+export interface DtoPdfRenderResponse {
+  filename?: string;
+  page_count?: number;
+  pages?: DtoPdfRenderPageDTO[];
+}
+
+export interface DtoPdfTemplateFieldDTO {
+  h?: number;
+  id?: string;
+  label?: string;
+  page?: number;
+  target: string;
+  w?: number;
+  x?: number;
+  y?: number;
+}
+
+export interface DtoPdfTemplateMatchResponse {
+  match?: DtoPdfTemplateResponse;
+}
+
+export interface DtoPdfTemplateRef {
+  id?: string;
+  name?: string;
+}
+
+export interface DtoPdfTemplateRequest {
+  /** Client is the default client name for orders imported with this template. */
+  client?: string;
+  fields?: DtoPdfTemplateFieldDTO[];
+  name: string;
+  /**
+   * Senders holds full addresses or "@domain" patterns used to preselect
+   * the template from a mail sender.
+   */
+  senders?: string[];
+}
+
+export interface DtoPdfTemplateResponse {
+  client?: string;
+  created_at?: string;
+  fields?: DtoPdfTemplateFieldDTO[];
+  id?: string;
+  name?: string;
+  senders?: string[];
+  updated_at?: string;
 }
 
 export interface DtoPriceListItemAddResult {
