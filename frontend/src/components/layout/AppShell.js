@@ -137,7 +137,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                     data-testid={`sidebar-nav-group-${item.label.toLowerCase()}`}
                     onClick={() => toggleGroup(item.label)}
                     className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5"
-                    style={{ color: hasActiveChild ? 'var(--sidebar-text)' : 'var(--sidebar-muted)' }}
+                    style={{ color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && (
@@ -154,8 +154,10 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                           key={child.path}
                           data-testid={`sidebar-nav-item-${child.path.replace(/\//g, '-').slice(1)}`}
                           onClick={() => handleNav(child.path)}
-                          className={`w-full flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 ${isActive(child.path) ? '' : 'hover:bg-white/5'}`}
-                          style={isActive(child.path) ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-text)', boxShadow: 'inset 0 0 0 1px var(--sidebar-active-ring)' } : { color: 'var(--sidebar-muted)' }}
+                          className={`w-full flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 border-l-2 ${isActive(child.path) ? '' : 'hover:bg-white/5'}`}
+                          style={isActive(child.path)
+                            ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)', borderColor: 'var(--sidebar-accent)' }
+                            : { color: 'var(--sidebar-muted)', borderColor: 'transparent' }}
                         >
                           <child.icon className="h-3.5 w-3.5 shrink-0" />
                           <span>{child.label}</span>
@@ -172,7 +174,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                 data-testid={`sidebar-nav-item-${item.path.replace(/\//g, '-').slice(1)}`}
                 onClick={() => handleNav(item.path)}
                 className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${isActive(item.path) ? '' : 'hover:bg-white/5'}`}
-                style={isActive(item.path) ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-text)', boxShadow: 'inset 0 0 0 1px var(--sidebar-active-ring)' } : { color: 'var(--sidebar-muted)' }}
+                style={isActive(item.path) ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)' } : { color: 'var(--sidebar-muted)' }}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
                 {!collapsed && <span>{item.label}</span>}
@@ -201,11 +203,11 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
       <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
         {!collapsed && user && (
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-accent)' }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: '#3A4A63', color: '#fff' }}>
               {user.name?.charAt(0)?.toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate" style={{ color: 'var(--sidebar-text)' }}>{user.name}</p>
+              <p className="text-xs font-medium truncate" style={{ color: 'var(--sidebar-active-text)' }}>{user.name}</p>
               <p className="text-[10px] truncate" style={{ color: 'var(--sidebar-muted)' }}>{user.role}</p>
             </div>
           </div>
@@ -215,7 +217,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
           variant="ghost"
           size="sm"
           onClick={logout}
-          className="w-full justify-start gap-2 text-xs hover:bg-white/5"
+          className="w-full justify-start gap-2 text-xs hover:bg-white/[0.08]"
           style={{ color: 'var(--sidebar-muted)' }}
         >
           <LogOut className="h-3.5 w-3.5" />

@@ -23,7 +23,7 @@
     --secondary-foreground: 222 30% 12%;
     --accent: 217 40% 92%;
     --accent-foreground: 222 30% 12%;
-    --destructive: 0 74% 45%;
+    --destructive: 6 63% 46%;
     --destructive-foreground: 0 0% 100%;
     --chart-1: 217 71% 51%;
     --chart-2: 195 60% 45%;
@@ -32,20 +32,26 @@
     --chart-5: 15 75% 55%;
     --radius: 0.5rem;
 
-    /* Sidebar */
+    /* Sidebar — valori presi 1:1 dal censimento colori del mockup
+       "TMS Unificato" (sideOn/sideOff/sideSub): testo attivo bianco puro
+       su highlight neutro (non blu), muted #8ea0bd, accento blu riservato
+       al bordo sinistro dei sotto-voci attive, non al fill. */
     --sidebar-bg: #0B1220;
     --sidebar-bg-2: #0F1A2E;
     --sidebar-text: #E7EEF9;
-    --sidebar-muted: #9FB0C7;
-    --sidebar-border: rgba(231,238,249,0.10);
+    --sidebar-active-text: #FFFFFF;
+    --sidebar-muted: #8EA0BD;
+    --sidebar-border: rgba(255,255,255,0.13);
     --sidebar-accent: #2A6FDB;
-    --sidebar-active-bg: rgba(42,111,219,0.14);
-    --sidebar-active-ring: rgba(42,111,219,0.35);
+    --sidebar-active-bg: rgba(255,255,255,0.12);
   }
 
   /* Palette navy presa dal mockup designer (sidebar #0B1220/#0F1A2E, card
      #1c2534) — cosi il tema scuro dei contenuti resta coerente con la
-     sidebar, che e gia sempre scura via --sidebar-*. */
+     sidebar. In tema chiaro la sidebar resta il "control center" scuro e
+     statico (var(--sidebar-*) in :root); in tema scuro invece diventa un
+     pannello alla stessa quota di --card (piu chiara dello sfondo), cosi
+     il toggle tema cambia visibilmente anche la sidebar. */
   .dark {
     --background: 220 42% 7%;
     --foreground: 210 20% 98%;
@@ -64,8 +70,11 @@
     --secondary-foreground: 210 20% 98%;
     --accent: 217 30% 20%;
     --accent-foreground: 210 20% 98%;
-    --destructive: 0 62% 42%;
+    --destructive: 6 63% 50%;
     --destructive-foreground: 0 0% 100%;
+
+    --sidebar-bg: hsl(217 30% 14%);
+    --sidebar-bg-2: hsl(217 30% 18%);
   }
 }
 
@@ -109,26 +118,30 @@
   background: hsl(var(--muted-foreground));
 }
 
-/* Status badge colors */
+/* Status badge colors — bg/border erano già identici 1:1 al mockup, i
+   colori testo sono stati allineati agli stessi valori esatti (censimento
+   colori "TMS Unificato": #c0392b rosso, #8a6508 ambra, #1f7a4d verde,
+   #1d55ad blu, #a05a1c arancio) invece delle tonalità approssimate usate
+   prima. */
 .status-pianificabile {
-  background-color: #FFF4CC;
-  color: #6A4B00;
-  border-color: #F1D98A;
+  background-color: #FDF1C7;
+  color: #8A6508;
+  border-color: #EEDDA0;
 }
 .status-viaggio {
-  background-color: #FFE2E2;
-  color: #7A1F1F;
-  border-color: #F3B8B8;
+  background-color: #FDECEC;
+  color: #C0392B;
+  border-color: #F0C5C0;
 }
 .status-chiuso {
-  background-color: #FFE9D6;
-  color: #7A3B08;
-  border-color: #F6C7A0;
+  background-color: #FBF0E3;
+  color: #A05A1C;
+  border-color: #EED9BD;
 }
 .status-fatturato {
-  background-color: #DFF7E9;
-  color: #0F5132;
-  border-color: #BFECD2;
+  background-color: #E9F5EE;
+  color: #1F7A4D;
+  border-color: #BFE0CD;
 }
 
 /* Stati ordine/viaggio (Da pianificare/Pianificato/In viaggio/Consegnato/
@@ -136,22 +149,22 @@
    (usate da Proforma/Definitiva) per non alterarne i colori. */
 .status-order-red {
   background-color: #FDECEC;
-  color: #7A1F1F;
+  color: #C0392B;
   border-color: #F0C5C0;
 }
 .status-order-yellow {
   background-color: #FDF1C7;
-  color: #6A4B00;
+  color: #8A6508;
   border-color: #EEDDA0;
 }
 .status-order-blue {
   background-color: #E4EEFC;
-  color: #1D3E7A;
+  color: #1D55AD;
   border-color: #BFD3F2;
 }
 .status-order-green {
   background-color: #E9F5EE;
-  color: #0F5132;
+  color: #1F7A4D;
   border-color: #BFE0CD;
 }
 .status-order-gray {

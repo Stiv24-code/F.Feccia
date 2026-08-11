@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 // restano sulle classi condivise originali.
 const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
   PIANIFICABILE: { label: 'Da pianificare', className: 'status-order-red', dot: '#C0392B' },
-  PIANIFICATO: { label: 'Pianificato', className: 'status-order-yellow', dot: '#B58105' },
+  PIANIFICATO: { label: 'Pianificato', className: 'status-order-yellow', dot: '#8A6508' },
   VIAGGIO: { label: 'In viaggio', className: 'status-order-blue', dot: '#1D55AD' },
   CHIUSO: { label: 'Consegnato', className: 'status-order-green', dot: '#1F7A4D' },
   SCARTATO: { label: 'Scartato', className: 'status-order-gray', dot: '#7C879A' },
-  PROFORMA: { label: 'Proforma', className: 'status-pianificabile', dot: '#F0B429' },
-  DEFINITIVA: { label: 'Definitiva', className: 'status-fatturato', dot: '#2AA36B' },
+  PROFORMA: { label: 'Proforma', className: 'status-pianificabile', dot: '#8A6508' },
+  DEFINITIVA: { label: 'Definitiva', className: 'status-fatturato', dot: '#1F7A4D' },
   IN_CORSO: { label: 'In corso', className: 'status-order-blue', dot: '#1D55AD' },
-  COMPLETATO: { label: 'Completato', className: 'status-fatturato', dot: '#2AA36B' },
+  COMPLETATO: { label: 'Completato', className: 'status-fatturato', dot: '#1F7A4D' },
 };
 
 export interface StatusBadgeProps {
