@@ -102,7 +102,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
             data-testid="sidebar-collapse-toggle"
             aria-label="Comprimi sidebar"
             title="Comprimi sidebar"
-            className="flex items-center justify-center h-7 w-7 rounded-md shrink-0 transition-colors duration-150 hover:bg-white/10"
+            className="flex items-center justify-center h-7 w-7 rounded-md shrink-0 transition-colors duration-150 hover:bg-white/10 dark:hover:bg-black/10"
             style={{ color: 'var(--sidebar-muted)' }}
           >
             <PanelLeftClose className="h-4 w-4" />
@@ -116,7 +116,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
             data-testid="sidebar-collapse-toggle"
             aria-label="Espandi sidebar"
             title="Espandi sidebar"
-            className="w-full flex items-center justify-center h-8 rounded-lg transition-colors duration-150 hover:bg-white/10"
+            className="w-full flex items-center justify-center h-8 rounded-lg transition-colors duration-150 hover:bg-white/10 dark:hover:bg-black/10"
             style={{ color: 'var(--sidebar-muted)' }}
           >
             <PanelLeftOpen className="h-4 w-4" />
@@ -136,7 +136,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                   <button
                     data-testid={`sidebar-nav-group-${item.label.toLowerCase()}`}
                     onClick={() => toggleGroup(item.label)}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5"
+                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5"
                     style={{ color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
@@ -154,7 +154,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                           key={child.path}
                           data-testid={`sidebar-nav-item-${child.path.replace(/\//g, '-').slice(1)}`}
                           onClick={() => handleNav(child.path)}
-                          className={`w-full flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 border-l-2 ${isActive(child.path) ? '' : 'hover:bg-white/5'}`}
+                          className={`w-full flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 border-l-2 ${isActive(child.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
                           style={isActive(child.path)
                             ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)', borderColor: 'var(--sidebar-accent)' }
                             : { color: 'var(--sidebar-muted)', borderColor: 'transparent' }}
@@ -173,7 +173,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                 key={item.path}
                 data-testid={`sidebar-nav-item-${item.path.replace(/\//g, '-').slice(1)}`}
                 onClick={() => handleNav(item.path)}
-                className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${isActive(item.path) ? '' : 'hover:bg-white/5'}`}
+                className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${isActive(item.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
                 style={isActive(item.path) ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)' } : { color: 'var(--sidebar-muted)' }}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -191,7 +191,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
           data-testid="theme-toggle-button"
           aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
           title={theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5"
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5"
           style={{ color: 'var(--sidebar-muted)' }}
         >
           {theme === 'dark' ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
@@ -217,7 +217,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
           variant="ghost"
           size="sm"
           onClick={logout}
-          className="w-full justify-start gap-2 text-xs hover:bg-white/[0.08]"
+          className="w-full justify-start gap-2 text-xs hover:bg-white/[0.08] dark:hover:bg-black/[0.08]"
           style={{ color: 'var(--sidebar-muted)' }}
         >
           <LogOut className="h-3.5 w-3.5" />

@@ -32,11 +32,19 @@
     --chart-5: 15 75% 55%;
     --radius: 0.5rem;
 
-    /* Sidebar — valori presi 1:1 dal censimento colori del mockup
-       "TMS Unificato" (sideOn/sideOff/sideSub): testo attivo bianco puro
+    /* Sidebar — valori presi 1:1 dal render reale del mockup "TMS
+       Unificato" (funzione che calcola sideWrapStyle/sideOn/sideOff/
+       sideSub, non le sole classi CSS): background #1c2534 (non
+       #0B1220 — valore precedente sbagliato), testo attivo bianco puro
        su highlight neutro (non blu), muted #8ea0bd, accento blu riservato
-       al bordo sinistro dei sotto-voci attive, non al fill. */
-    --sidebar-bg: #0B1220;
+       al bordo sinistro dei sotto-voci attive, non al fill. Nel mockup
+       #1c2534 è statico in entrambi i temi (sideWrapStyle non referenzia
+       st.dark) — qui invece resta la variante dark dedicata già scelta
+       in precedenza (vedi commento sotto), perché il mockup "cambia" solo
+       per un artefatto: un filtro CSS invert()+hue-rotate() globale
+       (.tms-dark) non esclude la sidebar e la rende lilla slavato, non
+       un secondo colore intenzionale. */
+    --sidebar-bg: #1C2534;
     --sidebar-bg-2: #0F1A2E;
     --sidebar-text: #E7EEF9;
     --sidebar-active-text: #FFFFFF;
@@ -46,12 +54,13 @@
     --sidebar-active-bg: rgba(255,255,255,0.12);
   }
 
-  /* Palette navy presa dal mockup designer (sidebar #0B1220/#0F1A2E, card
-     #1c2534) — cosi il tema scuro dei contenuti resta coerente con la
-     sidebar. In tema chiaro la sidebar resta il "control center" scuro e
-     statico (var(--sidebar-*) in :root); in tema scuro invece diventa un
-     pannello alla stessa quota di --card (piu chiara dello sfondo), cosi
-     il toggle tema cambia visibilmente anche la sidebar. */
+  /* Sidebar in tema scuro: #C9D1DE (valore dato esplicitamente — è il
+     risultato visivo reale del filtro invert()+hue-rotate() del mockup
+     sulla sidebar #1c2534, non un colore scelto a mano nel mockup, ma è
+     quello richiesto qui). Essendo un colore CHIARO, testo/muted/border/
+     highlight della sidebar si invertono di conseguenza (scuri invece di
+     chiari) solo in questo blocco — tutte le altre variabili --sidebar-*
+     non ridefinite qui restano quelle di :root. */
   .dark {
     --background: 220 42% 7%;
     --foreground: 210 20% 98%;
@@ -73,8 +82,13 @@
     --destructive: 6 63% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --sidebar-bg: hsl(217 30% 14%);
-    --sidebar-bg-2: hsl(217 30% 18%);
+    --sidebar-bg: #C9D1DE;
+    --sidebar-bg-2: #B8C2D6;
+    --sidebar-text: #1C2534;
+    --sidebar-active-text: #0B1220;
+    --sidebar-muted: #5B6B80;
+    --sidebar-border: rgba(28,37,52,0.15);
+    --sidebar-active-bg: rgba(28,37,52,0.08);
   }
 }
 
