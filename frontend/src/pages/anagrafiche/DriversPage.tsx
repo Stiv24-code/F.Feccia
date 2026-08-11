@@ -5,9 +5,12 @@ import {
   useUpdateDriverMutation,
   useDeleteDriverMutation,
   useGetDriverTripsQuery,
+  useGetDriverUnavailabilityQuery,
+  useCreateDriverUnavailabilityMutation,
+  useDeleteDriverUnavailabilityMutation,
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
-import type { DtoDriverRequest, DtoDriverResponse } from '@/api/data-contracts';
+import type { DtoDriverRequest, DtoDriverResponse, DtoDriverUnavailabilityRequest } from '@/api/data-contracts';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -18,9 +21,10 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Pencil, Trash2, ChevronDown, Truck } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, Truck, Plane, Plus } from 'lucide-react';
 
 type PatenteCategoria = NonNullable<DtoDriverRequest['patente']>[number];
 
@@ -71,6 +75,90 @@ function PatenteMultiSelect({ value, onChange }: { value: PatenteCategoria[]; on
   );
 }
 
+type Motivo = NonNullable<DtoDriverUnavailabilityRequest['motivo']>;
+
+const MOTIVO_LABELS: Record<Motivo, string> = { ferie: 'Ferie', malattia: 'Malattia', permesso: 'Permesso', altro: 'Altro' };
+
+const emptyFerieForm = { data_da: '', data_a: '', motivo: 'ferie' as Motivo, note: '' };
+
+function DriverFerieDialog({ driver, onClose }: { driver: DtoDriverResponse; onClose: () => void }) {
+  const [form, setForm] = useState(emptyFerieForm);
+  const { data: periods = [], isLoading } = useGetDriverUnavailabilityQuery(driver.id || '', { skip: !driver.id });
+  const [createPeriod, { isLoading: creating }] = useCreateDriverUnavailabilityMutation();
+  const [deletePeriod] = useDeleteDriverUnavailabilityMutation();
+
+  const handleAdd = async () => {
+    if (!driver.id || !form.data_da || !form.data_a) return;
+    try {
+      await createPeriod({
+        autista_id: driver.id,
+        autista_nome: `${driver.nome || ''} ${driver.cognome || ''}`.trim(),
+        data_da: form.data_da,
+        data_a: form.data_a,
+        motivo: form.motivo,
+        note: form.note || undefined,
+      }).unwrap();
+      toast.success('Periodo aggiunto');
+      setForm(emptyFerieForm);
+    } catch (e) { toast.error(getMutationErrorMessage(e) || 'Errore'); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Eliminare questo periodo?')) return;
+    try { await deletePeriod(id).unwrap(); toast.success('Eliminato'); } catch (e) { toast.error(getMutationErrorMessage(e) || 'Errore'); }
+  };
+
+  const sorted = [...periods].sort((a, b) => (a.data_da || '').localeCompare(b.data_da || ''));
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ferie e assenze — {driver.nome} {driver.cognome}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-2 items-end border-b pb-4 mb-2">
+          <div className="space-y-1.5"><Label>Dal</Label><Input type="date" value={form.data_da} onChange={e => setForm({ ...form, data_da: e.target.value })} /></div>
+          <div className="space-y-1.5"><Label>Al</Label><Input type="date" value={form.data_a} onChange={e => setForm({ ...form, data_a: e.target.value })} /></div>
+          <div className="space-y-1.5">
+            <Label>Motivo</Label>
+            <Select value={form.motivo} onValueChange={(v) => setForm({ ...form, motivo: v as Motivo })}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(MOTIVO_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Note</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Button size="sm" className="w-full gap-1.5" disabled={!form.data_da || !form.data_a || creating} onClick={handleAdd}>
+              <Plus className="h-3.5 w-3.5" /> Aggiungi periodo
+            </Button>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Caricamento...</p>
+        ) : sorted.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nessun periodo registrato.</p>
+        ) : (
+          <div className="space-y-2">
+            {sorted.map(p => (
+              <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <div>
+                  <div className="font-medium">{MOTIVO_LABELS[(p.motivo as Motivo) || 'altro']}</div>
+                  <div className="text-muted-foreground text-xs">{p.data_da || '-'} → {p.data_a || '-'}{p.note ? ` · ${p.note}` : ''}</div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => p.id && handleDelete(p.id)}><Trash2 className="h-3 w-3" /></Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DriverTripsDialog({ driver, onClose }: { driver: DtoDriverResponse; onClose: () => void }) {
   const { data: trips = [], isLoading } = useGetDriverTripsQuery(driver.id || '', { skip: !driver.id });
   return (
@@ -107,6 +195,7 @@ export default function DriversPage() {
   const [form, setForm] = useState<DtoDriverRequest>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [tripsDriver, setTripsDriver] = useState<DtoDriverResponse | null>(null);
+  const [ferieDriver, setFerieDriver] = useState<DtoDriverResponse | null>(null);
 
   const { data = [], isLoading: loading } = useGetDriversQuery(search);
   const [createDriver, { isLoading: creating }] = useCreateDriverMutation();
@@ -144,6 +233,7 @@ export default function DriversPage() {
             <TableCell className="py-2">
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Viaggi assegnati" onClick={() => setTripsDriver(item)}><Truck className="h-3 w-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Ferie e assenze" onClick={() => setFerieDriver(item)}><Plane className="h-3 w-3" /></Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}><Pencil className="h-3 w-3" /></Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => item.id && handleDelete(item.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
@@ -163,6 +253,7 @@ export default function DriversPage() {
         </div>
       </FormDialog>
       {tripsDriver && <DriverTripsDialog driver={tripsDriver} onClose={() => setTripsDriver(null)} />}
+      {ferieDriver && <DriverFerieDialog driver={ferieDriver} onClose={() => setFerieDriver(null)} />}
     </div>
   );
 }

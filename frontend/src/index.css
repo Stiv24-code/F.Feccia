@@ -16,16 +16,16 @@
     --muted-foreground: 215 16% 38%;
     --border: 214 18% 88%;
     --input: 214 18% 88%;
-    --ring: 195 92% 28%;
-    --primary: 195 92% 28%;
+    --ring: 217 71% 51%;
+    --primary: 217 71% 51%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 18% 96%;
     --secondary-foreground: 222 30% 12%;
-    --accent: 195 40% 92%;
+    --accent: 217 40% 92%;
     --accent-foreground: 222 30% 12%;
     --destructive: 0 74% 45%;
     --destructive-foreground: 0 0% 100%;
-    --chart-1: 195 92% 28%;
+    --chart-1: 217 71% 51%;
     --chart-2: 195 60% 45%;
     --chart-3: 210 30% 60%;
     --chart-4: 40 80% 55%;
@@ -38,8 +38,9 @@
     --sidebar-text: #E7EEF9;
     --sidebar-muted: #9FB0C7;
     --sidebar-border: rgba(231,238,249,0.10);
-    --sidebar-active-bg: rgba(34,211,238,0.10);
-    --sidebar-active-ring: rgba(34,211,238,0.35);
+    --sidebar-accent: #2A6FDB;
+    --sidebar-active-bg: rgba(42,111,219,0.14);
+    --sidebar-active-ring: rgba(42,111,219,0.35);
   }
 
   /* Palette navy presa dal mockup designer (sidebar #0B1220/#0F1A2E, card
@@ -56,8 +57,8 @@
     --muted-foreground: 215 14% 72%;
     --border: 217 20% 20%;
     --input: 217 20% 20%;
-    --ring: 195 92% 48%;
-    --primary: 195 92% 48%;
+    --ring: 217 71% 71%;
+    --primary: 217 71% 71%;
     --primary-foreground: 222 22% 9%;
     --secondary: 217 22% 17%;
     --secondary-foreground: 210 20% 98%;
@@ -211,8 +212,8 @@
 
 /* Selection */
 ::selection {
-  background-color: hsl(195 92% 28% / 0.2);
-  color: hsl(222 30% 12%);
+  background-color: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
 }
 
 /* ── Accessibility (issue #28) ─────────────────────────────────────────── */
@@ -224,7 +225,7 @@
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid hsl(195 92% 28%);
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -250,8 +251,8 @@ a:focus-visible,
   top: 0;
   z-index: 1000;
   padding: 0.5rem 1rem;
-  background: hsl(195 92% 28%);
-  color: white;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   font-weight: 500;
   border-radius: 0 0 0.5rem 0;
 }

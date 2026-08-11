@@ -10,8 +10,11 @@ import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
   Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
-  Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon, Inbox
+  Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon, Inbox,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
+
+const SIDEBAR_COLLAPSED_KEY = 'tms-sidebar-collapsed';
 
 // Se `roles` è presente, la voce è visibile solo agli utenti con quel ruolo.
 // Se `roles` è omesso, la voce è visibile a tutti gli autenticati.
@@ -21,9 +24,9 @@ const navItems = [
   {
     label: 'Anagrafiche', icon: ClipboardList, children: [
       { label: 'Clienti', path: '/anagrafiche/clienti', icon: Users },
-      { label: 'Destinazioni', path: '/anagrafiche/destinazioni', icon: MapPin },
-      { label: 'Trasporto', path: '/anagrafiche/veicoli', icon: Truck },
+      { label: 'Mezzi', path: '/anagrafiche/mezzi', icon: Truck },
       { label: 'Autisti', path: '/anagrafiche/autisti', icon: UserCircle },
+      { label: 'Destinazioni', path: '/anagrafiche/destinazioni', icon: MapPin },
       { label: 'Vettori', path: '/anagrafiche/vettori', icon: Building2 },
       { label: 'Prodotti', path: '/anagrafiche/prodotti', icon: Package },
       { label: 'Garage', path: '/anagrafiche/garage', icon: Warehouse },
@@ -60,7 +63,7 @@ const filterByRole = (items, role) => {
     );
 };
 
-const SidebarContent = ({ collapsed, onNavigate }) => {
+const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -85,11 +88,41 @@ const SidebarContent = ({ collapsed, onNavigate }) => {
     <div className="flex flex-col h-full" style={{ background: 'var(--sidebar-bg)' }}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-14 shrink-0" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(34,211,238,0.15)', color: '#22D3EE' }}>
-          LB
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'var(--sidebar-accent)', color: '#fff' }}>
+          FF
         </div>
-        {!collapsed && <span className="text-base font-semibold tracking-tight" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>LoginBusiness</span>}
+        {!collapsed && (
+          <span className="flex-1 min-w-0 text-base font-semibold tracking-tight truncate" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+            TMS <span className="font-normal" style={{ color: 'var(--sidebar-muted)' }}>· F.lli Feccia</span>
+          </span>
+        )}
+        {!collapsed && onToggleCollapsed && (
+          <button
+            onClick={onToggleCollapsed}
+            data-testid="sidebar-collapse-toggle"
+            aria-label="Comprimi sidebar"
+            title="Comprimi sidebar"
+            className="flex items-center justify-center h-7 w-7 rounded-md shrink-0 transition-colors duration-150 hover:bg-white/10"
+            style={{ color: 'var(--sidebar-muted)' }}
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {collapsed && onToggleCollapsed && (
+        <div className="px-2 pt-2 shrink-0">
+          <button
+            onClick={onToggleCollapsed}
+            data-testid="sidebar-collapse-toggle"
+            aria-label="Espandi sidebar"
+            title="Espandi sidebar"
+            className="w-full flex items-center justify-center h-8 rounded-lg transition-colors duration-150 hover:bg-white/10"
+            style={{ color: 'var(--sidebar-muted)' }}
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <ScrollArea className="flex-1 px-2 py-3">
@@ -149,11 +182,26 @@ const SidebarContent = ({ collapsed, onNavigate }) => {
         </nav>
       </ScrollArea>
 
+      {/* Theme toggle */}
+      <div className="px-2 pt-1 pb-2 shrink-0">
+        <button
+          onClick={toggleTheme}
+          data-testid="theme-toggle-button"
+          aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
+          title={theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5"
+          style={{ color: 'var(--sidebar-muted)' }}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+          {!collapsed && <span>{theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}</span>}
+        </button>
+      </div>
+
       {/* User section */}
       <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
         {!collapsed && user && (
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: 'rgba(34,211,238,0.15)', color: '#22D3EE' }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-accent)' }}>
               {user.name?.charAt(0)?.toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -181,11 +229,19 @@ const SidebarContent = ({ collapsed, onNavigate }) => {
 const AppShell = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState(getInitialTheme);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'; } catch { return false; }
+  });
   const location = useLocation();
 
   useEffect(() => { applyTheme(theme); }, [theme]);
 
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
+  const toggleCollapsed = () => setCollapsed(c => {
+    const next = !c;
+    try { window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0'); } catch { /* ignore */ }
+    return next;
+  });
 
   // Get page title from path
   const getTitle = () => {
@@ -193,7 +249,7 @@ const AppShell = ({ children }) => {
     if (path === '/' || path === '/dashboard') return 'Dashboard';
     if (path.includes('clienti')) return 'Clienti';
     if (path.includes('destinazioni')) return 'Destinazioni';
-    if (path.includes('veicoli')) return 'Trasporto';
+    if (path.includes('mezzi')) return 'Mezzi';
     if (path.includes('autisti')) return 'Autisti';
     if (path.includes('vettori')) return 'Vettori';
     if (path.includes('prodotti')) return 'Prodotti';
@@ -207,7 +263,7 @@ const AppShell = ({ children }) => {
     if (path.includes('viaggi')) return 'Gestione Viaggi';
     if (path.includes('mappa')) return 'Mappa Viaggi';
     if (path.includes('fatturazione')) return 'Fatturazione';
-    return 'LoginBusiness';
+    return 'F.lli Feccia';
   };
 
   return (
@@ -217,14 +273,17 @@ const AppShell = ({ children }) => {
       <CommandPalette />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-[260px] shrink-0 h-full" style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.15)' }}>
-        <SidebarContent collapsed={false} />
+      <aside
+        className={`hidden lg:block shrink-0 h-full transition-[width] duration-200 ${collapsed ? 'w-[76px]' : 'w-[260px]'}`}
+        style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.15)' }}
+      >
+        <SidebarContent collapsed={collapsed} theme={theme} toggleTheme={toggleTheme} onToggleCollapsed={toggleCollapsed} />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 w-[280px]" style={{ background: 'var(--sidebar-bg)' }}>
-          <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} />
+          <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} theme={theme} toggleTheme={toggleTheme} />
         </SheetContent>
       </Sheet>
 
@@ -252,17 +311,6 @@ const AppShell = ({ children }) => {
               <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">K</kbd>
               <span>per cercare</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleTheme}
-              data-testid="theme-toggle-button"
-              aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
-              title={theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
           </div>
         </header>
 

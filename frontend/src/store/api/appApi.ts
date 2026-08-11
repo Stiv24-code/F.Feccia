@@ -24,6 +24,8 @@ import type {
   DtoDestinationResponse,
   DtoDriverRequest,
   DtoDriverResponse,
+  DtoDriverUnavailabilityRequest,
+  DtoDriverUnavailabilityResponse,
   DtoGarageRequest,
   DtoGarageResponse,
   DtoMotriceRequest,
@@ -45,7 +47,7 @@ export const appApi = createApi({
   reducerPath: 'appApi',
   baseQuery: fakeBaseQuery(),
   tagTypes: [
-    'Customer', 'Dashboard', 'Destination', 'Motrice', 'Semirimorchio', 'Driver',
+    'Customer', 'Dashboard', 'Destination', 'Motrice', 'Semirimorchio', 'Driver', 'DriverUnavailability',
     'Carrier', 'Product', 'Garage', 'WashStation', 'Country', 'Bank', 'AccountingEntry', 'AdminUser',
     'MyAnagrafica', 'MyOrder',
   ],
@@ -141,6 +143,18 @@ export const appApi = createApi({
     }),
     getDriverTrips: builder.query<DtoTripResponse[], string>({
       queryFn: (autistaId) => toQueryResult(apiClient.v1TripsList({ autista_id: autistaId })),
+    }),
+    getDriverUnavailability: builder.query<DtoDriverUnavailabilityResponse[], string>({
+      queryFn: (autistaId) => toQueryResult(apiClient.v1DriverUnavailabilityList({ autista_id: autistaId })),
+      providesTags: ['DriverUnavailability'],
+    }),
+    createDriverUnavailability: builder.mutation<DtoDriverUnavailabilityResponse, DtoDriverUnavailabilityRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1DriverUnavailabilityCreate(body)),
+      invalidatesTags: ['DriverUnavailability', 'Driver'],
+    }),
+    deleteDriverUnavailability: builder.mutation<Record<string, boolean>, string>({
+      queryFn: (id) => toQueryResult(apiClient.v1DriverUnavailabilityDelete(id)),
+      invalidatesTags: ['DriverUnavailability', 'Driver'],
     }),
     updateDriver: builder.mutation<DtoDriverResponse, { id: string; body: DtoDriverRequest }>({
       queryFn: ({ id, body }) => toQueryResult(apiClient.v1DriversUpdate(id, body)),
@@ -368,6 +382,9 @@ export const {
   useUpdateDriverMutation,
   useDeleteDriverMutation,
   useGetDriverTripsQuery,
+  useGetDriverUnavailabilityQuery,
+  useCreateDriverUnavailabilityMutation,
+  useDeleteDriverUnavailabilityMutation,
   useGetCarriersQuery,
   useCreateCarrierMutation,
   useUpdateCarrierMutation,

@@ -20,28 +20,34 @@ export interface DataTableProps<T> {
   onSearchChange?: (value: string) => void;
   onAdd?: () => void;
   addLabel?: string;
+  addSlot?: React.ReactNode;
+  filters?: React.ReactNode;
   onExport?: () => void;
   emptyMessage?: string;
   renderRow: (item: T, index: number) => React.ReactNode;
   testId?: string;
 }
 
-export function DataTable<T>({ columns, data, loading, searchValue, onSearchChange, onAdd, addLabel, onExport, emptyMessage, renderRow, testId }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, loading, searchValue, onSearchChange, onAdd, addLabel, addSlot, filters, onExport, emptyMessage, renderRow, testId }: DataTableProps<T>) {
   return (
     <div className="space-y-3">
       {/* Filter bar */}
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between" data-testid="filter-bar">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            data-testid="masterdata-search-input"
-            placeholder="Cerca..."
-            value={searchValue || ''}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-            className="pl-9 h-9 text-sm"
-          />
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              data-testid="masterdata-search-input"
+              placeholder="Cerca..."
+              value={searchValue || ''}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+          {filters}
         </div>
         <div className="flex gap-2">
+          {addSlot}
           {onExport && (
             <Button variant="outline" size="sm" onClick={onExport} className="text-xs gap-1.5">
               <Download className="h-3.5 w-3.5" /> Esporta

@@ -40,10 +40,12 @@ export default function ClientRegisterPage() {
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: 'var(--sidebar-bg)' }}>
         <div>
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(34,211,238,0.15)' }}>
-              <Truck className="h-5 w-5" style={{ color: '#22D3EE' }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--sidebar-accent)' }}>
+              <Truck className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>LoginBusiness</span>
+            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+              TMS <span className="font-normal" style={{ color: 'var(--sidebar-muted)' }}>· F.lli Feccia</span>
+            </span>
           </div>
           <h2 className="text-4xl font-bold leading-tight mb-4" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
             Portale Cliente
@@ -57,10 +59,10 @@ export default function ClientRegisterPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-lg">
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'hsl(195 92% 28%)' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--sidebar-accent)' }}>
               <Truck className="h-4 w-4 text-white" />
             </div>
-            <span className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>LoginBusiness</span>
+            <span className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>TMS · F.lli Feccia</span>
           </div>
 
           <Card className="border shadow-sm">

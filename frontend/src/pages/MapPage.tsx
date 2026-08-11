@@ -34,8 +34,8 @@ const createIcon = (color: string, size = 28) => L.divIcon({
 
 const garageIcon = L.divIcon({
   className: '',
-  html: `<div style="width:32px;height:32px;border-radius:8px;background:#0B1220;border:3px solid #22D3EE;box-shadow:0 2px 12px rgba(34,211,238,0.4);display:flex;align-items:center;justify-content:center;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  html: `<div style="width:32px;height:32px;border-radius:8px;background:#0B1220;border:3px solid #2A6FDB;box-shadow:0 2px 12px rgba(42,111,219,0.4);display:flex;align-items:center;justify-content:center;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2A6FDB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
   </div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
@@ -54,7 +54,7 @@ const washIcon = L.divIcon({
 
 const destIcon = L.divIcon({
   className: '',
-  html: `<div style="width:10px;height:10px;border-radius:50%;background:hsl(195,92%,28%);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
+  html: `<div style="width:10px;height:10px;border-radius:50%;background:#2A6FDB;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>`,
   iconSize: [10, 10],
   iconAnchor: [5, 5],
 });

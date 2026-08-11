@@ -27,11 +27,11 @@ export default function ClientPortalShell({ children }: ClientPortalShellProps) 
       <header className="border-b bg-card">
         <div className="flex items-center gap-6 px-4 md:px-6 h-14">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(195 92% 28%)' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#2A6FDB' }}>
               <Truck className="h-4 w-4 text-white" />
             </div>
             <span className="font-bold text-sm hidden sm:inline" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              LoginBusiness — Portale Cliente
+              TMS · F.lli Feccia — Portale Cliente
             </span>
           </div>
 

@@ -44,9 +44,9 @@ const NAV_ITEMS = [
 
 const ANAGRAFICHE_ITEMS = [
   { label: 'Clienti', to: '/anagrafiche/clienti', icon: Users },
-  { label: 'Destinazioni', to: '/anagrafiche/destinazioni', icon: MapPin },
-  { label: 'Trasporto', to: '/anagrafiche/veicoli', icon: Truck },
+  { label: 'Mezzi', to: '/anagrafiche/mezzi', icon: Truck },
   { label: 'Autisti', to: '/anagrafiche/autisti', icon: UserCircle },
+  { label: 'Destinazioni', to: '/anagrafiche/destinazioni', icon: MapPin },
   { label: 'Vettori', to: '/anagrafiche/vettori', icon: Building2 },
   { label: 'Prodotti', to: '/anagrafiche/prodotti', icon: Package },
   { label: 'Garage', to: '/anagrafiche/garage', icon: Building2 },
