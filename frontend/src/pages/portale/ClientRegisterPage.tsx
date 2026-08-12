@@ -2,30 +2,36 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { DtoClientRegisterRequest } from '@/api/data-contracts';
+import type { DtoClientRegisterRequest, DtoGeocodeResultDTO } from '@/api/data-contracts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { MapPicker } from '@/components/shared/MapPicker';
+import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { toast } from 'sonner';
 import { Truck, UserPlus, Loader2 } from 'lucide-react';
 
-const emptyForm: DtoClientRegisterRequest = {
-  ragione_sociale: '', indirizzo: '', citta: '', cap: '', provincia: '',
+type RegisterForm = Omit<DtoClientRegisterRequest, 'lat' | 'lng'> & { lat: number | null; lng: number | null };
+
+const emptyForm: RegisterForm = {
+  ragione_sociale: '', indirizzo: '', citta: '', cap: '', provincia: '', lat: null, lng: null,
   partita_iva: '', codice_fiscale: '', telefono: '', name: '', email: '', password: '',
 };
 
 export default function ClientRegisterPage() {
   const { registerClient } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState<DtoClientRegisterRequest>(emptyForm);
+  const [form, setForm] = useState<RegisterForm>(emptyForm);
+  const [flySignal, setFlySignal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await registerClient(form);
+      const body: DtoClientRegisterRequest = { ...form, lat: form.lat ?? undefined, lng: form.lng ?? undefined };
+      await registerClient(body);
       toast.success('Registrazione completata');
       navigate('/portale');
     } catch (err) {
@@ -77,10 +83,24 @@ export default function ClientRegisterPage() {
                     <Label htmlFor="ragione_sociale">Ragione Sociale *</Label>
                     <Input id="ragione_sociale" value={form.ragione_sociale} onChange={e => setForm({ ...form, ragione_sociale: e.target.value })} required />
                   </div>
-                  <div className="space-y-1.5"><Label htmlFor="indirizzo">Indirizzo</Label><Input id="indirizzo" value={form.indirizzo} onChange={e => setForm({ ...form, indirizzo: e.target.value })} /></div>
+                  <div className="md:col-span-2 space-y-1.5">
+                    <Label htmlFor="indirizzo">Indirizzo</Label>
+                    <AddressSearchInput
+                      value={form.indirizzo || ''}
+                      onChange={(v) => setForm(f => ({ ...f, indirizzo: v }))}
+                      onSelect={(r: DtoGeocodeResultDTO) => {
+                        setForm(f => ({ ...f, indirizzo: r.indirizzo || f.indirizzo, citta: r.citta || f.citta, cap: r.cap || f.cap, provincia: r.provincia || f.provincia, lat: r.lat ?? f.lat, lng: r.lng ?? f.lng }));
+                        setFlySignal(s => s + 1);
+                      }}
+                    />
+                  </div>
                   <div className="space-y-1.5"><Label htmlFor="citta">Città</Label><Input id="citta" value={form.citta} onChange={e => setForm({ ...form, citta: e.target.value })} /></div>
                   <div className="space-y-1.5"><Label htmlFor="cap">CAP</Label><Input id="cap" value={form.cap} onChange={e => setForm({ ...form, cap: e.target.value })} /></div>
                   <div className="space-y-1.5"><Label htmlFor="provincia">Provincia</Label><Input id="provincia" value={form.provincia} onChange={e => setForm({ ...form, provincia: e.target.value })} /></div>
+                  <div className="md:col-span-2 space-y-1.5">
+                    <Label>Posizione</Label>
+                    <MapPicker lat={form.lat} lng={form.lng} flyToSignal={flySignal} />
+                  </div>
                   <div className="space-y-1.5"><Label htmlFor="partita_iva">Partita IVA</Label><Input id="partita_iva" value={form.partita_iva} onChange={e => setForm({ ...form, partita_iva: e.target.value })} /></div>
                   <div className="space-y-1.5"><Label htmlFor="codice_fiscale">Codice Fiscale</Label><Input id="codice_fiscale" value={form.codice_fiscale} onChange={e => setForm({ ...form, codice_fiscale: e.target.value })} /></div>
                   <div className="md:col-span-2 space-y-1.5"><Label htmlFor="telefono">Telefono</Label><Input id="telefono" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} /></div>

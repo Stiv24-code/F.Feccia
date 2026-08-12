@@ -111,6 +111,13 @@ export interface DtoClientRegisterRequest {
   codice_fiscale?: string;
   email: string;
   indirizzo?: string;
+  /**
+   * Lat/Lng are optional, filled in from the Indirizzo geocoding search when
+   * the address matched — never required, so a signup never fails just
+   * because the address wasn't found on the map.
+   */
+  lat?: number;
+  lng?: number;
   /** @minLength 1 */
   name: string;
   partita_iva?: string;
@@ -208,6 +215,12 @@ export interface DtoCustomerRequest {
   condizioni_pagamento?: string;
   email?: string;
   indirizzo?: string;
+  /**
+   * Lat/Lng optional — see models.Customer for why this differs from
+   * Destination/Garage/WashStation's mandatory Posizione.
+   */
+  lat?: number;
+  lng?: number;
   nazione?: string;
   note?: string;
   partita_iva?: string;
@@ -228,6 +241,8 @@ export interface DtoCustomerResponse {
   email?: string;
   id?: string;
   indirizzo?: string;
+  lat?: number;
+  lng?: number;
   nazione?: string;
   note?: string;
   partita_iva?: string;

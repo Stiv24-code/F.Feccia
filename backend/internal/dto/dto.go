@@ -53,12 +53,17 @@ type ClientRegisterRequest struct {
 	Citta          string `json:"citta"`
 	Cap            string `json:"cap"`
 	Provincia      string `json:"provincia"`
-	PartitaIva     string `json:"partita_iva"`
-	CodiceFiscale  string `json:"codice_fiscale"`
-	Telefono       string `json:"telefono"`
-	Name           string `json:"name" validate:"required,min=1"`
-	Email          string `json:"email" validate:"required,email"`
-	Password       string `json:"password" validate:"required,min=12"`
+	// Lat/Lng are optional, filled in from the Indirizzo geocoding search when
+	// the address matched — never required, so a signup never fails just
+	// because the address wasn't found on the map.
+	Lat           *float64 `json:"lat"`
+	Lng           *float64 `json:"lng"`
+	PartitaIva    string   `json:"partita_iva"`
+	CodiceFiscale string   `json:"codice_fiscale"`
+	Telefono      string   `json:"telefono"`
+	Name          string   `json:"name" validate:"required,min=1"`
+	Email         string   `json:"email" validate:"required,email"`
+	Password      string   `json:"password" validate:"required,min=12"`
 }
 
 // PatchUserRequest mirrors Python's UserUpdate (PATCH /admin/users/{id}):
@@ -110,20 +115,24 @@ type UserResponse struct {
 // CustomerRequest is used for both create and update — Python's customers.py
 // accepts the same CustomerCreate schema for POST and PUT.
 type CustomerRequest struct {
-	RagioneSociale      string `json:"ragione_sociale" validate:"required"`
-	Indirizzo           string `json:"indirizzo"`
-	Citta               string `json:"citta"`
-	Cap                 string `json:"cap"`
-	Provincia           string `json:"provincia"`
-	Nazione             string `json:"nazione"`
-	PartitaIva          string `json:"partita_iva"`
-	CodiceFiscale       string `json:"codice_fiscale"`
-	Telefono            string `json:"telefono"`
-	Email               string `json:"email"`
-	Pec                 string `json:"pec"`
-	CondizioniPagamento string `json:"condizioni_pagamento"`
-	Note                string `json:"note"`
-	RichiedeRifOrdine   bool   `json:"richiede_rif_ordine"`
+	RagioneSociale string `json:"ragione_sociale" validate:"required"`
+	Indirizzo      string `json:"indirizzo"`
+	Citta          string `json:"citta"`
+	Cap            string `json:"cap"`
+	Provincia      string `json:"provincia"`
+	Nazione        string `json:"nazione"`
+	// Lat/Lng optional — see models.Customer for why this differs from
+	// Destination/Garage/WashStation's mandatory Posizione.
+	Lat                 *float64 `json:"lat"`
+	Lng                 *float64 `json:"lng"`
+	PartitaIva          string   `json:"partita_iva"`
+	CodiceFiscale       string   `json:"codice_fiscale"`
+	Telefono            string   `json:"telefono"`
+	Email               string   `json:"email"`
+	Pec                 string   `json:"pec"`
+	CondizioniPagamento string   `json:"condizioni_pagamento"`
+	Note                string   `json:"note"`
+	RichiedeRifOrdine   bool     `json:"richiede_rif_ordine"`
 }
 
 type DestinationRequest struct {
@@ -1012,6 +1021,8 @@ type CustomerResponse struct {
 	Cap                 string    `json:"cap"`
 	Provincia           string    `json:"provincia"`
 	Nazione             string    `json:"nazione"`
+	Lat                 *float64  `json:"lat"`
+	Lng                 *float64  `json:"lng"`
 	PartitaIva          string    `json:"partita_iva"`
 	CodiceFiscale       string    `json:"codice_fiscale"`
 	Telefono            string    `json:"telefono"`

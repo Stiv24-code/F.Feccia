@@ -181,6 +181,14 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        description: |-
+          Lat/Lng are optional, filled in from the Indirizzo geocoding search when
+          the address matched — never required, so a signup never fails just
+          because the address wasn't found on the map.
+        type: number
+      lng:
+        type: number
       name:
         minLength: 1
         type: string
@@ -358,6 +366,13 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        description: |-
+          Lat/Lng optional — see models.Customer for why this differs from
+          Destination/Garage/WashStation's mandatory Posizione.
+        type: number
+      lng:
+        type: number
       nazione:
         type: string
       note:
@@ -397,6 +412,10 @@ definitions:
         type: string
       indirizzo:
         type: string
+      lat:
+        type: number
+      lng:
+        type: number
       nazione:
         type: string
       note:

@@ -75,6 +75,8 @@ func (s *CustomerService) Create(ctx context.Context, req dto.CustomerRequest) (
 		Cap:                 req.Cap,
 		Provincia:           req.Provincia,
 		Nazione:             defaultString(req.Nazione, "Italia"),
+		Lat:                 req.Lat,
+		Lng:                 req.Lng,
 		PartitaIva:          req.PartitaIva,
 		CodiceFiscale:       req.CodiceFiscale,
 		Telefono:            req.Telefono,
@@ -106,6 +108,8 @@ func (s *CustomerService) Update(ctx context.Context, id uuid.UUID, req dto.Cust
 	customer.Cap = req.Cap
 	customer.Provincia = req.Provincia
 	customer.Nazione = defaultString(req.Nazione, "Italia")
+	customer.Lat = req.Lat
+	customer.Lng = req.Lng
 	customer.PartitaIva = req.PartitaIva
 	customer.CodiceFiscale = req.CodiceFiscale
 	customer.Telefono = req.Telefono
@@ -145,6 +149,8 @@ func toCustomerResponse(c models.Customer) dto.CustomerResponse {
 		Cap:                 c.Cap,
 		Provincia:           c.Provincia,
 		Nazione:             c.Nazione,
+		Lat:                 c.Lat,
+		Lng:                 c.Lng,
 		PartitaIva:          c.PartitaIva,
 		CodiceFiscale:       c.CodiceFiscale,
 		Telefono:            c.Telefono,

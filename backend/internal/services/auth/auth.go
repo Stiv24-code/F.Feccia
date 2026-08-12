@@ -131,6 +131,8 @@ func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginR
 			Citta:          req.Citta,
 			Cap:            req.Cap,
 			Provincia:      req.Provincia,
+			Lat:            req.Lat,
+			Lng:            req.Lng,
 			PartitaIva:     req.PartitaIva,
 			CodiceFiscale:  req.CodiceFiscale,
 			Telefono:       req.Telefono,

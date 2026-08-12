@@ -6719,6 +6719,13 @@ const docTemplate = `{
                 "indirizzo": {
                     "type": "string"
                 },
+                "lat": {
+                    "description": "Lat/Lng are optional, filled in from the Indirizzo geocoding search when\nthe address matched — never required, so a signup never fails just\nbecause the address wasn't found on the map.",
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
                 "name": {
                     "type": "string",
                     "minLength": 1
@@ -6980,6 +6987,13 @@ const docTemplate = `{
                 "indirizzo": {
                     "type": "string"
                 },
+                "lat": {
+                    "description": "Lat/Lng optional — see models.Customer for why this differs from\nDestination/Garage/WashStation's mandatory Posizione.",
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
                 "nazione": {
                     "type": "string"
                 },
@@ -7035,6 +7049,12 @@ const docTemplate = `{
                 },
                 "indirizzo": {
                     "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
                 },
                 "nazione": {
                     "type": "string"

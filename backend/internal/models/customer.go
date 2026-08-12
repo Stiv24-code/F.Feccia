@@ -10,22 +10,28 @@ import (
 // Deletion is logical (Active=false), mirroring the Python/Mongo behavior —
 // there is no gorm.DeletedAt soft-delete here.
 type Customer struct {
-	ID                  uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	RagioneSociale      string    `gorm:"type:varchar(255);not null;index:idx_customers_active_ragione,priority:2" json:"ragione_sociale" validate:"required"`
-	Indirizzo           string    `gorm:"type:varchar(255)" json:"indirizzo"`
-	Citta               string    `gorm:"type:varchar(150)" json:"citta"`
-	Cap                 string    `gorm:"type:varchar(20)" json:"cap"`
-	Provincia           string    `gorm:"type:varchar(50)" json:"provincia"`
-	Nazione             string    `gorm:"type:varchar(100);default:Italia" json:"nazione"`
-	PartitaIva          string    `gorm:"type:varchar(50)" json:"partita_iva"`
-	CodiceFiscale       string    `gorm:"type:varchar(50)" json:"codice_fiscale"`
-	Telefono            string    `gorm:"type:varchar(50)" json:"telefono"`
-	Email               string    `gorm:"type:varchar(255)" json:"email"`
-	Pec                 string    `gorm:"type:varchar(255)" json:"pec"`
-	CondizioniPagamento string    `gorm:"type:varchar(255)" json:"condizioni_pagamento"`
-	Note                string    `gorm:"type:text" json:"note"`
-	RichiedeRifOrdine   bool      `gorm:"not null;default:false" json:"richiede_rif_ordine"`
-	Active              bool      `gorm:"not null;default:true;index:idx_customers_active_ragione,priority:1" json:"active"`
+	ID             uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	RagioneSociale string    `gorm:"type:varchar(255);not null;index:idx_customers_active_ragione,priority:2" json:"ragione_sociale" validate:"required"`
+	Indirizzo      string    `gorm:"type:varchar(255)" json:"indirizzo"`
+	Citta          string    `gorm:"type:varchar(150)" json:"citta"`
+	Cap            string    `gorm:"type:varchar(20)" json:"cap"`
+	Provincia      string    `gorm:"type:varchar(50)" json:"provincia"`
+	Nazione        string    `gorm:"type:varchar(100);default:Italia" json:"nazione"`
+	// Lat/Lng are nullable (unlike Destination/Garage/WashStation, where a map
+	// point is mandatory): existing customers predate this column and a
+	// precise address match isn't always available/required for an anagrafica
+	// record, so geocoding here is best-effort, not a save-blocking gate.
+	Lat                 *float64 `json:"lat"`
+	Lng                 *float64 `json:"lng"`
+	PartitaIva          string   `gorm:"type:varchar(50)" json:"partita_iva"`
+	CodiceFiscale       string   `gorm:"type:varchar(50)" json:"codice_fiscale"`
+	Telefono            string   `gorm:"type:varchar(50)" json:"telefono"`
+	Email               string   `gorm:"type:varchar(255)" json:"email"`
+	Pec                 string   `gorm:"type:varchar(255)" json:"pec"`
+	CondizioniPagamento string   `gorm:"type:varchar(255)" json:"condizioni_pagamento"`
+	Note                string   `gorm:"type:text" json:"note"`
+	RichiedeRifOrdine   bool     `gorm:"not null;default:false" json:"richiede_rif_ordine"`
+	Active              bool     `gorm:"not null;default:true;index:idx_customers_active_ragione,priority:1" json:"active"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
