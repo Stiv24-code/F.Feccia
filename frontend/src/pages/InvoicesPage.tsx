@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getInvoices, createInvoice, finalizeInvoice, deleteInvoice, downloadInvoicePdf, getInvoicePdfUrl, getOrders } from '@/lib/api';
 import { useGetCustomersQuery } from '@/store/api/appApi';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { DtoInvoiceResponse, DtoOrderResponse, DtoInvoiceLineDTO } from '@/api/data-contracts';
+import type { DtoInvoiceResponse, DtoOrderResponse, DtoInvoiceLineDTO, DtoCustomerResponse } from '@/api/data-contracts';
 import { formatEuro } from '@/lib/format';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,7 +32,8 @@ export default function InvoicesPage() {
   const [closedOrders, setClosedOrders] = useState<DtoOrderResponse[]>([]);
   // Selettore cliente: serve l'elenco completo, non una pagina.
   const { data: customersPage } = useGetCustomersQuery({ limit: 500 }, { skip: !newDialogOpen });
-  const customers = customersPage?.items ?? [];
+  const customers = useMemo(() => customersPage?.items ?? [], [customersPage]);
+  const customerFilterOptions = useMemo(() => [{ id: 'all', ragione_sociale: 'Tutti' } as DtoCustomerResponse, ...customers], [customers]);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [selectedClienteId, setSelectedClienteId] = useState('');
 
@@ -215,13 +216,15 @@ export default function InvoicesPage() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Filtra per Cliente</Label>
-              <Select value={selectedClienteId} onValueChange={setSelectedClienteId}>
-                <SelectTrigger><SelectValue placeholder="Tutti i clienti" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti</SelectItem>
-                  {customers.map(c => <SelectItem key={c.id} value={c.id || ''}>{c.ragione_sociale}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={selectedClienteId || 'all'}
+                onValueChange={v => setSelectedClienteId(v === 'all' ? '' : v)}
+                options={customerFilterOptions}
+                getValue={(c) => c.id || ''}
+                getLabel={(c) => c.ragione_sociale || ''}
+                placeholder="Tutti i clienti"
+                searchPlaceholder="Cerca cliente..."
+              />
             </div>
             <div>
               <Label className="mb-2 block">Ordini chiusi da fatturare ({filteredClosedOrders.length})</Label>

@@ -16,7 +16,7 @@ import { MapPicker } from '@/components/shared/MapPicker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -168,10 +168,16 @@ export default function ClientOrdersPage() {
           <div className="space-y-1.5">
             <Label>Destinazione Carico</Label>
             <div className="flex gap-2">
-              <Select value={form.destinazione_carico_id} onValueChange={v => setForm({ ...form, destinazione_carico_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                <SelectContent>{destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.destinazione_carico_id}
+                onValueChange={v => setForm({ ...form, destinazione_carico_id: v })}
+                options={destinations}
+                getValue={(d) => d.id || ''}
+                getLabel={(d) => d.nome || ''}
+                placeholder="Seleziona..."
+                searchPlaceholder="Cerca destinazione..."
+                className="flex-1"
+              />
               <Button type="button" variant="outline" size="icon" className="shrink-0" title="Nuova destinazione" onClick={() => openNewDestination('carico')}>
                 <Plus className="h-4 w-4" />
               </Button>
@@ -180,10 +186,16 @@ export default function ClientOrdersPage() {
           <div className="space-y-1.5">
             <Label>Destinazione Scarico</Label>
             <div className="flex gap-2">
-              <Select value={form.destinazione_scarico_id} onValueChange={v => setForm({ ...form, destinazione_scarico_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                <SelectContent>{destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.destinazione_scarico_id}
+                onValueChange={v => setForm({ ...form, destinazione_scarico_id: v })}
+                options={destinations}
+                getValue={(d) => d.id || ''}
+                getLabel={(d) => d.nome || ''}
+                placeholder="Seleziona..."
+                searchPlaceholder="Cerca destinazione..."
+                className="flex-1"
+              />
               <Button type="button" variant="outline" size="icon" className="shrink-0" title="Nuova destinazione" onClick={() => openNewDestination('scarico')}>
                 <Plus className="h-4 w-4" />
               </Button>

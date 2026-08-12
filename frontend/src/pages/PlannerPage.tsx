@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -183,6 +183,7 @@ export default function PlannerPage() {
     const names = new Set(orders.map(driverFullName).filter(Boolean));
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [orders]);
+  const driverFilterOptions = useMemo(() => ['all', ...driverOptions], [driverOptions]);
 
   const searchAndDriverFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -241,13 +242,17 @@ export default function PlannerPage() {
               className="pl-9 h-9 w-64 text-sm" data-testid="planner-search-input"
             />
           </div>
-          <Select value={driverFilter || 'all'} onValueChange={v => setDriverFilter(v === 'all' ? '' : v)}>
-            <SelectTrigger className="h-9 w-44 text-sm" data-testid="planner-driver-filter"><SelectValue placeholder="Tutti gli autisti" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti gli autisti</SelectItem>
-              {driverOptions.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={driverFilter || 'all'}
+            onValueChange={v => setDriverFilter(v === 'all' ? '' : v)}
+            options={driverFilterOptions}
+            getValue={(name) => name}
+            getLabel={(name) => (name === 'all' ? 'Tutti gli autisti' : name)}
+            placeholder="Tutti gli autisti"
+            searchPlaceholder="Cerca autista..."
+            className="h-9 w-44 text-sm"
+            triggerTestId="planner-driver-filter"
+          />
           {view === 'list' && (
             <div className="relative">
               <button
