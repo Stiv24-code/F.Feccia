@@ -37,10 +37,10 @@ const navItems = [
     ]
   },
   { label: 'Listini', path: '/listini', icon: ListOrdered },
-  { label: 'Raccolta Ordini', path: '/ordini', icon: ClipboardList },
   {
-    label: 'Ordini in Ingresso', icon: Inbox, children: [
-      { label: 'Accettazione', path: '/ordini-in-ingresso', icon: Inbox },
+    label: 'Ordini', icon: ClipboardList, children: [
+      { label: 'In arrivo', path: '/ordini-in-ingresso', icon: Inbox },
+      { label: 'Registro ordini', path: '/ordini', icon: ClipboardList },
       { label: 'Template PDF', path: '/ordini-in-ingresso/template', icon: FileText },
     ]
   },
@@ -78,6 +78,17 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
     if (path === '/dashboard' && (location.pathname === '/' || location.pathname === '/dashboard')) return true;
     return location.pathname === path;
   };
+
+  // Espande automaticamente il gruppo di un item attivo raggiunto per URL
+  // diretto (refresh, link esterno) — senza, un gruppo diverso da
+  // "Anagrafiche" resterebbe chiuso pur avendo la voce corrente evidenziata.
+  useEffect(() => {
+    const activeGroup = visibleNavItems.find(item => item.children?.some(c => isActive(c.path)));
+    if (activeGroup && !openGroups[activeGroup.label]) {
+      setOpenGroups(prev => ({ ...prev, [activeGroup.label]: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const handleNav = (path) => {
     navigate(path);
@@ -258,9 +269,7 @@ const AppShell = ({ children }) => {
     if (path.includes('lavaggi')) return 'Punti di Lavaggio';
     if (path.includes('garage')) return 'Garage / Parcheggio';
     if (path.includes('listini')) return 'Listini';
-    // prima del generico 'ordini': 'ordini-in-ingresso' lo conterrebbe
-    if (path.includes('ordini-in-ingresso')) return path.includes('template') ? 'Template PDF per cliente' : 'Ordini in Ingresso';
-    if (path.includes('ordini')) return 'Raccolta Ordini';
+    if (path.includes('/ordini')) return 'Ordini';
     if (path.includes('planner')) return 'Planner';
     if (path.includes('viaggi')) return 'Gestione Viaggi';
     if (path.includes('mappa')) return 'Mappa Viaggi';

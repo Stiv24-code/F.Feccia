@@ -106,6 +106,11 @@ func TestSetupRoutes_StaffAndClienteAreNotMutuallyExclusive(t *testing.T) {
 			t.Fatalf("expected /geocode/search to be reachable, got %d", status)
 		}
 	}
+	// ...and with no token at all — the public /registrati self-signup form
+	// calls this before any account/token exists, so it must not require auth.
+	if status := doRoutesRequest(t, app, http.MethodGet, "/api/v1/geocode/search", ""); status == http.StatusUnauthorized || status == http.StatusForbidden {
+		t.Fatalf("expected /geocode/search to be reachable without a token, got %d", status)
+	}
 
 	// GET /auth/me: reachable by any authenticated role.
 	for _, tok := range []string{adminTokens.AccessToken, clienteTokens.AccessToken} {

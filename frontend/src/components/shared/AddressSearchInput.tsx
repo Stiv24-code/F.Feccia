@@ -6,7 +6,7 @@ import { geocodeSearch } from '@/lib/api';
 import { logger } from '@/lib/logger';
 import type { DtoGeocodeResultDTO } from '@/api/data-contracts';
 
-const SEARCH_DEBOUNCE_MS = 400;
+const SEARCH_DEBOUNCE_MS = 600;
 const MIN_QUERY_LENGTH = 3;
 
 export interface AddressSearchInputProps {

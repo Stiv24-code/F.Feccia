@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import LoginPage from '@/pages/LoginPage';
 import ClientRegisterPage from '@/pages/portale/ClientRegisterPage';
 import AppShell from '@/components/layout/AppShell';
+import OrdiniTabsLayout from '@/components/layout/OrdiniTabsLayout';
 import ClientPortalShell from '@/components/layout/ClientPortalShell';
 import DashboardPage from '@/pages/DashboardPage';
 import '@/App.css';
@@ -75,9 +76,9 @@ function StaffRoutes() {
           <Route path="anagrafiche/banche" element={<BanksPage />} />
           <Route path="anagrafiche/voci-contabili" element={<AccountingEntriesPage />} />
           <Route path="listini" element={<PriceListsPage />} />
-          <Route path="ordini" element={<OrdersPage />} />
-          <Route path="ordini-in-ingresso" element={<InboundOrdersPage />} />
-          <Route path="ordini-in-ingresso/template" element={<PdfTemplatesPage />} />
+          <Route path="ordini" element={<OrdiniTabsLayout><OrdersPage /></OrdiniTabsLayout>} />
+          <Route path="ordini-in-ingresso" element={<OrdiniTabsLayout><InboundOrdersPage /></OrdiniTabsLayout>} />
+          <Route path="ordini-in-ingresso/template" element={<OrdiniTabsLayout><PdfTemplatesPage /></OrdiniTabsLayout>} />
           <Route path="planner" element={<PlannerPage />} />
           <Route path="planner/ordini/:id" element={<OrderDetailPage />} />
           <Route path="planner/dnd" element={<PlannerDnDPage />} />

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText, Plus, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, FileText, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type {
   DtoPdfRenderPageDTO,
@@ -18,8 +17,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Stage, { type StageZoneNorm } from '@/components/inbound/Stage';
 import { TARGETS, getInboundApiError } from '@/components/inbound/constants';
+
+const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('it-IT') : '—');
 
 let uid = 0;
 const newLocalId = () => `new-${++uid}`;
@@ -56,7 +58,6 @@ interface LoadedPdf {
 // sul PDF renderizzato, collegate ai campi dell'ordine in ingresso; i
 // mittenti associati preselezionano il template all'import.
 export default function PdfTemplatesPage() {
-  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [templates, setTemplates] = useState<DtoPdfTemplateResponse[]>([]);
   const [cur, setCur] = useState<EditTemplate | null>(null);
@@ -205,8 +206,91 @@ export default function PdfTemplatesPage() {
     }
   }
 
+  // Eliminazione diretta da riga della tabella, senza passare per l'editor.
+  async function removeFromList(t: DtoPdfTemplateResponse) {
+    if (!t.id) return;
+    if (!window.confirm(`Eliminare il template «${t.name}»?`)) return;
+    try {
+      await apiClient.v1PdfTemplatesDelete(t.id);
+      if (cur?.id === t.id) { setCur(null); setDirty(false); }
+      await loadTemplates();
+      toast.success('Template eliminato');
+    } catch (err) {
+      toast.error(getInboundApiError(err));
+    }
+  }
+
   const page = pdf?.pages?.find((p) => p.page_num === curPage) ?? null;
   const sendersValue = typeof cur?.senders === 'string' ? cur.senders : (cur?.senders ?? []).join(', ');
+
+  // ── Vista elenco (landing della tab Template PDF) ──
+  if (!cur) {
+    return (
+      <div data-testid="pdf-templates-page" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
+            e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
+          </p>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={newTemplate}>
+            <Plus className="h-3.5 w-3.5" /> Nuovo template
+          </Button>
+        </div>
+
+        <Card className="rounded-xl border shadow-sm">
+          <div className="overflow-x-auto">
+            <Table className="text-xs md:text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="py-2 text-xs">Cliente</TableHead>
+                  <TableHead className="py-2 text-xs">Template</TableHead>
+                  <TableHead className="py-2 text-xs">Mittente</TableHead>
+                  <TableHead className="py-2 text-xs">Blocchi mappati</TableHead>
+                  <TableHead className="py-2 text-xs">Aggiornato</TableHead>
+                  <TableHead className="py-2 text-xs w-20" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {templates.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                      Nessun template ancora.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {templates.map((t) => (
+                  <TableRow key={t.id} className="cursor-pointer hover:bg-muted/60" onClick={() => openTemplate(t)}>
+                    <TableCell className="py-2 font-medium">{t.client || '—'}</TableCell>
+                    <TableCell className="py-2">{t.name}</TableCell>
+                    <TableCell className="py-2 max-w-[220px] truncate text-muted-foreground">
+                      {(t.senders ?? []).join(', ') || '—'}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Badge variant="outline">{(t.fields ?? []).length} blocchi</Badge>
+                    </TableCell>
+                    <TableCell className="py-2 text-muted-foreground">{fmtDate(t.updated_at)}</TableCell>
+                    <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTemplate(t)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                          onClick={() => removeFromList(t)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="pdf-templates-page" className="space-y-4">
@@ -215,8 +299,11 @@ export default function PdfTemplatesPage() {
           Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
           e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
         </p>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={() => navigate('/ordini-in-ingresso')}>
-          <ArrowLeft className="h-3.5 w-3.5" /> Torna agli ordini
+        <Button
+          variant="ghost" size="sm" className="gap-1.5 text-xs"
+          onClick={() => { if (confirmDiscard()) { setCur(null); setDirty(false); } }}
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Torna all’elenco
         </Button>
       </div>
 
@@ -252,61 +339,49 @@ export default function PdfTemplatesPage() {
         </Card>
 
         {/* ── Editor ── */}
-        {cur ? (
-          <Card className="p-3">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <input
-                ref={fileRef} type="file" accept=".pdf" hidden
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadSample(f); e.target.value = ''; }}
-              />
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => fileRef.current?.click()} disabled={busy === 'render'}>
-                <Upload className="h-3.5 w-3.5" /> {busy === 'render' ? 'Rendering…' : 'Carica PDF di esempio'}
-              </Button>
-              {pdf && pdf.pages.length > 1 && (
-                <div className="flex rounded-lg border p-0.5 gap-0.5">
-                  {pdf.pages.map((p) => (
-                    <Button
-                      key={p.page_num}
-                      variant={p.page_num === curPage ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => { setCurPage(p.page_num ?? 0); setSelField(null); }}
-                    >
-                      Pag. {(p.page_num ?? 0) + 1}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              <div className="ml-auto flex items-center gap-1.5">
-                <Checkbox id="show-blocks" checked={showBlocks} onCheckedChange={(v) => setShowBlocks(!!v)} />
-                <Label htmlFor="show-blocks" className="text-xs text-muted-foreground cursor-pointer">
-                  mostra testo rilevato
-                </Label>
-              </div>
-            </div>
-
-            <Stage
-              page={page}
-              fields={cur.fields.filter((f) => f.page === curPage)}
-              selectedId={selField}
-              showBlocks={showBlocks}
-              onSelect={setSelField}
-              onAddZone={addZone}
-              onMoveZone={patchField}
-              onCommit={() => setDirty(true)}
+        <Card className="p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={fileRef} type="file" accept=".pdf" hidden
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadSample(f); e.target.value = ''; }}
             />
-          </Card>
-        ) : (
-          <Card className="p-3">
-            <p className="px-5 py-16 text-center text-sm text-muted-foreground">
-              Seleziona un template a sinistra o creane uno nuovo.
-              <br /><br />
-              Ogni cliente invia i propri ordini PDF con un layout diverso: qui disegni
-              le zone del PDF e le colleghi ai campi dell’ordine. Il sistema sceglierà
-              il template giusto in base al mittente.
-            </p>
-          </Card>
-        )}
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => fileRef.current?.click()} disabled={busy === 'render'}>
+              <Upload className="h-3.5 w-3.5" /> {busy === 'render' ? 'Rendering…' : 'Carica PDF di esempio'}
+            </Button>
+            {pdf && pdf.pages.length > 1 && (
+              <div className="flex rounded-lg border p-0.5 gap-0.5">
+                {pdf.pages.map((p) => (
+                  <Button
+                    key={p.page_num}
+                    variant={p.page_num === curPage ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => { setCurPage(p.page_num ?? 0); setSelField(null); }}
+                  >
+                    Pag. {(p.page_num ?? 0) + 1}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <div className="ml-auto flex items-center gap-1.5">
+              <Checkbox id="show-blocks" checked={showBlocks} onCheckedChange={(v) => setShowBlocks(!!v)} />
+              <Label htmlFor="show-blocks" className="text-xs text-muted-foreground cursor-pointer">
+                mostra testo rilevato
+              </Label>
+            </div>
+          </div>
+
+          <Stage
+            page={page}
+            fields={cur.fields.filter((f) => f.page === curPage)}
+            selectedId={selField}
+            showBlocks={showBlocks}
+            onSelect={setSelField}
+            onAddZone={addZone}
+            onMoveZone={patchField}
+            onCommit={() => setDirty(true)}
+          />
+        </Card>
 
         {/* ── Proprietà ── */}
         {cur && (

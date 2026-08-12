@@ -177,8 +177,10 @@ export const unassignOrder = (id) => api.patch(`/orders/${id}/unassign`);
 export const getOrderRouteAlternatives = (id, { garageId, washStationId } = {}) =>
   api.post(`/orders/${id}/route-alternatives`, { garage_id: garageId || '', wash_station_id: washStationId || '' });
 export const updateOrderRoute = (id, waypoints) => api.patch(`/orders/${id}/route`, { waypoints });
-// Ricerca indirizzo per il MapPicker (Destinazioni/Garage/Punti di Lavaggio):
-// text -> fino a 5 candidati con coordinate, l'utente sceglie quello giusto.
+// Ricerca indirizzo per il MapPicker (Destinazioni/Garage/Punti di Lavaggio/
+// Clienti, incluso il form pubblico di registrazione): text -> fino a 5
+// candidati con coordinate, l'utente sceglie quello giusto. Endpoint pubblico
+// (nessun JWT richiesto) proprio per funzionare su /registrati.
 export const geocodeSearch = (query) => api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
 export const startOrder = (id) => api.patch(`/orders/${id}/start`);
 export const closeOrder = (id) => api.patch(`/orders/${id}/close`);
