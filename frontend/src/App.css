@@ -73,6 +73,21 @@
   border-color: #d97706;
 }
 
+/* Variante read-only (revisione ordine da PDF): stessa zona mappata, ma
+   senza interazione — cursore neutro, nessun handle di resize. Lo stato
+   "missing" segnala un campo non letto dal PDF o a bassa confidenza. */
+.stage-zone.readonly {
+  cursor: default;
+}
+.stage-zone.missing {
+  border-style: dashed;
+  border-color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.12);
+}
+.stage-zone.missing .tag {
+  background: hsl(var(--destructive));
+}
+
 .stage-rubber {
   position: absolute;
   border: 1.5px dashed #d97706;
@@ -100,4 +115,37 @@
   border-color: #059669;
   color: #059669;
   font-weight: 600;
+}
+
+/* Le zone/tag/filebox usano hex letterali (non token) perché sono accenti
+   semantici fissi (verde = mappato, ambra = selezionato); in dark mode li
+   schiariamo per mantenere contrasto sufficiente sul canvas scuro. */
+.dark .stage-zone {
+  border-color: #34d399;
+}
+.dark .stage-zone .tag,
+.dark .stage-zone .rsz {
+  border-color: #34d399;
+  background: #34d399;
+}
+.dark .stage-zone .rsz {
+  background: hsl(var(--card));
+}
+.dark .stage-zone.sel {
+  border-color: #fbbf24;
+}
+.dark .stage-zone.sel .tag,
+.dark .stage-zone.sel .rsz {
+  border-color: #fbbf24;
+  background: #fbbf24;
+}
+.dark .stage-zone.sel .rsz {
+  background: hsl(var(--card));
+}
+.dark .stage-rubber {
+  border-color: #fbbf24;
+}
+.dark .filebox.hasfile {
+  border-color: #34d399;
+  color: #34d399;
 }

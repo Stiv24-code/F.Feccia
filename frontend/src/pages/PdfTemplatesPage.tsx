@@ -380,15 +380,17 @@ export default function PdfTemplatesPage() {
             onAddZone={addZone}
             onMoveZone={patchField}
             onCommit={() => setDirty(true)}
+            onPick={() => fileRef.current?.click()}
           />
         </Card>
 
-        {/* ── Proprietà ── */}
+        {/* ── Proprietà: dati template + blocchi rilevati, in due card distinte ── */}
         {cur && (
+          <div className="flex flex-col gap-3">
           <Card className="p-3">
             <div className="flex flex-col gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Proprietà template
+                Dati template
               </p>
               <div className="space-y-1">
                 <Label className="text-[11px] text-muted-foreground uppercase">Nome</Label>
@@ -420,9 +422,13 @@ export default function PdfTemplatesPage() {
                   Indirizzi separati da virgola. «@dominio.it» abbina l’intero dominio.
                 </p>
               </div>
+            </div>
+          </Card>
 
-              <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Campi mappati ({cur.fields.length})
+          <Card className="p-3">
+            <div className="flex flex-col gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Blocchi rilevati · associazione ai campi ({cur.fields.length})
               </p>
               {cur.fields.length === 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -508,6 +514,7 @@ export default function PdfTemplatesPage() {
               )}
             </div>
           </Card>
+          </div>
         )}
       </div>
     </div>

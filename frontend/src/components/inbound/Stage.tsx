@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { Upload } from 'lucide-react';
 import type { DtoPdfRenderPageDTO, DtoPdfTemplateFieldDTO } from '@/api/data-contracts';
 import { TARGET_LABEL } from './constants';
 
@@ -18,6 +19,8 @@ interface StageProps {
   onAddZone: (norm: StageZoneNorm, blockText?: string) => void;
   onMoveZone: (id: string, patch: Partial<DtoPdfTemplateFieldDTO>) => void;
   onCommit: () => void;
+  /** Attiva la dropzone dello stato vuoto (apre il file picker del PDF di esempio). */
+  onPick?: () => void;
 }
 
 interface DragState {
@@ -47,7 +50,7 @@ interface RubberState {
 // Stage di OrderMesh; gli stili .stage-* vivono in App.css.
 export default function Stage({
   page, fields, selectedId, showBlocks,
-  onSelect, onAddZone, onMoveZone, onCommit,
+  onSelect, onAddZone, onMoveZone, onCommit, onPick,
 }: StageProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -130,16 +133,19 @@ export default function Stage({
 
   if (!page) {
     return (
-      <div className="stage">
-        <p className="text-center text-sm text-muted-foreground px-5 py-16">
-          Carica un PDF di esempio del cliente per mappare i campi.
-          <br />
-          <span className="text-xs">
-            Clic su un blocco di testo rilevato per aggiungerlo come campo,
-            oppure trascina per disegnare una zona.
-          </span>
+      <button
+        type="button"
+        onClick={onPick}
+        disabled={!onPick}
+        className="flex min-h-[260px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 px-5 py-16 text-center transition-colors hover:border-primary hover:bg-primary/5 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-muted/30"
+      >
+        <Upload className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm font-semibold">Trascina qui un PDF d’esempio del cliente</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          oppure clicca per selezionarlo · l’AI rileverà i blocchi di testo e proporrà
+          l’associazione con i campi dell’ordine
         </p>
-      </div>
+      </button>
     );
   }
 

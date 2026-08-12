@@ -580,6 +580,79 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d indisponibilita' autisti\n", len(unavails))
 
+	// ─────────────────────────── ORDINI IN ARRIVO (PDF/e-mail) ───────────────────────────
+	// Bozze non ancora accettate per la tab "In arrivo": stesso concetto di
+	// Order ma senza FK (Client/Product sono testo libero, come nella realtà
+	// un ordine ricevuto via mail/PDF). Riusa le stesse anagrafiche clienti/
+	// prodotti/destinazioni seminate sopra invece di inventarne di nuove.
+	inboundStatuses := weighted(map[string]int{"pending": 6, "accepted": 1, "modify": 1})
+	inboundSources := []string{models.InboundOrderSourceMail, models.InboundOrderSourcePDF, models.InboundOrderSourceSeed}
+	inboundRates := []string{"€ 1.480", "€ 1.850", "€ 2.100", "€ 2.250", "€ 2.400", "€ 2.650", "€ 3.800", "€ 480"}
+	inboundNotes := []string{"", "", "Serve sponda idraulica per lo scarico.", "Cliente richiede conferma telefonica prima del ritiro."}
+	// Minuti trascorsi da "ora": copre i bucket del formattatore relativo del
+	// frontend (min/h/ieri/data) così il tab non mostra solo "20 min fa".
+	inboundAgoMinutes := []int{20, 35, 60, 120, 180, 1440, 1500, 2900}
+
+	inboundOrders := make([]models.InboundOrder, 0, len(inboundAgoMinutes))
+	for _, minutesAgo := range inboundAgoMinutes {
+		cust := pick(customers)
+		carico := pick(destinations)
+		scarico := pick(destinations)
+		for scarico.ID == carico.ID {
+			scarico = pick(destinations)
+		}
+		prod := pick(products)
+		stato := models.InboundOrderStatus(pick(inboundStatuses))
+		portal := stato == models.InboundOrderStatusPending && randBelow(3) == 0
+
+		deliveryDate := ""
+		if randBelow(4) != 0 {
+			deliveryDate = today.AddDate(0, 0, randRange(2, 20)).Format("2006-01-02")
+		}
+
+		inboundOrders = append(inboundOrders, models.InboundOrder{
+			ID:      uuid.New(),
+			Client:  cust.RagioneSociale, SenderEmail: cust.Email,
+			Ref:     fmt.Sprintf("%d/%02d", randRange(100000, 999999), randRange(10, 99)),
+			Product: prod.Descrizione, Kg: randRange(5000, 26000),
+			LoadDate: today.AddDate(0, 0, randRange(-2, 15)).Format("2006-01-02"), LoadPlace: carico.Nome,
+			DeliveryDate: deliveryDate, DeliveryPlace: scarico.Nome,
+			Rate: pick(inboundRates), Notes: pick(inboundNotes),
+			Portal: portal, Status: stato, Source: pick(inboundSources),
+			ReceivedAt: today.Add(-time.Duration(minutesAgo) * time.Minute),
+		})
+	}
+	if err := db.Create(&inboundOrders).Error; err != nil {
+		return fmt.Errorf("ordini in arrivo: %w", err)
+	}
+	fmt.Printf("✓ %d ordini in arrivo\n", len(inboundOrders))
+
+	// ─────────────────────────── TEMPLATE PDF ───────────────────────────
+	tplFieldsA, _ := json.Marshal([]models.PdfTemplateField{
+		{ID: "1", Target: "load_place", Label: "Luogo di carico", Page: 0, X: 0.08, Y: 0.42, W: 0.35, H: 0.03},
+		{ID: "2", Target: "load_date", Label: "Data ritiro", Page: 0, X: 0.08, Y: 0.46, W: 0.25, H: 0.03},
+		{ID: "3", Target: "delivery_place", Label: "Luogo di scarico", Page: 0, X: 0.55, Y: 0.42, W: 0.35, H: 0.03},
+		{ID: "4", Target: "delivery_date", Label: "Data consegna", Page: 0, X: 0.55, Y: 0.46, W: 0.25, H: 0.03},
+		{ID: "5", Target: "kg", Label: "Peso (kg)", Page: 0, X: 0.08, Y: 0.20, W: 0.2, H: 0.03},
+		{ID: "6", Target: "rate", Label: "Tariffa", Page: 0, X: 0.55, Y: 0.20, W: 0.2, H: 0.03},
+	})
+	tplFieldsB, _ := json.Marshal([]models.PdfTemplateField{
+		{ID: "1", Target: "ref", Label: "Riferimento", Page: 0, X: 0.1, Y: 0.12, W: 0.3, H: 0.03},
+		{ID: "2", Target: "product", Label: "Prodotto", Page: 0, X: 0.1, Y: 0.30, W: 0.4, H: 0.03},
+		{ID: "3", Target: "kg", Label: "Peso (kg)", Page: 0, X: 0.1, Y: 0.34, W: 0.2, H: 0.03},
+	})
+	sendersA, _ := json.Marshal([]string{customers[5].Email, "@ferrero.com"})
+	sendersB, _ := json.Marshal([]string{customers[3].Email})
+
+	templates := []models.PdfTemplate{
+		{ID: uuid.New(), Name: "Trasporto Transporeon (Trimble)", Client: customers[5].RagioneSociale, Senders: datatypes.JSON(sendersA), Fields: datatypes.JSON(tplFieldsA)},
+		{ID: uuid.New(), Name: "Transport Order Confirmation", Client: customers[3].RagioneSociale, Senders: datatypes.JSON(sendersB), Fields: datatypes.JSON(tplFieldsB)},
+	}
+	if err := db.Create(&templates).Error; err != nil {
+		return fmt.Errorf("template pdf: %w", err)
+	}
+	fmt.Printf("✓ %d template pdf\n", len(templates))
+
 	fmt.Println()
 	fmt.Println("═══════════════════════════════════════")
 	fmt.Println("  SEED COMPLETATO")

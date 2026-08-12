@@ -6,6 +6,9 @@ import { apiClient } from '@/lib/apiClient';
 import type {
   DtoInboundOrderRequest,
   DtoInboundOrderResponse,
+  DtoPdfExtractedValueDTO,
+  DtoPdfRenderPageDTO,
+  DtoPdfTemplateFieldDTO,
   DtoPdfTemplateResponse,
 } from '@/api/data-contracts';
 import {
@@ -19,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import PdfFieldOverlay from './PdfFieldOverlay';
 import { getInboundApiError } from './constants';
 
 const DRAFT_KEYS: Array<[keyof DraftFields, string]> = [
@@ -28,6 +32,11 @@ const DRAFT_KEYS: Array<[keyof DraftFields, string]> = [
   ['load_date', 'Data carico'], ['load_place', 'Luogo carico'],
   ['delivery_date', 'Data consegna'], ['delivery_place', 'Luogo consegna'],
 ];
+
+// Sotto questa soglia un valore estratto è considerato "non presente nel
+// PDF" (vuoto o letto con poca certezza) — stessa soglia usata per il
+// conteggio aggregato "N zone incerte".
+const CONFIDENCE_THRESHOLD = 0.65;
 
 interface DraftFields {
   client: string;
@@ -68,14 +77,19 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
   const [step, setStep] = useState<1 | 2>(1);
   const [draft, setDraft] = useState<DraftFields>(emptyDraft);
   const [templateId, setTemplateId] = useState('');
+  const [templateFields, setTemplateFields] = useState<DtoPdfTemplateFieldDTO[]>([]);
   const [extraction, setExtraction] = useState({ tplName: '', n: 0, low: 0 });
+  const [extractionMeta, setExtractionMeta] = useState<Record<string, DtoPdfExtractedValueDTO>>({});
+  const [pages, setPages] = useState<DtoPdfRenderPageDTO[]>([]);
+  const [curPage, setCurPage] = useState(0);
   const [busy, setBusy] = useState(false);
 
   // reset a ogni apertura + carica template
   useEffect(() => {
     if (!open) return;
     setFile(null); setSender(''); setTplId(''); setMatch(null); setStep(1);
-    setDraft(emptyDraft); setTemplateId('');
+    setDraft(emptyDraft); setTemplateId(''); setTemplateFields([]);
+    setExtractionMeta({}); setPages([]); setCurPage(0);
     apiClient.v1PdfTemplatesList()
       .then((res) => setTemplates(res.data ?? []))
       .catch((err) => toast.error(getInboundApiError(err)));
@@ -109,24 +123,35 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
     if (!tplId && !sender) { toast.error('Indica il mittente o scegli un template'); return; }
     setBusy(true);
     try {
-      const res = await apiClient.v1PdfImportCreate({
-        file,
-        template_id: tplId || undefined,
-        sender: sender || undefined,
-      });
+      const [res, renderRes] = await Promise.all([
+        apiClient.v1PdfImportCreate({
+          file,
+          template_id: tplId || undefined,
+          sender: sender || undefined,
+        }),
+        // La preview del documento è un extra per la revisione: se il
+        // render fallisce non deve bloccare l'estrazione dei campi.
+        apiClient.v1PdfRenderCreate({ file }).catch(() => null),
+      ]);
       const j = res.data;
       const order = j.order ?? {};
       const d = { ...emptyDraft };
       DRAFT_KEYS.forEach(([k]) => { d[k] = String((order as Record<string, unknown>)[k] ?? ''); });
       d.notes = order.notes ?? '';
-      const ex = Object.values(j.extraction ?? {});
+      const extractionMap = j.extraction ?? {};
+      const ex = Object.values(extractionMap);
       setExtraction({
         tplName: j.template?.name ?? '',
-        n: ex.filter((v) => (v.confidence ?? 0) >= 0.65).length,
-        low: ex.filter((v) => (v.confidence ?? 0) < 0.65).length,
+        n: ex.filter((v) => (v.confidence ?? 0) >= CONFIDENCE_THRESHOLD).length,
+        low: ex.filter((v) => (v.confidence ?? 0) < CONFIDENCE_THRESHOLD).length,
       });
+      setExtractionMeta(extractionMap);
       setDraft(d);
-      setTemplateId(j.template?.id ?? '');
+      const usedTemplateId = j.template?.id || tplId;
+      setTemplateId(usedTemplateId ?? '');
+      setTemplateFields(templates.find((t) => t.id === usedTemplateId)?.fields ?? []);
+      setPages(renderRes?.data.pages ?? []);
+      setCurPage(0);
       setStep(2);
     } catch (err) {
       toast.error(getInboundApiError(err));
@@ -134,6 +159,20 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
       setBusy(false);
     }
   }
+
+  // Target dei campi non letti dal PDF o letti con poca certezza — pilotano
+  // sia il badge per campo nel form, sia l'evidenziazione nel documento.
+  const missingTargets = useMemo(() => {
+    const s = new Set<string>();
+    DRAFT_KEYS.forEach(([k]) => {
+      const meta = extractionMeta[k];
+      if (!meta || (meta.confidence ?? 0) < CONFIDENCE_THRESHOLD) s.add(k);
+    });
+    return s;
+  }, [extractionMeta]);
+
+  const currentPage = pages.find((p) => p.page_num === curPage) ?? pages[0] ?? null;
+  const overlayFields = templateFields.filter((f) => (f.page ?? 0) === (currentPage?.page_num ?? 0));
 
   async function save() {
     const body: DtoInboundOrderRequest = {
@@ -166,15 +205,27 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className={step === 2 ? 'sm:max-w-[1100px] w-[95vw] max-h-[85vh] overflow-y-auto' : 'sm:max-w-[560px]'}>
         <DialogHeader>
-          <DialogTitle>Importa ordine da PDF</DialogTitle>
+          <DialogTitle>{step === 2 ? 'Revisione ordine da PDF' : 'Importa ordine da PDF'}</DialogTitle>
           <DialogDescription>
-            Il template giusto viene preselezionato in base al mittente; puoi comunque
-            sceglierlo a mano. I template si creano in{' '}
-            <Link to="/ordini-in-ingresso/template" className="underline" onClick={() => onOpenChange(false)}>
-              Template PDF
-            </Link>.
+            {step === 2 ? (
+              <>
+                Correggi dove serve: alla conferma l’ordine entra nel Registro come «Da
+                confermare».{' '}
+                <Link to="/ordini-in-ingresso/template" className="underline" onClick={() => onOpenChange(false)}>
+                  Gestisci i template PDF →
+                </Link>
+              </>
+            ) : (
+              <>
+                Il template giusto viene preselezionato in base al mittente; puoi comunque
+                sceglierlo a mano. I template si creano in{' '}
+                <Link to="/ordini-in-ingresso/template" className="underline" onClick={() => onOpenChange(false)}>
+                  Template PDF
+                </Link>.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -263,25 +314,71 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {DRAFT_KEYS.map(([k, label]) => (
-                <div key={k} className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground uppercase">{label}</Label>
-                  <Input
-                    className="h-8 text-sm"
-                    value={draft[k]}
-                    onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
+            <div className="grid gap-4 md:grid-cols-[1fr_420px]">
+              {/* ── Documento originale ── */}
+              <div className="min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Documento originale
+                  </p>
+                  {pages.length > 1 && (
+                    <div className="ml-auto flex rounded-lg border p-0.5 gap-0.5">
+                      {pages.map((p) => (
+                        <Button
+                          key={p.page_num}
+                          variant={p.page_num === curPage ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setCurPage(p.page_num ?? 0)}
+                        >
+                          Pag. {(p.page_num ?? 0) + 1}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {currentPage ? (
+                  <PdfFieldOverlay page={currentPage} fields={overlayFields} missingTargets={missingTargets} />
+                ) : (
+                  <div className="flex items-center justify-center rounded-lg border border-dashed p-10 text-center text-xs text-muted-foreground">
+                    Anteprima del documento non disponibile.
+                  </div>
+                )}
+              </div>
+
+              {/* ── Campi estratti dall'AI ── */}
+              <div className="min-w-0 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {DRAFT_KEYS.map(([k, label]) => {
+                    const missing = missingTargets.has(k);
+                    return (
+                      <div key={k} className="space-y-1">
+                        <div className="flex min-h-[15px] items-center justify-between gap-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase">{label}</Label>
+                          {missing && (
+                            <span className="whitespace-nowrap text-[10px] font-medium text-destructive">
+                              non nel PDF
+                            </span>
+                          )}
+                        </div>
+                        <Input
+                          className="h-8 text-sm"
+                          value={draft[k]}
+                          onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground uppercase">Note</Label>
+                  <Textarea
+                    rows={2}
+                    value={draft.notes}
+                    onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
                   />
                 </div>
-              ))}
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] text-muted-foreground uppercase">Note</Label>
-              <Textarea
-                rows={2}
-                value={draft.notes}
-                onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-              />
+              </div>
             </div>
 
             <div className="flex justify-between mt-2">
