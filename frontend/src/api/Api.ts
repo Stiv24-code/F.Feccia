@@ -13,28 +13,36 @@
 import {
   DtoAccessoryCostRequest,
   DtoAccessoryCostResponse,
+  DtoAccountingEntryListResponse,
   DtoAccountingEntryRequest,
   DtoAccountingEntryResponse,
   DtoAuthUserResponse,
+  DtoBankListResponse,
   DtoBankRequest,
   DtoBankResponse,
+  DtoCarrierListResponse,
   DtoCarrierRequest,
   DtoCarrierResponse,
   DtoClientRegisterRequest,
+  DtoCountryListResponse,
   DtoCountryRequest,
   DtoCountryResponse,
   DtoCreateUserRequest,
   DtoCustomerDashboardResponse,
+  DtoCustomerListResponse,
   DtoCustomerRequest,
   DtoCustomerResponse,
   DtoDashboardStatsResponse,
+  DtoDestinationListResponse,
   DtoDestinationRequest,
   DtoDestinationResponse,
   DtoDriverAvailabilityResponse,
+  DtoDriverListResponse,
   DtoDriverRequest,
   DtoDriverResponse,
   DtoDriverUnavailabilityRequest,
   DtoDriverUnavailabilityResponse,
+  DtoGarageListResponse,
   DtoGarageRequest,
   DtoGarageResponse,
   DtoGeocodeResultDTO,
@@ -51,6 +59,7 @@ import {
   DtoLoginResult,
   DtoMapTripsResponse,
   DtoMotriceAvailabilityResponse,
+  DtoMotriceListResponse,
   DtoMotriceRequest,
   DtoMotriceResponse,
   DtoOKResult,
@@ -74,11 +83,13 @@ import {
   DtoPriceListRequest,
   DtoPriceListResponse,
   DtoPriceListUpdateResult,
+  DtoProductListResponse,
   DtoProductRequest,
   DtoProductResponse,
   DtoRecomputeSegmentsResult,
   DtoRegisterRequest,
   DtoSemirimorchioAvailabilityResponse,
+  DtoSemirimorchioListResponse,
   DtoSemirimorchioRequest,
   DtoSemirimorchioResponse,
   DtoTariffLookupResult,
@@ -90,6 +101,7 @@ import {
   DtoUpdateUserRequest,
   DtoVehicleTypeRequest,
   DtoVehicleTypeResponse,
+  DtoWashStationListResponse,
   DtoWashStationRequest,
   DtoWashStationResponse,
   ModelsUser,
@@ -157,10 +169,14 @@ export class Api<SecurityDataType = unknown> {
       search?: string;
       /** Filter by tipo (ricavo|costo) */
       tipo?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoAccountingEntryResponse[], any>({
+    this.http.request<DtoAccountingEntryListResponse, any>({
       path: `/api/v1/accounting-entries`,
       method: "GET",
       query: query,
@@ -575,10 +591,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by nome/bic_swift */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoBankResponse[], any>({
+    this.http.request<DtoBankListResponse, any>({
       path: `/api/v1/banks`,
       method: "GET",
       query: query,
@@ -657,10 +677,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by ragione sociale */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoCarrierResponse[], any>({
+    this.http.request<DtoCarrierListResponse, any>({
       path: `/api/v1/carriers`,
       method: "GET",
       query: query,
@@ -739,10 +763,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by nome/iso2 */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoCountryResponse[], any>({
+    this.http.request<DtoCountryListResponse, any>({
       path: `/api/v1/countries`,
       method: "GET",
       query: query,
@@ -812,7 +840,7 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
-   * @description Returns active customers, optionally filtered by ragione sociale
+   * @description Returns active customers, optionally filtered by ragione sociale, paginated
    *
    * @tags Customers
    * @name V1CustomersList
@@ -824,10 +852,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by ragione sociale (substring, case-insensitive) */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoCustomerResponse[], any>({
+    this.http.request<DtoCustomerListResponse, any>({
       path: `/api/v1/customers`,
       method: "GET",
       query: query,
@@ -982,10 +1014,14 @@ export class Api<SecurityDataType = unknown> {
       search?: string;
       /** Include logically deleted (active=false) destinations */
       include_inactive?: boolean;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoDestinationResponse[], any>({
+    this.http.request<DtoDestinationListResponse, any>({
       path: `/api/v1/destinations`,
       method: "GET",
       query: query,
@@ -1153,10 +1189,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by nome/cognome */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoDriverResponse[], any>({
+    this.http.request<DtoDriverListResponse, any>({
       path: `/api/v1/drivers`,
       method: "GET",
       query: query,
@@ -1262,10 +1302,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Include logically deleted (active=false) garages */
       include_inactive?: boolean;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoGarageResponse[], any>({
+    this.http.request<DtoGarageListResponse, any>({
       path: `/api/v1/garages`,
       method: "GET",
       query: query,
@@ -1778,10 +1822,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by targa */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoMotriceResponse[], any>({
+    this.http.request<DtoMotriceListResponse, any>({
       path: `/api/v1/motrici`,
       method: "GET",
       query: query,
@@ -2553,10 +2601,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by codice/descrizione */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoProductResponse[], any>({
+    this.http.request<DtoProductListResponse, any>({
       path: `/api/v1/products`,
       method: "GET",
       query: query,
@@ -2635,10 +2687,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Filter by targa */
       search?: string;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoSemirimorchioResponse[], any>({
+    this.http.request<DtoSemirimorchioListResponse, any>({
       path: `/api/v1/semirimorchi`,
       method: "GET",
       query: query,
@@ -2954,10 +3010,14 @@ export class Api<SecurityDataType = unknown> {
     query?: {
       /** Include logically deleted (active=false) wash stations */
       include_inactive?: boolean;
+      /** Page number (default 1) */
+      page?: number;
+      /** Items per page (default 20, max 100) */
+      limit?: number;
     },
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoWashStationResponse[], any>({
+    this.http.request<DtoWashStationListResponse, any>({
       path: `/api/v1/wash-stations`,
       method: "GET",
       query: query,

@@ -9,6 +9,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
@@ -37,7 +38,9 @@ func TestWashStationService_CRUD(t *testing.T) {
 		t.Fatalf("expected lat to round-trip, got %+v", created.Lat)
 	}
 
-	list, err := svc.List(ctx, false)
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	list, _, err := svc.List(ctx, false, allPage)
 	if err != nil || len(list) != 1 {
 		t.Fatalf("expected 1 wash station, got %v (err=%v)", list, err)
 	}
@@ -53,12 +56,12 @@ func TestWashStationService_CRUD(t *testing.T) {
 	if err := svc.Delete(ctx, created.ID); err != nil {
 		t.Fatalf("Delete returned error: %v", err)
 	}
-	list, err = svc.List(ctx, false)
+	list, _, err = svc.List(ctx, false, allPage)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("expected 0 wash stations after delete, got %v (err=%v)", list, err)
 	}
 
-	withInactive, err := svc.List(ctx, true)
+	withInactive, _, err := svc.List(ctx, true, allPage)
 	if err != nil || len(withInactive) != 1 {
 		t.Fatalf("expected include_inactive=true to still show the deleted station, got %v (err=%v)", withInactive, err)
 	}
@@ -70,7 +73,7 @@ func TestWashStationService_CRUD(t *testing.T) {
 	if !reactivated.Active {
 		t.Fatalf("expected Update with Active:true to reactivate the station, got %+v", reactivated)
 	}
-	list, err = svc.List(ctx, false)
+	list, _, err = svc.List(ctx, false, allPage)
 	if err != nil || len(list) != 1 {
 		t.Fatalf("expected the reactivated station back in the default list, got %v (err=%v)", list, err)
 	}

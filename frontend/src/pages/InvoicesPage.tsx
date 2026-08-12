@@ -30,7 +30,9 @@ export default function InvoicesPage() {
   const [saving, setSaving] = useState(false);
 
   const [closedOrders, setClosedOrders] = useState<DtoOrderResponse[]>([]);
-  const { data: customers = [] } = useGetCustomersQuery(undefined, { skip: !newDialogOpen });
+  // Selettore cliente: serve l'elenco completo, non una pagina.
+  const { data: customersPage } = useGetCustomersQuery({ limit: 500 }, { skip: !newDialogOpen });
+  const customers = customersPage?.items ?? [];
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [selectedClienteId, setSelectedClienteId] = useState('');
 

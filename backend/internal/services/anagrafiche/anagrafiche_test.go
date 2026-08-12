@@ -115,7 +115,9 @@ func TestAnagraficheService_Bank_CRUD(t *testing.T) {
 		t.Fatalf("CreateBank returned error: %v", err)
 	}
 
-	list, err := svc.ListBanks(ctx, "")
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	list, _, err := svc.ListBanks(ctx, "", allPage)
 	if err != nil || len(list) != 1 {
 		t.Fatalf("expected 1 bank, got %v (err=%v)", list, err)
 	}
@@ -123,7 +125,7 @@ func TestAnagraficheService_Bank_CRUD(t *testing.T) {
 	if err := svc.DeleteBank(ctx, created.ID); err != nil {
 		t.Fatalf("DeleteBank returned error: %v", err)
 	}
-	list, err = svc.ListBanks(ctx, "")
+	list, _, err = svc.ListBanks(ctx, "", allPage)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("expected 0 banks after delete, got %v (err=%v)", list, err)
 	}

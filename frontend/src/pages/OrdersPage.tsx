@@ -46,8 +46,9 @@ export default function OrdersPage() {
   const [returnsLoading, setReturnsLoading] = useState(false);
   const [returnsData, setReturnsData] = useState<DtoOrderReturnSuggestionsResponse | null>(null);
 
-  // Lookup data
-  const { data: customers = [] } = useGetCustomersQuery();
+  // Lookup data — serve l'elenco completo, non una pagina.
+  const { data: customersPage } = useGetCustomersQuery({ limit: 500 });
+  const customers = customersPage?.items ?? [];
   const [destinations, setDestinations] = useState<DtoDestinationResponse[]>([]);
   const [categories, setCategories] = useState<DtoTransportCategoryResponse[]>([]);
 

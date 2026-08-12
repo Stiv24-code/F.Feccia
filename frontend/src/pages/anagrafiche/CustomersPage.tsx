@@ -8,6 +8,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoCustomerRequest, DtoCustomerResponse, DtoGeocodeResultDTO } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MapPicker } from '@/components/shared/MapPicker';
@@ -21,6 +22,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2, BarChart3 } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 type CustomerForm = Omit<DtoCustomerRequest, 'lat' | 'lng'> & { lat: number | null; lng: number | null };
 
 const emptyForm: CustomerForm = { ragione_sociale: '', indirizzo: '', citta: '', cap: '', provincia: '', nazione: 'Italia', lat: null, lng: null, partita_iva: '', codice_fiscale: '', telefono: '', email: '', pec: '', condizioni_pagamento: '', note: '', richiede_rif_ordine: false };
@@ -32,7 +35,10 @@ export default function CustomersPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [flySignal, setFlySignal] = useState(0);
 
-  const { data = [], isLoading: loading } = useGetCustomersQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetCustomersQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createCustomer, { isLoading: creating }] = useCreateCustomerMutation();
   const [updateCustomer, { isLoading: updating }] = useUpdateCustomerMutation();
   const [deleteCustomer] = useDeleteCustomerMutation();
@@ -75,6 +81,9 @@ export default function CustomersPage() {
         onAdd={openNew}
         addLabel="Nuovo Cliente"
         testId="masterdata-table"
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-medium">{item.ragione_sociale}</TableCell>

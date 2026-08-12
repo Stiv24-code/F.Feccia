@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoAccountingEntryRequest, DtoAccountingEntryResponse } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 const emptyForm: DtoAccountingEntryRequest = { codice: '', descrizione: '', tipo: 'ricavo', conto_contabile: '', iva_codice: 'N8' };
 
 export default function AccountingEntriesPage() {
@@ -26,7 +29,10 @@ export default function AccountingEntriesPage() {
   const [form, setForm] = useState<DtoAccountingEntryRequest>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
 
-  const { data = [], isLoading: loading } = useGetAccountingEntriesQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetAccountingEntriesQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createAccountingEntry, { isLoading: creating }] = useCreateAccountingEntryMutation();
   const [updateAccountingEntry, { isLoading: updating }] = useUpdateAccountingEntryMutation();
   const [deleteAccountingEntry] = useDeleteAccountingEntryMutation();
@@ -71,6 +77,7 @@ export default function AccountingEntriesPage() {
         columns={columns} data={data} loading={loading}
         searchValue={search} onSearchChange={setSearch}
         onAdd={openNew} addLabel="Nuova Voce" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-mono font-medium">{item.codice}</TableCell>

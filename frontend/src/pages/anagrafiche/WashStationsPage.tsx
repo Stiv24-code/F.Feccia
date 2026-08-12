@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoWashStationRequest, DtoWashStationResponse, DtoGeocodeResultDTO } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MapPicker } from '@/components/shared/MapPicker';
@@ -22,6 +23,8 @@ import { Pencil, Trash2 } from 'lucide-react';
 
 type WashStationForm = Omit<DtoWashStationRequest, 'lat' | 'lng'> & { lat: number | null; lng: number | null };
 
+const PAGE_SIZE = 20;
+
 const emptyForm: WashStationForm = { nome: '', tipo: '', indirizzo: '', citta: '', lat: null, lng: null, orario_da: '', orario_a: '', note: '', active: true };
 
 export default function WashStationsPage() {
@@ -30,7 +33,10 @@ export default function WashStationsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [flySignal, setFlySignal] = useState(0);
 
-  const { data = [], isLoading: loading } = useGetWashStationsQuery(true);
+  const [page, setPage] = usePagination(null);
+  const { data: result, isLoading: loading } = useGetWashStationsQuery({ includeInactive: true, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createWashStation, { isLoading: creating }] = useCreateWashStationMutation();
   const [updateWashStation, { isLoading: updating }] = useUpdateWashStationMutation();
   const [deleteWashStation] = useDeleteWashStationMutation();
@@ -58,6 +64,7 @@ export default function WashStationsPage() {
   return (
     <div data-testid="wash-stations-page">
       <DataTable columns={columns} data={data} loading={loading} searchValue="" onSearchChange={() => {}} onAdd={openNew} addLabel="Nuovo Punto di Lavaggio" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className={`hover:bg-muted/60 ${!item.active ? 'opacity-60' : ''}`}>
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>

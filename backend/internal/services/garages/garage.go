@@ -8,9 +8,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type GarageService struct {
 	db *gorm.DB
@@ -22,21 +21,27 @@ func NewGarageService(db *gorm.DB) *GarageService {
 
 // List has no search parameter, mirroring backend/routers/garages.py (no
 // search support, no GET-by-id either).
-func (s *GarageService) List(ctx context.Context, includeInactive bool) ([]dto.GarageResponse, error) {
-	query := s.db.WithContext(ctx)
+func (s *GarageService) List(ctx context.Context, includeInactive bool, page utils.PageParams) ([]dto.GarageResponse, int64, error) {
+	query := s.db.WithContext(ctx).Model(&models.Garage{})
 	if !includeInactive {
 		query = query.Where("active = ?", true)
 	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var garages []models.Garage
-	if err := query.Limit(listLimit).Find(&garages).Error; err != nil {
-		return nil, err
+	if err := query.Order("nome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&garages).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.GarageResponse, len(garages))
 	for i, g := range garages {
 		result[i] = toResponse(g)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *GarageService) Create(ctx context.Context, req dto.GarageRequest) (*dto.GarageResponse, error) {

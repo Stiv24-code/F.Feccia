@@ -8,9 +8,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type WashStationService struct {
 	db *gorm.DB
@@ -20,21 +19,27 @@ func NewWashStationService(db *gorm.DB) *WashStationService {
 	return &WashStationService{db: db}
 }
 
-func (s *WashStationService) List(ctx context.Context, includeInactive bool) ([]dto.WashStationResponse, error) {
-	query := s.db.WithContext(ctx)
+func (s *WashStationService) List(ctx context.Context, includeInactive bool, page utils.PageParams) ([]dto.WashStationResponse, int64, error) {
+	query := s.db.WithContext(ctx).Model(&models.WashStation{})
 	if !includeInactive {
 		query = query.Where("active = ?", true)
 	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var stations []models.WashStation
-	if err := query.Limit(listLimit).Find(&stations).Error; err != nil {
-		return nil, err
+	if err := query.Order("nome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&stations).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.WashStationResponse, len(stations))
 	for i, w := range stations {
 		result[i] = toResponse(w)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *WashStationService) Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error) {

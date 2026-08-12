@@ -24,6 +24,11 @@ export interface DtoAccessoryCostResponse {
   nome?: string;
 }
 
+export interface DtoAccountingEntryListResponse {
+  data?: DtoAccountingEntryResponse[];
+  total?: number;
+}
+
 export interface DtoAccountingEntryRequest {
   codice: string;
   conto_contabile?: string;
@@ -59,6 +64,11 @@ export interface DtoAuthUserResponse {
   role?: string;
 }
 
+export interface DtoBankListResponse {
+  data?: DtoBankResponse[];
+  total?: number;
+}
+
 export interface DtoBankRequest {
   bic_swift?: string;
   citta?: string;
@@ -79,6 +89,11 @@ export interface DtoBankResponse {
   nome?: string;
   note?: string;
   updated_at?: string;
+}
+
+export interface DtoCarrierListResponse {
+  data?: DtoCarrierResponse[];
+  total?: number;
 }
 
 export interface DtoCarrierRequest {
@@ -126,6 +141,11 @@ export interface DtoClientRegisterRequest {
   provincia?: string;
   ragione_sociale: string;
   telefono?: string;
+}
+
+export interface DtoCountryListResponse {
+  data?: DtoCountryResponse[];
+  total?: number;
 }
 
 export interface DtoCountryRequest {
@@ -208,6 +228,11 @@ export interface DtoCustomerDashboardTipologia {
   tipologia?: string;
 }
 
+export interface DtoCustomerListResponse {
+  data?: DtoCustomerResponse[];
+  total?: number;
+}
+
 export interface DtoCustomerRequest {
   cap?: string;
   citta?: string;
@@ -266,6 +291,11 @@ export interface DtoDashboardStatsResponse {
   total_orders?: number;
   total_revenue?: number;
   total_semirimorchi?: number;
+}
+
+export interface DtoDestinationListResponse {
+  data?: DtoDestinationResponse[];
+  total?: number;
 }
 
 export interface DtoDestinationRequest {
@@ -339,6 +369,11 @@ export interface DtoDriverAvailabilityResponse {
   scadenza_patente?: string;
   telefono?: string;
   updated_at?: string;
+}
+
+export interface DtoDriverListResponse {
+  data?: DtoDriverResponse[];
+  total?: number;
 }
 
 export interface DtoDriverRequest {
@@ -428,6 +463,11 @@ export interface DtoDriverUnavailabilityResponse {
   id?: string;
   motivo?: "ferie" | "malattia" | "permesso" | "altro";
   note?: string;
+}
+
+export interface DtoGarageListResponse {
+  data?: DtoGarageResponse[];
+  total?: number;
 }
 
 export interface DtoGarageRequest {
@@ -688,6 +728,11 @@ export interface DtoMotriceAvailabilityResponse {
   portata_kg?: number;
   targa?: string;
   updated_at?: string;
+}
+
+export interface DtoMotriceListResponse {
+  data?: DtoMotriceResponse[];
+  total?: number;
 }
 
 export interface DtoMotriceRequest {
@@ -1000,6 +1045,11 @@ export interface DtoPriceListUpdateResult {
   ok?: boolean;
 }
 
+export interface DtoProductListResponse {
+  data?: DtoProductResponse[];
+  total?: number;
+}
+
 export interface DtoProductRequest {
   codice: string;
   descrizione: string;
@@ -1073,6 +1123,11 @@ export interface DtoSemirimorchioAvailabilityResponse {
   targa?: string;
   tipo?: string;
   updated_at?: string;
+}
+
+export interface DtoSemirimorchioListResponse {
+  data?: DtoSemirimorchioResponse[];
+  total?: number;
 }
 
 export interface DtoSemirimorchioRequest {
@@ -1213,6 +1268,11 @@ export interface DtoVehicleTypeResponse {
   descrizione?: string;
   id?: string;
   nome?: string;
+}
+
+export interface DtoWashStationListResponse {
+  data?: DtoWashStationResponse[];
+  total?: number;
 }
 
 export interface DtoWashStationRequest {

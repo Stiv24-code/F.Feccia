@@ -10,11 +10,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-// listLimit mirrors backend/routers/customers.py's `.to_list(1000)` cap —
-// this endpoint has no pagination in the Python original.
-const listLimit = 1000
 
 type CustomerService struct {
 	db *gorm.DB
@@ -34,7 +31,7 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
-func (s *CustomerService) List(ctx context.Context, search string) ([]dto.CustomerResponse, error) {
+func (s *CustomerService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.CustomerResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Customer{}).Where("active = ?", true)
 	if search != "" {
 		// LOWER()+LIKE (not ILIKE) so this runs identically on Postgres and the
@@ -42,16 +39,21 @@ func (s *CustomerService) List(ctx context.Context, search string) ([]dto.Custom
 		query = query.Where("LOWER(ragione_sociale) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var customers []models.Customer
-	if err := query.Order("ragione_sociale ASC").Limit(listLimit).Find(&customers).Error; err != nil {
-		return nil, err
+	if err := query.Order("ragione_sociale ASC").Offset(page.Offset()).Limit(page.Limit).Find(&customers).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.CustomerResponse, len(customers))
 	for i, c := range customers {
 		result[i] = toCustomerResponse(c)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *CustomerService) GetByID(ctx context.Context, id uuid.UUID) (*dto.CustomerResponse, error) {

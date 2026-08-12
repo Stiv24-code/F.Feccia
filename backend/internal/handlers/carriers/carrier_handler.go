@@ -23,15 +23,17 @@ func NewCarrierHandler(service services.Carrier) *CarrierHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by ragione sociale"
-// @Success 200 {array} dto.CarrierResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.CarrierListResponse
 // @Router /api/v1/carriers [get]
 func (h *CarrierHandler) ListCarriers(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx, c.Query("search"))
+	items, total, err := h.Service.List(ctx, c.Query("search"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.CarrierListResponse{Data: items, Total: total})
 }
 
 // CreateCarrier godoc

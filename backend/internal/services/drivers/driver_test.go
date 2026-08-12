@@ -9,6 +9,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
@@ -32,11 +33,13 @@ func TestDriverService_CRUD_AndSearchByNomeOrCognome(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	byNome, err := svc.List(ctx, "mario")
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	byNome, _, err := svc.List(ctx, "mario", allPage)
 	if err != nil || len(byNome) != 1 {
 		t.Fatalf("expected search by nome to match, got %v (err=%v)", byNome, err)
 	}
-	byCognome, err := svc.List(ctx, "rossi")
+	byCognome, _, err := svc.List(ctx, "rossi", allPage)
 	if err != nil || len(byCognome) != 1 {
 		t.Fatalf("expected search by cognome to match, got %v (err=%v)", byCognome, err)
 	}
@@ -52,7 +55,7 @@ func TestDriverService_CRUD_AndSearchByNomeOrCognome(t *testing.T) {
 	if err := svc.Delete(ctx, created.ID); err != nil {
 		t.Fatalf("Delete returned error: %v", err)
 	}
-	list, err := svc.List(ctx, "")
+	list, _, err := svc.List(ctx, "", allPage)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("expected 0 drivers after delete, got %v (err=%v)", list, err)
 	}

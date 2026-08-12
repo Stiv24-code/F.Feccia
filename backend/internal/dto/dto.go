@@ -1223,3 +1223,69 @@ type InboundConfigResponse struct {
 	PdfReady          bool   `json:"pdf_ready"`
 	VisionReady       bool   `json:"vision_ready"`
 }
+
+// ─────────────────────── Liste paginate (Anagrafiche) ───────────────────────
+// Envelope {data, total} per gli endpoint di elenco Anagrafiche con paginazione
+// server-side (page/limit — vedi pkg/utils.PageParams). Un tipo concreto per
+// entità (invece del generico utils.ListResult usato da ListUsers) così swag
+// genera un tipo TS `data`/`total` corretto invece di `map[string]interface{}`.
+
+type CustomerListResponse struct {
+	Data  []CustomerResponse `json:"data"`
+	Total int64              `json:"total"`
+}
+
+type MotriceListResponse struct {
+	Data  []MotriceResponse `json:"data"`
+	Total int64             `json:"total"`
+}
+
+type SemirimorchioListResponse struct {
+	Data  []SemirimorchioResponse `json:"data"`
+	Total int64                   `json:"total"`
+}
+
+type DriverListResponse struct {
+	Data  []DriverResponse `json:"data"`
+	Total int64            `json:"total"`
+}
+
+type CarrierListResponse struct {
+	Data  []CarrierResponse `json:"data"`
+	Total int64             `json:"total"`
+}
+
+type ProductListResponse struct {
+	Data  []ProductResponse `json:"data"`
+	Total int64             `json:"total"`
+}
+
+type GarageListResponse struct {
+	Data  []GarageResponse `json:"data"`
+	Total int64            `json:"total"`
+}
+
+type WashStationListResponse struct {
+	Data  []WashStationResponse `json:"data"`
+	Total int64                 `json:"total"`
+}
+
+type DestinationListResponse struct {
+	Data  []DestinationResponse `json:"data"`
+	Total int64                 `json:"total"`
+}
+
+type CountryListResponse struct {
+	Data  []CountryResponse `json:"data"`
+	Total int64             `json:"total"`
+}
+
+type BankListResponse struct {
+	Data  []BankResponse `json:"data"`
+	Total int64          `json:"total"`
+}
+
+type AccountingEntryListResponse struct {
+	Data  []AccountingEntryResponse `json:"data"`
+	Total int64                    `json:"total"`
+}

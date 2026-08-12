@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoBankRequest, DtoBankResponse } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 const emptyForm: DtoBankRequest = { nome: '', bic_swift: '', iban_prefix: '', indirizzo: '', citta: '', note: '' };
 
 export default function BanksPage() {
@@ -25,7 +28,10 @@ export default function BanksPage() {
   const [form, setForm] = useState<DtoBankRequest>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
 
-  const { data = [], isLoading: loading } = useGetBanksQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetBanksQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createBank, { isLoading: creating }] = useCreateBankMutation();
   const [updateBank, { isLoading: updating }] = useUpdateBankMutation();
   const [deleteBank] = useDeleteBankMutation();
@@ -68,6 +74,7 @@ export default function BanksPage() {
         columns={columns} data={data} loading={loading}
         searchValue={search} onSearchChange={setSearch}
         onAdd={openNew} addLabel="Nuova Banca" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>

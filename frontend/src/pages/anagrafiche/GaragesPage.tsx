@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoGarageRequest, DtoGarageResponse, DtoGeocodeResultDTO } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MapPicker } from '@/components/shared/MapPicker';
@@ -22,6 +23,8 @@ import { Pencil, Trash2 } from 'lucide-react';
 
 type GarageForm = Omit<DtoGarageRequest, 'lat' | 'lng'> & { lat: number | null; lng: number | null };
 
+const PAGE_SIZE = 20;
+
 const emptyForm: GarageForm = { nome: '', indirizzo: '', citta: '', lat: null, lng: null, note: '', active: true };
 
 export default function GaragesPage() {
@@ -32,8 +35,13 @@ export default function GaragesPage() {
 
   // include_inactive: la pagina anagrafica deve poter riattivare un garage
   // disattivato, quindi mostra anche gli inattivi (a differenza di dove
-  // Garage viene usato solo per scegliere un punto di partenza).
-  const { data = [], isLoading: loading } = useGetGaragesQuery(true);
+  // Garage viene usato solo per scegliere un punto di partenza). Nessun
+  // filtro di ricerca qui (non esiste lato backend), la pagina si azzera
+  // solo al mount.
+  const [page, setPage] = usePagination(null);
+  const { data: result, isLoading: loading } = useGetGaragesQuery({ includeInactive: true, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createGarage, { isLoading: creating }] = useCreateGarageMutation();
   const [updateGarage, { isLoading: updating }] = useUpdateGarageMutation();
   const [deleteGarage] = useDeleteGarageMutation();
@@ -61,6 +69,7 @@ export default function GaragesPage() {
   return (
     <div data-testid="garages-page">
       <DataTable columns={columns} data={data} loading={loading} searchValue="" onSearchChange={() => {}} onAdd={openNew} addLabel="Nuovo Garage" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className={`hover:bg-muted/60 ${!item.active ? 'opacity-60' : ''}`}>
             <TableCell className="py-2 font-medium">{item.nome}</TableCell>

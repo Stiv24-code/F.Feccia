@@ -10,9 +10,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type DestinationService struct {
 	db *gorm.DB
@@ -30,7 +29,7 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
-func (s *DestinationService) List(ctx context.Context, search string, includeInactive bool) ([]dto.DestinationResponse, error) {
+func (s *DestinationService) List(ctx context.Context, search string, includeInactive bool, page utils.PageParams) ([]dto.DestinationResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Destination{})
 	if !includeInactive {
 		query = query.Where("active = ?", true)
@@ -39,16 +38,21 @@ func (s *DestinationService) List(ctx context.Context, search string, includeIna
 		query = query.Where("LOWER(nome) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var destinations []models.Destination
-	if err := query.Order("nome ASC").Limit(listLimit).Find(&destinations).Error; err != nil {
-		return nil, err
+	if err := query.Order("nome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&destinations).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.DestinationResponse, len(destinations))
 	for i, d := range destinations {
 		result[i] = toResponse(d)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *DestinationService) GetByID(ctx context.Context, id uuid.UUID) (*dto.DestinationResponse, error) {

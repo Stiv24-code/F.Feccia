@@ -120,16 +120,25 @@
                         "description": "Filter by tipo (ricavo|costo)",
                         "name": "tipo",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.AccountingEntryResponse"
-                            }
+                            "$ref": "#/definitions/dto.AccountingEntryListResponse"
                         }
                     }
                 }
@@ -1014,16 +1023,25 @@
                         "description": "Filter by nome/bic_swift",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.BankResponse"
-                            }
+                            "$ref": "#/definitions/dto.BankListResponse"
                         }
                     }
                 }
@@ -1191,16 +1209,25 @@
                         "description": "Filter by ragione sociale",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CarrierResponse"
-                            }
+                            "$ref": "#/definitions/dto.CarrierListResponse"
                         }
                     }
                 }
@@ -1368,16 +1395,25 @@
                         "description": "Filter by nome/iso2",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CountryResponse"
-                            }
+                            "$ref": "#/definitions/dto.CountryListResponse"
                         }
                     }
                 }
@@ -1541,7 +1577,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns active customers, optionally filtered by ragione sociale",
+                "description": "Returns active customers, optionally filtered by ragione sociale, paginated",
                 "produces": [
                     "application/json"
                 ],
@@ -1555,16 +1591,25 @@
                         "description": "Filter by ragione sociale (substring, case-insensitive)",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CustomerResponse"
-                            }
+                            "$ref": "#/definitions/dto.CustomerListResponse"
                         }
                     }
                 }
@@ -1880,16 +1925,25 @@
                         "description": "Include logically deleted (active=false) destinations",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.DestinationResponse"
-                            }
+                            "$ref": "#/definitions/dto.DestinationListResponse"
                         }
                     }
                 }
@@ -2258,16 +2312,25 @@
                         "description": "Filter by nome/cognome",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.DriverResponse"
-                            }
+                            "$ref": "#/definitions/dto.DriverListResponse"
                         }
                     }
                 }
@@ -2479,16 +2542,25 @@
                         "description": "Include logically deleted (active=false) garages",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.GarageResponse"
-                            }
+                            "$ref": "#/definitions/dto.GarageListResponse"
                         }
                     }
                 }
@@ -3674,16 +3746,25 @@
                         "description": "Filter by targa",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.MotriceResponse"
-                            }
+                            "$ref": "#/definitions/dto.MotriceListResponse"
                         }
                     }
                 }
@@ -5405,16 +5486,25 @@
                         "description": "Filter by codice/descrizione",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.ProductResponse"
-                            }
+                            "$ref": "#/definitions/dto.ProductListResponse"
                         }
                     }
                 }
@@ -5591,16 +5681,25 @@
                         "description": "Filter by targa",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.SemirimorchioResponse"
-                            }
+                            "$ref": "#/definitions/dto.SemirimorchioListResponse"
                         }
                     }
                 }
@@ -6282,16 +6381,25 @@
                         "description": "Include logically deleted (active=false) wash stations",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.WashStationResponse"
-                            }
+                            "$ref": "#/definitions/dto.WashStationListResponse"
                         }
                     }
                 }
@@ -6478,6 +6586,20 @@
                 }
             }
         },
+        "dto.AccountingEntryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AccountingEntryResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AccountingEntryRequest": {
             "type": "object",
             "required": [
@@ -6565,6 +6687,20 @@
                 }
             }
         },
+        "dto.BankListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BankResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.BankRequest": {
             "type": "object",
             "required": [
@@ -6623,6 +6759,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CarrierListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CarrierResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6743,6 +6893,20 @@
                 },
                 "telefono": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CountryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CountryResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6961,6 +7125,20 @@
                 }
             }
         },
+        "dto.CustomerListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CustomerResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.CustomerRequest": {
             "type": "object",
             "required": [
@@ -7120,6 +7298,20 @@
                     "type": "number"
                 },
                 "total_semirimorchi": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.DestinationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DestinationResponse"
+                    }
+                },
+                "total": {
                     "type": "integer"
                 }
             }
@@ -7287,6 +7479,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.DriverListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DriverResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -7481,6 +7687,20 @@
                 },
                 "note": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.GarageListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.GarageResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -8219,6 +8439,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.MotriceListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.MotriceResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -9079,6 +9313,20 @@
                 }
             }
         },
+        "dto.ProductListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProductResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.ProductRequest": {
             "type": "object",
             "required": [
@@ -9306,6 +9554,20 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.SemirimorchioListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SemirimorchioResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -9705,6 +9967,20 @@
                 },
                 "nome": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.WashStationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WashStationResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

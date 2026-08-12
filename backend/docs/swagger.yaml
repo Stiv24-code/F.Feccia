@@ -24,6 +24,15 @@ definitions:
       nome:
         type: string
     type: object
+  dto.AccountingEntryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.AccountingEntryResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.AccountingEntryRequest:
     properties:
       codice:
@@ -85,6 +94,15 @@ definitions:
       role:
         type: string
     type: object
+  dto.BankListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.BankResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.BankRequest:
     properties:
       bic_swift:
@@ -124,6 +142,15 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.CarrierListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.CarrierResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.CarrierRequest:
     properties:
@@ -208,6 +235,15 @@ definitions:
     - name
     - password
     - ragione_sociale
+    type: object
+  dto.CountryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.CountryResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.CountryRequest:
     properties:
@@ -352,6 +388,15 @@ definitions:
       tipologia:
         type: string
     type: object
+  dto.CustomerListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.CustomerResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.CustomerRequest:
     properties:
       cap:
@@ -460,6 +505,15 @@ definitions:
       total_revenue:
         type: number
       total_semirimorchi:
+        type: integer
+    type: object
+  dto.DestinationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.DestinationResponse'
+        type: array
+      total:
         type: integer
     type: object
   dto.DestinationRequest:
@@ -580,6 +634,15 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.DriverListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.DriverResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.DriverRequest:
     properties:
@@ -725,6 +788,15 @@ definitions:
         type: string
       note:
         type: string
+    type: object
+  dto.GarageListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.GarageResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.GarageRequest:
     properties:
@@ -1212,6 +1284,15 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.MotriceListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.MotriceResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.MotriceRequest:
     properties:
@@ -1785,6 +1866,15 @@ definitions:
       ok:
         type: boolean
     type: object
+  dto.ProductListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.ProductResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.ProductRequest:
     properties:
       codice:
@@ -1939,6 +2029,15 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  dto.SemirimorchioListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.SemirimorchioResponse'
+        type: array
+      total:
+        type: integer
     type: object
   dto.SemirimorchioRequest:
     properties:
@@ -2204,6 +2303,15 @@ definitions:
       nome:
         type: string
     type: object
+  dto.WashStationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.WashStationResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   dto.WashStationRequest:
     properties:
       active:
@@ -2369,15 +2477,21 @@ paths:
         in: query
         name: tipo
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.AccountingEntryResponse'
-            type: array
+            $ref: '#/definitions/dto.AccountingEntryListResponse'
       security:
       - BearerAuth: []
       summary: List accounting entries
@@ -2940,15 +3054,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.BankResponse'
-            type: array
+            $ref: '#/definitions/dto.BankListResponse'
       security:
       - BearerAuth: []
       summary: List banks
@@ -3050,15 +3170,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.CarrierResponse'
-            type: array
+            $ref: '#/definitions/dto.CarrierListResponse'
       security:
       - BearerAuth: []
       summary: List carriers
@@ -3160,15 +3286,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.CountryResponse'
-            type: array
+            $ref: '#/definitions/dto.CountryListResponse'
       security:
       - BearerAuth: []
       summary: List countries
@@ -3271,21 +3403,28 @@ paths:
       - Anagrafiche
   /api/v1/customers:
     get:
-      description: Returns active customers, optionally filtered by ragione sociale
+      description: Returns active customers, optionally filtered by ragione sociale,
+        paginated
       parameters:
       - description: Filter by ragione sociale (substring, case-insensitive)
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.CustomerResponse'
-            type: array
+            $ref: '#/definitions/dto.CustomerListResponse'
       security:
       - BearerAuth: []
       summary: List customers
@@ -3478,15 +3617,21 @@ paths:
         in: query
         name: include_inactive
         type: boolean
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.DestinationResponse'
-            type: array
+            $ref: '#/definitions/dto.DestinationListResponse'
       security:
       - BearerAuth: []
       summary: List destinations
@@ -3714,15 +3859,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.DriverResponse'
-            type: array
+            $ref: '#/definitions/dto.DriverListResponse'
       security:
       - BearerAuth: []
       summary: List drivers
@@ -3851,15 +4002,21 @@ paths:
         in: query
         name: include_inactive
         type: boolean
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.GarageResponse'
-            type: array
+            $ref: '#/definitions/dto.GarageListResponse'
       security:
       - BearerAuth: []
       summary: List garages
@@ -4604,15 +4761,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.MotriceResponse'
-            type: array
+            $ref: '#/definitions/dto.MotriceListResponse'
       security:
       - BearerAuth: []
       summary: List motrici
@@ -5699,15 +5862,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.ProductResponse'
-            type: array
+            $ref: '#/definitions/dto.ProductListResponse'
       security:
       - BearerAuth: []
       summary: List products
@@ -5815,15 +5984,21 @@ paths:
         in: query
         name: search
         type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.SemirimorchioResponse'
-            type: array
+            $ref: '#/definitions/dto.SemirimorchioListResponse'
       security:
       - BearerAuth: []
       summary: List semirimorchi
@@ -6246,15 +6421,21 @@ paths:
         in: query
         name: include_inactive
         type: boolean
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.WashStationResponse'
-            type: array
+            $ref: '#/definitions/dto.WashStationListResponse'
       security:
       - BearerAuth: []
       summary: List wash stations

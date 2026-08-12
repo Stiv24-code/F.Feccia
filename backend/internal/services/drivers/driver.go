@@ -12,9 +12,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type DriverService struct {
 	db *gorm.DB
@@ -35,21 +34,26 @@ func escapeLike(term string) string {
 // List searches nome OR cognome, mirroring backend/routers/drivers.py's `$or`.
 // Also attaches, per driver, the nearest upcoming motivo=ferie
 // DriverUnavailability window (if any) as ProssimeFerie{Da,A}.
-func (s *DriverService) List(ctx context.Context, search string) ([]dto.DriverResponse, error) {
+func (s *DriverService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.DriverResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Driver{}).Where("active = ?", true)
 	if search != "" {
 		term := "%" + strings.ToLower(escapeLike(search)) + "%"
 		query = query.Where("LOWER(nome) LIKE ? OR LOWER(cognome) LIKE ?", term, term)
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var drivers []models.Driver
-	if err := query.Order("cognome ASC").Limit(listLimit).Find(&drivers).Error; err != nil {
-		return nil, err
+	if err := query.Order("cognome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&drivers).Error; err != nil {
+		return nil, 0, err
 	}
 
 	nextFerie, err := s.nextFeriePerDriver(ctx, drivers)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	result := make([]dto.DriverResponse, len(drivers))
@@ -60,7 +64,7 @@ func (s *DriverService) List(ctx context.Context, search string) ([]dto.DriverRe
 			result[i].ProssimeFerieA = &next.DataA
 		}
 	}
-	return result, nil
+	return result, total, nil
 }
 
 // nextFeriePerDriver batch-fetches the earliest still-upcoming motivo=ferie

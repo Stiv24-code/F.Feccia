@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoCountryRequest, DtoCountryResponse } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 const emptyForm: DtoCountryRequest = { iso2: '', iso3: '', nome: '', eu: false, valuta: 'EUR' };
 
 export default function CountriesPage() {
@@ -26,7 +29,10 @@ export default function CountriesPage() {
   const [form, setForm] = useState<DtoCountryRequest>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
 
-  const { data = [], isLoading: loading } = useGetCountriesQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetCountriesQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createCountry, { isLoading: creating }] = useCreateCountryMutation();
   const [updateCountry, { isLoading: updating }] = useUpdateCountryMutation();
   const [deleteCountry] = useDeleteCountryMutation();
@@ -70,6 +76,7 @@ export default function CountriesPage() {
         columns={columns} data={data} loading={loading}
         searchValue={search} onSearchChange={setSearch}
         onAdd={openNew} addLabel="Nuova Nazione" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-mono font-medium">{item.iso2}</TableCell>

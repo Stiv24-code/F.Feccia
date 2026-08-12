@@ -22,14 +22,16 @@ func NewSemirimorchioHandler(service services.Semirimorchio) *SemirimorchioHandl
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by targa"
-// @Success 200 {array} dto.SemirimorchioResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.SemirimorchioListResponse
 // @Router /api/v1/semirimorchi [get]
 func (h *SemirimorchioHandler) ListSemirimorchi(c *fiber.Ctx) error {
-	items, err := h.Service.List(utils.RequestContext(c), c.Query("search"))
+	items, total, err := h.Service.List(utils.RequestContext(c), c.Query("search"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.SemirimorchioListResponse{Data: items, Total: total})
 }
 
 // @Summary Create semirimorchio

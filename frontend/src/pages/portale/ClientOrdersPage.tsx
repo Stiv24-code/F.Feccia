@@ -52,8 +52,10 @@ export default function ClientOrdersPage() {
   const { data = [], isLoading: loading } = useGetMyOrdersQuery();
   // Pool condiviso con lo staff: la mutation createMyDestination invalida il
   // tag 'Destination', questa query lo fornisce — nessun refetch manuale
-  // necessario dopo aver creato una nuova destinazione qui sotto.
-  const { data: destinations = [] } = useGetDestinationsQuery();
+  // necessario dopo aver creato una nuova destinazione qui sotto. Serve
+  // l'elenco completo, non una pagina.
+  const { data: destinationsPage } = useGetDestinationsQuery({ limit: 500 });
+  const destinations = destinationsPage?.items ?? [];
   const [createMyOrder, { isLoading: saving }] = useCreateMyOrderMutation();
   const [deleteMyOrder] = useDeleteMyOrderMutation();
   const [createMyDestination, { isLoading: destSaving }] = useCreateMyDestinationMutation();

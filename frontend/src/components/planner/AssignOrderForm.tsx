@@ -71,8 +71,12 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [routeLoading, setRouteLoading] = useState(false);
 
-  const { data: garages = [] } = useGetGaragesQuery();
-  const { data: washStations = [] } = useGetWashStationsQuery();
+  // Selettore mezzi/garage: serve l'elenco completo, non una pagina — limit
+  // alto per replicare il comportamento pre-paginazione (cap lato backend).
+  const { data: garagesPage } = useGetGaragesQuery({ limit: 500 });
+  const { data: washStationsPage } = useGetWashStationsQuery({ limit: 500 });
+  const garages = garagesPage?.items ?? [];
+  const washStations = washStationsPage?.items ?? [];
 
   useEffect(() => {
     if (!order) return;

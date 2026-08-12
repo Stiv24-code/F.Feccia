@@ -26,14 +26,16 @@ func NewAnagraficheHandler(service services.Anagrafiche) *AnagraficheHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by nome/iso2"
-// @Success 200 {array} dto.CountryResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.CountryListResponse
 // @Router /api/v1/countries [get]
 func (h *AnagraficheHandler) ListCountries(c *fiber.Ctx) error {
-	items, err := h.Service.ListCountries(utils.RequestContext(c), c.Query("search"))
+	items, total, err := h.Service.ListCountries(utils.RequestContext(c), c.Query("search"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.CountryListResponse{Data: items, Total: total})
 }
 
 // @Summary Create country
@@ -116,14 +118,16 @@ func (h *AnagraficheHandler) DeleteCountry(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by nome/bic_swift"
-// @Success 200 {array} dto.BankResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.BankListResponse
 // @Router /api/v1/banks [get]
 func (h *AnagraficheHandler) ListBanks(c *fiber.Ctx) error {
-	items, err := h.Service.ListBanks(utils.RequestContext(c), c.Query("search"))
+	items, total, err := h.Service.ListBanks(utils.RequestContext(c), c.Query("search"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.BankListResponse{Data: items, Total: total})
 }
 
 // @Summary Create bank
@@ -206,14 +210,16 @@ func (h *AnagraficheHandler) DeleteBank(c *fiber.Ctx) error {
 // @Produce json
 // @Param search query string false "Filter by codice/descrizione"
 // @Param tipo query string false "Filter by tipo (ricavo|costo)"
-// @Success 200 {array} dto.AccountingEntryResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.AccountingEntryListResponse
 // @Router /api/v1/accounting-entries [get]
 func (h *AnagraficheHandler) ListAccountingEntries(c *fiber.Ctx) error {
-	items, err := h.Service.ListAccountingEntries(utils.RequestContext(c), c.Query("search"), c.Query("tipo"))
+	items, total, err := h.Service.ListAccountingEntries(utils.RequestContext(c), c.Query("search"), c.Query("tipo"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.AccountingEntryListResponse{Data: items, Total: total})
 }
 
 // @Summary Create accounting entry

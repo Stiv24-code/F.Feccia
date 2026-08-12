@@ -58,7 +58,7 @@ func TestCustomerHandler_List_Success(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockSvc := mocks.NewMockCustomer(ctrl)
-	mockSvc.EXPECT().List(gomock.Any(), "acme").Return([]dto.CustomerResponse{{RagioneSociale: "Acme S.r.l."}}, nil)
+	mockSvc.EXPECT().List(gomock.Any(), "acme", gomock.Any()).Return([]dto.CustomerResponse{{RagioneSociale: "Acme S.r.l."}}, int64(1), nil)
 
 	app := newCustomerTestApp(mockSvc)
 	resp := doCustomerRequest(t, app, http.MethodGet, "/customers?search=acme", nil)

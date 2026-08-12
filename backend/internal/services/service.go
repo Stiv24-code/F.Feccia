@@ -61,7 +61,7 @@ type Auth interface {
 }
 
 type Customer interface {
-	List(ctx context.Context, search string) ([]dto.CustomerResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.CustomerResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.CustomerResponse, error)
 	Create(ctx context.Context, req dto.CustomerRequest) (*dto.CustomerResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.CustomerRequest) (*dto.CustomerResponse, error)
@@ -69,7 +69,7 @@ type Customer interface {
 }
 
 type Destination interface {
-	List(ctx context.Context, search string, includeInactive bool) ([]dto.DestinationResponse, error)
+	List(ctx context.Context, search string, includeInactive bool, page utils.PageParams) ([]dto.DestinationResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*dto.DestinationResponse, error)
 	Create(ctx context.Context, req dto.DestinationRequest) (*dto.DestinationResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.DestinationRequest) (*dto.DestinationResponse, error)
@@ -77,49 +77,49 @@ type Destination interface {
 }
 
 type Carrier interface {
-	List(ctx context.Context, search string) ([]dto.CarrierResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.CarrierResponse, int64, error)
 	Create(ctx context.Context, req dto.CarrierRequest) (*dto.CarrierResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.CarrierRequest) (*dto.CarrierResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type Garage interface {
-	List(ctx context.Context, includeInactive bool) ([]dto.GarageResponse, error)
+	List(ctx context.Context, includeInactive bool, page utils.PageParams) ([]dto.GarageResponse, int64, error)
 	Create(ctx context.Context, req dto.GarageRequest) (*dto.GarageResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.GarageRequest) (*dto.GarageResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type WashStation interface {
-	List(ctx context.Context, includeInactive bool) ([]dto.WashStationResponse, error)
+	List(ctx context.Context, includeInactive bool, page utils.PageParams) ([]dto.WashStationResponse, int64, error)
 	Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type Driver interface {
-	List(ctx context.Context, search string) ([]dto.DriverResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.DriverResponse, int64, error)
 	Create(ctx context.Context, req dto.DriverRequest) (*dto.DriverResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.DriverRequest) (*dto.DriverResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type Motrice interface {
-	List(ctx context.Context, search string) ([]dto.MotriceResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.MotriceResponse, int64, error)
 	Create(ctx context.Context, req dto.MotriceRequest) (*dto.MotriceResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.MotriceRequest) (*dto.MotriceResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type Semirimorchio interface {
-	List(ctx context.Context, search string) ([]dto.SemirimorchioResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.SemirimorchioResponse, int64, error)
 	Create(ctx context.Context, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type Product interface {
-	List(ctx context.Context, search string) ([]dto.ProductResponse, error)
+	List(ctx context.Context, search string, page utils.PageParams) ([]dto.ProductResponse, int64, error)
 	Create(ctx context.Context, req dto.ProductRequest) (*dto.ProductResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.ProductRequest) (*dto.ProductResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -135,15 +135,15 @@ type Masterdata interface {
 }
 
 type Anagrafiche interface {
-	ListCountries(ctx context.Context, search string) ([]dto.CountryResponse, error)
+	ListCountries(ctx context.Context, search string, page utils.PageParams) ([]dto.CountryResponse, int64, error)
 	CreateCountry(ctx context.Context, req dto.CountryRequest) (*dto.CountryResponse, error)
 	UpdateCountry(ctx context.Context, id uuid.UUID, req dto.CountryRequest) (*dto.CountryResponse, error)
 	DeleteCountry(ctx context.Context, id uuid.UUID) error
-	ListBanks(ctx context.Context, search string) ([]dto.BankResponse, error)
+	ListBanks(ctx context.Context, search string, page utils.PageParams) ([]dto.BankResponse, int64, error)
 	CreateBank(ctx context.Context, req dto.BankRequest) (*dto.BankResponse, error)
 	UpdateBank(ctx context.Context, id uuid.UUID, req dto.BankRequest) (*dto.BankResponse, error)
 	DeleteBank(ctx context.Context, id uuid.UUID) error
-	ListAccountingEntries(ctx context.Context, search, tipo string) ([]dto.AccountingEntryResponse, error)
+	ListAccountingEntries(ctx context.Context, search, tipo string, page utils.PageParams) ([]dto.AccountingEntryResponse, int64, error)
 	CreateAccountingEntry(ctx context.Context, req dto.AccountingEntryRequest) (*dto.AccountingEntryResponse, error)
 	UpdateAccountingEntry(ctx context.Context, id uuid.UUID, req dto.AccountingEntryRequest) (*dto.AccountingEntryResponse, error)
 	DeleteAccountingEntry(ctx context.Context, id uuid.UUID) error

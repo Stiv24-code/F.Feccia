@@ -9,6 +9,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
@@ -35,7 +36,9 @@ func TestCarrierService_CRUD(t *testing.T) {
 		t.Fatalf("expected new carrier to be active")
 	}
 
-	list, err := svc.List(ctx, "rossi")
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	list, _, err := svc.List(ctx, "rossi", allPage)
 	if err != nil || len(list) != 1 {
 		t.Fatalf("expected 1 matching carrier, got %v (err=%v)", list, err)
 	}
@@ -51,7 +54,7 @@ func TestCarrierService_CRUD(t *testing.T) {
 	if err := svc.Delete(ctx, created.ID); err != nil {
 		t.Fatalf("Delete returned error: %v", err)
 	}
-	list, err = svc.List(ctx, "")
+	list, _, err = svc.List(ctx, "", allPage)
 	if err != nil || len(list) != 0 {
 		t.Fatalf("expected 0 carriers after delete, got %v (err=%v)", list, err)
 	}

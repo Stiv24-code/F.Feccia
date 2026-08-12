@@ -24,15 +24,17 @@ func NewDestinationHandler(service services.Destination) *DestinationHandler {
 // @Produce json
 // @Param search query string false "Filter by nome (substring, case-insensitive)"
 // @Param include_inactive query bool false "Include logically deleted (active=false) destinations"
-// @Success 200 {array} dto.DestinationResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.DestinationListResponse
 // @Router /api/v1/destinations [get]
 func (h *DestinationHandler) ListDestinations(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx, c.Query("search"), c.QueryBool("include_inactive", false))
+	items, total, err := h.Service.List(ctx, c.Query("search"), c.QueryBool("include_inactive", false), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.DestinationListResponse{Data: items, Total: total})
 }
 
 // GetDestinationByID godoc

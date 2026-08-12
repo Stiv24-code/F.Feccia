@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Download } from 'lucide-react';
+import { Search, Plus, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface DataTableColumn {
   key: string;
@@ -26,9 +26,16 @@ export interface DataTableProps<T> {
   emptyMessage?: string;
   renderRow: (item: T, index: number) => React.ReactNode;
   testId?: string;
+  /** Paginazione server-side (opzionale): se omessa, la tabella si comporta come prima. */
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export function DataTable<T>({ columns, data, loading, searchValue, onSearchChange, onAdd, addLabel, addSlot, filters, onExport, emptyMessage, renderRow, testId }: DataTableProps<T>) {
+export function DataTable<T>({
+  columns, data, loading, searchValue, onSearchChange, onAdd, addLabel, addSlot, filters, onExport,
+  emptyMessage, renderRow, testId, page, totalPages, onPageChange,
+}: DataTableProps<T>) {
   return (
     <div className="space-y-3">
       {/* Filter bar */}
@@ -94,6 +101,26 @@ export function DataTable<T>({ columns, data, loading, searchValue, onSearchChan
           </Table>
         </div>
       </Card>
+
+      {!!totalPages && totalPages > 1 && (
+        <nav aria-label="Paginazione" className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline" size="sm" className="h-8 gap-1 text-xs"
+            disabled={!page || page <= 1}
+            onClick={() => { if (page && page > 1) onPageChange?.(page - 1); }}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Precedente
+          </Button>
+          <span className="px-2 text-xs text-muted-foreground">Pagina {page} di {totalPages}</span>
+          <Button
+            variant="outline" size="sm" className="h-8 gap-1 text-xs"
+            disabled={!page || !totalPages || page >= totalPages}
+            onClick={() => { if (page && totalPages && page < totalPages) onPageChange?.(page + 1); }}
+          >
+            Successiva <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </nav>
+      )}
     </div>
   );
 }

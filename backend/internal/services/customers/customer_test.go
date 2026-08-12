@@ -11,6 +11,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func newCustomerTestDB(t *testing.T) *gorm.DB {
@@ -68,28 +69,30 @@ func TestCustomerService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("Delete returned error: %v", err)
 	}
 
-	all, err := svc.List(ctx, "")
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	all, total, err := svc.List(ctx, "", allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
-	if len(all) != 1 || all[0].RagioneSociale != "Beta S.p.A." {
-		t.Fatalf("expected only the active Beta customer, got %+v", all)
+	if total != 1 || len(all) != 1 || all[0].RagioneSociale != "Beta S.p.A." {
+		t.Fatalf("expected only the active Beta customer, got %+v (total %d)", all, total)
 	}
 
-	filtered, err := svc.List(ctx, "beta")
+	filtered, total, err := svc.List(ctx, "beta", allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
-	if len(filtered) != 1 {
-		t.Fatalf("expected search to match Beta, got %+v", filtered)
+	if total != 1 || len(filtered) != 1 {
+		t.Fatalf("expected search to match Beta, got %+v (total %d)", filtered, total)
 	}
 
-	none, err := svc.List(ctx, "nomatch")
+	none, total, err := svc.List(ctx, "nomatch", allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
-	if len(none) != 0 {
-		t.Fatalf("expected no matches, got %+v", none)
+	if total != 0 || len(none) != 0 {
+		t.Fatalf("expected no matches, got %+v (total %d)", none, total)
 	}
 }
 

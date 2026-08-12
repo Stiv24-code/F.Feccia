@@ -23,6 +23,20 @@ export async function toQueryResult<T>(promise: Promise<{ data: T }>) {
   }
 }
 
+// Come toQueryResult, ma per gli endpoint di elenco paginati (envelope
+// {data, total} generato da utils.ListResult-like DTO — vedi
+// pkg/utils.PageParams sul backend): normalizza i campi opzionali generati
+// da swagger (`data?`, `total?`) in un contratto sempre presente, così le
+// pagine anagrafiche non devono gestire `undefined` ad ogni chiamata.
+export async function toPagedQueryResult<T>(promise: Promise<{ data: { data?: T[]; total?: number } }>) {
+  try {
+    const res = await promise;
+    return { data: { items: res.data.data ?? [], total: res.data.total ?? 0 } };
+  } catch (err) {
+    return { error: toQueryError(err) };
+  }
+}
+
 // Estrae il messaggio leggibile dal payload di errore che una mutation RTK
 // Query rifiuta dopo `.unwrap()` (shape { status, data } prodotta da
 // toQueryError sopra, con `data` che è il body JSON del backend Go —

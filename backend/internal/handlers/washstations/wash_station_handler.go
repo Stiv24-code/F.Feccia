@@ -23,15 +23,17 @@ func NewWashStationHandler(service services.WashStation) *WashStationHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param include_inactive query bool false "Include logically deleted (active=false) wash stations"
-// @Success 200 {array} dto.WashStationResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.WashStationListResponse
 // @Router /api/v1/wash-stations [get]
 func (h *WashStationHandler) ListWashStations(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx, c.QueryBool("include_inactive", false))
+	items, total, err := h.Service.List(ctx, c.QueryBool("include_inactive", false), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.WashStationListResponse{Data: items, Total: total})
 }
 
 // CreateWashStation godoc

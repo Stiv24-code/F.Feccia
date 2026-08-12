@@ -26,8 +26,6 @@ func NewAnagraficheService(db *gorm.DB) *AnagraficheService {
 	return &AnagraficheService{db: db}
 }
 
-const listLimit = 500
-
 func escapeLike(term string) string {
 	if len(term) > 100 {
 		term = term[:100]
@@ -38,21 +36,25 @@ func escapeLike(term string) string {
 
 // ── Countries ────────────────────────────────────────────────────────────
 
-func (s *AnagraficheService) ListCountries(ctx context.Context, search string) ([]dto.CountryResponse, error) {
+func (s *AnagraficheService) ListCountries(ctx context.Context, search string, page utils.PageParams) ([]dto.CountryResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Country{}).Where("active = ?", true)
 	if search != "" {
 		term := "%" + strings.ToLower(escapeLike(search)) + "%"
 		query = query.Where("LOWER(nome) LIKE ? OR LOWER(iso2) LIKE ?", term, term)
 	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var countries []models.Country
-	if err := query.Order("nome ASC").Limit(listLimit).Find(&countries).Error; err != nil {
-		return nil, err
+	if err := query.Order("nome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&countries).Error; err != nil {
+		return nil, 0, err
 	}
 	result := make([]dto.CountryResponse, len(countries))
 	for i, c := range countries {
 		result[i] = toCountryResponse(c)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *AnagraficheService) CreateCountry(ctx context.Context, req dto.CountryRequest) (*dto.CountryResponse, error) {
@@ -110,21 +112,25 @@ func (s *AnagraficheService) DeleteCountry(ctx context.Context, id uuid.UUID) er
 
 // ── Banks ────────────────────────────────────────────────────────────────
 
-func (s *AnagraficheService) ListBanks(ctx context.Context, search string) ([]dto.BankResponse, error) {
+func (s *AnagraficheService) ListBanks(ctx context.Context, search string, page utils.PageParams) ([]dto.BankResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Bank{}).Where("active = ?", true)
 	if search != "" {
 		term := "%" + strings.ToLower(escapeLike(search)) + "%"
 		query = query.Where("LOWER(nome) LIKE ? OR LOWER(bic_swift) LIKE ?", term, term)
 	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var banks []models.Bank
-	if err := query.Order("nome ASC").Limit(listLimit).Find(&banks).Error; err != nil {
-		return nil, err
+	if err := query.Order("nome ASC").Offset(page.Offset()).Limit(page.Limit).Find(&banks).Error; err != nil {
+		return nil, 0, err
 	}
 	result := make([]dto.BankResponse, len(banks))
 	for i, b := range banks {
 		result[i] = toBankResponse(b)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *AnagraficheService) CreateBank(ctx context.Context, req dto.BankRequest) (*dto.BankResponse, error) {
@@ -171,7 +177,7 @@ func (s *AnagraficheService) DeleteBank(ctx context.Context, id uuid.UUID) error
 
 // ── Accounting entries ──────────────────────────────────────────────────
 
-func (s *AnagraficheService) ListAccountingEntries(ctx context.Context, search, tipo string) ([]dto.AccountingEntryResponse, error) {
+func (s *AnagraficheService) ListAccountingEntries(ctx context.Context, search, tipo string, page utils.PageParams) ([]dto.AccountingEntryResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.AccountingEntry{}).Where("active = ?", true)
 	if tipo != "" {
 		query = query.Where("tipo = ?", tipo)
@@ -180,15 +186,19 @@ func (s *AnagraficheService) ListAccountingEntries(ctx context.Context, search, 
 		term := "%" + strings.ToLower(escapeLike(search)) + "%"
 		query = query.Where("LOWER(codice) LIKE ? OR LOWER(descrizione) LIKE ?", term, term)
 	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var entries []models.AccountingEntry
-	if err := query.Order("codice ASC").Limit(listLimit).Find(&entries).Error; err != nil {
-		return nil, err
+	if err := query.Order("codice ASC").Offset(page.Offset()).Limit(page.Limit).Find(&entries).Error; err != nil {
+		return nil, 0, err
 	}
 	result := make([]dto.AccountingEntryResponse, len(entries))
 	for i, e := range entries {
 		result[i] = toAccountingEntryResponse(e)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *AnagraficheService) CreateAccountingEntry(ctx context.Context, req dto.AccountingEntryRequest) (*dto.AccountingEntryResponse, error) {

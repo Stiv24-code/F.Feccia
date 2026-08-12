@@ -7,6 +7,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoCarrierRequest, DtoCarrierResponse } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 const emptyForm: DtoCarrierRequest = { ragione_sociale: '', partita_iva: '', indirizzo: '', citta: '', telefono: '', email: '', note: '' };
 
 export default function CarriersPage() {
@@ -24,7 +27,10 @@ export default function CarriersPage() {
   const [form, setForm] = useState<DtoCarrierRequest>(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
 
-  const { data = [], isLoading: loading } = useGetCarriersQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetCarriersQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createCarrier, { isLoading: creating }] = useCreateCarrierMutation();
   const [updateCarrier, { isLoading: updating }] = useUpdateCarrierMutation();
   const [deleteCarrier] = useDeleteCarrierMutation();
@@ -50,6 +56,7 @@ export default function CarriersPage() {
   return (
     <div data-testid="carriers-page">
       <DataTable columns={columns} data={data} loading={loading} searchValue={search} onSearchChange={setSearch} onAdd={openNew} addLabel="Nuovo Vettore" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-medium">{item.ragione_sociale}</TableCell>

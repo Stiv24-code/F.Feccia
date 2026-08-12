@@ -9,9 +9,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type ProductService struct {
 	db *gorm.DB
@@ -30,23 +29,28 @@ func escapeLike(term string) string {
 }
 
 // List searches codice OR descrizione, mirroring backend/routers/products.py's `$or`.
-func (s *ProductService) List(ctx context.Context, search string) ([]dto.ProductResponse, error) {
+func (s *ProductService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.ProductResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Product{}).Where("active = ?", true)
 	if search != "" {
 		term := "%" + strings.ToLower(escapeLike(search)) + "%"
 		query = query.Where("LOWER(codice) LIKE ? OR LOWER(descrizione) LIKE ?", term, term)
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var products []models.Product
-	if err := query.Order("codice ASC").Limit(listLimit).Find(&products).Error; err != nil {
-		return nil, err
+	if err := query.Order("codice ASC").Offset(page.Offset()).Limit(page.Limit).Find(&products).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.ProductResponse, len(products))
 	for i, p := range products {
 		result[i] = toResponse(p)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *ProductService) Create(ctx context.Context, req dto.ProductRequest) (*dto.ProductResponse, error) {

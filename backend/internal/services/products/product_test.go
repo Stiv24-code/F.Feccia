@@ -9,6 +9,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
@@ -58,11 +59,13 @@ func TestProductService_SearchByCodiceOrDescrizione(t *testing.T) {
 		t.Fatalf("Create returned error: %v", err)
 	}
 
-	byCodice, err := svc.List(ctx, "p001")
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	byCodice, _, err := svc.List(ctx, "p001", allPage)
 	if err != nil || len(byCodice) != 1 {
 		t.Fatalf("expected search by codice to match, got %v (err=%v)", byCodice, err)
 	}
-	byDescrizione, err := svc.List(ctx, "cemento")
+	byDescrizione, _, err := svc.List(ctx, "cemento", allPage)
 	if err != nil || len(byDescrizione) != 1 {
 		t.Fatalf("expected search by descrizione to match, got %v (err=%v)", byDescrizione, err)
 	}

@@ -5,7 +5,21 @@
 // niente duplicazione di path/tipi qui, RTK Query fa solo caching/tag.
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { apiClient } from '@/lib/apiClient';
-import { toQueryResult, toQueryError } from './rtkQueryHelpers';
+import { toQueryResult, toQueryError, toPagedQueryResult } from './rtkQueryHelpers';
+
+// Argomenti comuni degli endpoint di elenco Anagrafiche paginati: ricerca +
+// pagina/dimensione pagina (default lato backend 1/20 — vedi pkg/utils.PageParams).
+export interface PagedListArgs {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+// Risultato normalizzato (vedi toPagedQueryResult): sempre {items, total},
+// mai undefined, indipendentemente da come swagger ha tipizzato l'envelope.
+export interface PagedResult<T> {
+  items: T[];
+  total: number;
+}
 import type {
   DtoAccountingEntryRequest,
   DtoAccountingEntryResponse,
@@ -65,8 +79,8 @@ export const appApi = createApi({
       providesTags: ['Dashboard'],
     }),
 
-    getCustomers: builder.query<DtoCustomerResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1CustomersList({ search: search || undefined })),
+    getCustomers: builder.query<PagedResult<DtoCustomerResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1CustomersList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Customer'],
     }),
     createCustomer: builder.mutation<DtoCustomerResponse, DtoCustomerRequest>({
@@ -82,8 +96,8 @@ export const appApi = createApi({
       invalidatesTags: ['Customer'],
     }),
 
-    getDestinations: builder.query<DtoDestinationResponse[], { search?: string; includeInactive?: boolean } | void>({
-      queryFn: (args: { search?: string; includeInactive?: boolean } = {}) => toQueryResult(apiClient.v1DestinationsList({ search: args.search || undefined, include_inactive: args.includeInactive || undefined })),
+    getDestinations: builder.query<PagedResult<DtoDestinationResponse>, (PagedListArgs & { includeInactive?: boolean }) | void>({
+      queryFn: (args: PagedListArgs & { includeInactive?: boolean } = {}) => toPagedQueryResult(apiClient.v1DestinationsList({ search: args.search || undefined, include_inactive: args.includeInactive || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Destination'],
     }),
     createDestination: builder.mutation<DtoDestinationResponse, DtoDestinationRequest>({
@@ -99,8 +113,8 @@ export const appApi = createApi({
       invalidatesTags: ['Destination'],
     }),
 
-    getMotrici: builder.query<DtoMotriceResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1MotriciList({ search: search || undefined })),
+    getMotrici: builder.query<PagedResult<DtoMotriceResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1MotriciList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Motrice'],
     }),
     createMotrice: builder.mutation<DtoMotriceResponse, DtoMotriceRequest>({
@@ -116,8 +130,8 @@ export const appApi = createApi({
       invalidatesTags: ['Motrice'],
     }),
 
-    getSemirimorchi: builder.query<DtoSemirimorchioResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1SemirimorchiList({ search: search || undefined })),
+    getSemirimorchi: builder.query<PagedResult<DtoSemirimorchioResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1SemirimorchiList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Semirimorchio'],
     }),
     createSemirimorchio: builder.mutation<DtoSemirimorchioResponse, DtoSemirimorchioRequest>({
@@ -133,8 +147,8 @@ export const appApi = createApi({
       invalidatesTags: ['Semirimorchio'],
     }),
 
-    getDrivers: builder.query<DtoDriverResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1DriversList({ search: search || undefined })),
+    getDrivers: builder.query<PagedResult<DtoDriverResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1DriversList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Driver'],
     }),
     createDriver: builder.mutation<DtoDriverResponse, DtoDriverRequest>({
@@ -165,8 +179,8 @@ export const appApi = createApi({
       invalidatesTags: ['Driver'],
     }),
 
-    getCarriers: builder.query<DtoCarrierResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1CarriersList({ search: search || undefined })),
+    getCarriers: builder.query<PagedResult<DtoCarrierResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1CarriersList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Carrier'],
     }),
     createCarrier: builder.mutation<DtoCarrierResponse, DtoCarrierRequest>({
@@ -182,8 +196,8 @@ export const appApi = createApi({
       invalidatesTags: ['Carrier'],
     }),
 
-    getProducts: builder.query<DtoProductResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1ProductsList({ search: search || undefined })),
+    getProducts: builder.query<PagedResult<DtoProductResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1ProductsList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Product'],
     }),
     createProduct: builder.mutation<DtoProductResponse, DtoProductRequest>({
@@ -200,8 +214,8 @@ export const appApi = createApi({
     }),
 
     // Garages: nessun filtro `search` lato backend (a differenza degli altri).
-    getGarages: builder.query<DtoGarageResponse[], boolean | void>({
-      queryFn: (includeInactive) => toQueryResult(apiClient.v1GaragesList({ include_inactive: includeInactive || undefined })),
+    getGarages: builder.query<PagedResult<DtoGarageResponse>, ({ includeInactive?: boolean } & PagedListArgs) | void>({
+      queryFn: (args: { includeInactive?: boolean } & PagedListArgs = {}) => toPagedQueryResult(apiClient.v1GaragesList({ include_inactive: args.includeInactive || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Garage'],
     }),
     createGarage: builder.mutation<DtoGarageResponse, DtoGarageRequest>({
@@ -217,8 +231,8 @@ export const appApi = createApi({
       invalidatesTags: ['Garage'],
     }),
 
-    getWashStations: builder.query<DtoWashStationResponse[], boolean | void>({
-      queryFn: (includeInactive) => toQueryResult(apiClient.v1WashStationsList({ include_inactive: includeInactive || undefined })),
+    getWashStations: builder.query<PagedResult<DtoWashStationResponse>, ({ includeInactive?: boolean } & PagedListArgs) | void>({
+      queryFn: (args: { includeInactive?: boolean } & PagedListArgs = {}) => toPagedQueryResult(apiClient.v1WashStationsList({ include_inactive: args.includeInactive || undefined, page: args.page, limit: args.limit })),
       providesTags: ['WashStation'],
     }),
     createWashStation: builder.mutation<DtoWashStationResponse, DtoWashStationRequest>({
@@ -234,8 +248,8 @@ export const appApi = createApi({
       invalidatesTags: ['WashStation'],
     }),
 
-    getCountries: builder.query<DtoCountryResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1CountriesList({ search: search || undefined })),
+    getCountries: builder.query<PagedResult<DtoCountryResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1CountriesList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Country'],
     }),
     createCountry: builder.mutation<DtoCountryResponse, DtoCountryRequest>({
@@ -251,8 +265,8 @@ export const appApi = createApi({
       invalidatesTags: ['Country'],
     }),
 
-    getBanks: builder.query<DtoBankResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1BanksList({ search: search || undefined })),
+    getBanks: builder.query<PagedResult<DtoBankResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1BanksList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['Bank'],
     }),
     createBank: builder.mutation<DtoBankResponse, DtoBankRequest>({
@@ -268,8 +282,8 @@ export const appApi = createApi({
       invalidatesTags: ['Bank'],
     }),
 
-    getAccountingEntries: builder.query<DtoAccountingEntryResponse[], string | void>({
-      queryFn: (search) => toQueryResult(apiClient.v1AccountingEntriesList({ search: search || undefined })),
+    getAccountingEntries: builder.query<PagedResult<DtoAccountingEntryResponse>, PagedListArgs | void>({
+      queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1AccountingEntriesList({ search: args.search || undefined, page: args.page, limit: args.limit })),
       providesTags: ['AccountingEntry'],
     }),
     createAccountingEntry: builder.mutation<DtoAccountingEntryResponse, DtoAccountingEntryRequest>({

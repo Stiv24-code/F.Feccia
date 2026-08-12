@@ -122,16 +122,25 @@ const docTemplate = `{
                         "description": "Filter by tipo (ricavo|costo)",
                         "name": "tipo",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.AccountingEntryResponse"
-                            }
+                            "$ref": "#/definitions/dto.AccountingEntryListResponse"
                         }
                     }
                 }
@@ -1016,16 +1025,25 @@ const docTemplate = `{
                         "description": "Filter by nome/bic_swift",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.BankResponse"
-                            }
+                            "$ref": "#/definitions/dto.BankListResponse"
                         }
                     }
                 }
@@ -1193,16 +1211,25 @@ const docTemplate = `{
                         "description": "Filter by ragione sociale",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CarrierResponse"
-                            }
+                            "$ref": "#/definitions/dto.CarrierListResponse"
                         }
                     }
                 }
@@ -1370,16 +1397,25 @@ const docTemplate = `{
                         "description": "Filter by nome/iso2",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CountryResponse"
-                            }
+                            "$ref": "#/definitions/dto.CountryListResponse"
                         }
                     }
                 }
@@ -1543,7 +1579,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns active customers, optionally filtered by ragione sociale",
+                "description": "Returns active customers, optionally filtered by ragione sociale, paginated",
                 "produces": [
                     "application/json"
                 ],
@@ -1557,16 +1593,25 @@ const docTemplate = `{
                         "description": "Filter by ragione sociale (substring, case-insensitive)",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.CustomerResponse"
-                            }
+                            "$ref": "#/definitions/dto.CustomerListResponse"
                         }
                     }
                 }
@@ -1882,16 +1927,25 @@ const docTemplate = `{
                         "description": "Include logically deleted (active=false) destinations",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.DestinationResponse"
-                            }
+                            "$ref": "#/definitions/dto.DestinationListResponse"
                         }
                     }
                 }
@@ -2260,16 +2314,25 @@ const docTemplate = `{
                         "description": "Filter by nome/cognome",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.DriverResponse"
-                            }
+                            "$ref": "#/definitions/dto.DriverListResponse"
                         }
                     }
                 }
@@ -2481,16 +2544,25 @@ const docTemplate = `{
                         "description": "Include logically deleted (active=false) garages",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.GarageResponse"
-                            }
+                            "$ref": "#/definitions/dto.GarageListResponse"
                         }
                     }
                 }
@@ -3676,16 +3748,25 @@ const docTemplate = `{
                         "description": "Filter by targa",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.MotriceResponse"
-                            }
+                            "$ref": "#/definitions/dto.MotriceListResponse"
                         }
                     }
                 }
@@ -5407,16 +5488,25 @@ const docTemplate = `{
                         "description": "Filter by codice/descrizione",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.ProductResponse"
-                            }
+                            "$ref": "#/definitions/dto.ProductListResponse"
                         }
                     }
                 }
@@ -5593,16 +5683,25 @@ const docTemplate = `{
                         "description": "Filter by targa",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.SemirimorchioResponse"
-                            }
+                            "$ref": "#/definitions/dto.SemirimorchioListResponse"
                         }
                     }
                 }
@@ -6284,16 +6383,25 @@ const docTemplate = `{
                         "description": "Include logically deleted (active=false) wash stations",
                         "name": "include_inactive",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.WashStationResponse"
-                            }
+                            "$ref": "#/definitions/dto.WashStationListResponse"
                         }
                     }
                 }
@@ -6480,6 +6588,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AccountingEntryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AccountingEntryResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AccountingEntryRequest": {
             "type": "object",
             "required": [
@@ -6567,6 +6689,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.BankListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BankResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.BankRequest": {
             "type": "object",
             "required": [
@@ -6625,6 +6761,20 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CarrierListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CarrierResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6745,6 +6895,20 @@ const docTemplate = `{
                 },
                 "telefono": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CountryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CountryResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6963,6 +7127,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CustomerListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CustomerResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.CustomerRequest": {
             "type": "object",
             "required": [
@@ -7122,6 +7300,20 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_semirimorchi": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.DestinationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DestinationResponse"
+                    }
+                },
+                "total": {
                     "type": "integer"
                 }
             }
@@ -7289,6 +7481,20 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.DriverListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DriverResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -7483,6 +7689,20 @@ const docTemplate = `{
                 },
                 "note": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.GarageListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.GarageResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -8221,6 +8441,20 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.MotriceListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.MotriceResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -9081,6 +9315,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ProductListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProductResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.ProductRequest": {
             "type": "object",
             "required": [
@@ -9308,6 +9556,20 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.SemirimorchioListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SemirimorchioResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -9707,6 +9969,20 @@ const docTemplate = `{
                 },
                 "nome": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.WashStationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WashStationResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

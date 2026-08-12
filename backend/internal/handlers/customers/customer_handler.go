@@ -19,23 +19,26 @@ func NewCustomerHandler(service services.Customer) *CustomerHandler {
 
 // ListCustomers godoc
 // @Summary List customers
-// @Description Returns active customers, optionally filtered by ragione sociale
+// @Description Returns active customers, optionally filtered by ragione sociale, paginated
 // @Tags Customers
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by ragione sociale (substring, case-insensitive)"
-// @Success 200 {array} dto.CustomerResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.CustomerListResponse
 // @Router /api/v1/customers [get]
 func (h *CustomerHandler) ListCustomers(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
 	search := c.Query("search")
+	page := utils.ParsePageParams(c)
 
-	customers, err := h.Service.List(ctx, search)
+	customers, total, err := h.Service.List(ctx, search, page)
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
 
-	return utils.SuccessResponse(c, 200, customers)
+	return utils.SuccessResponse(c, 200, dto.CustomerListResponse{Data: customers, Total: total})
 }
 
 // GetCustomerByID godoc

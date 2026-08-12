@@ -11,6 +11,7 @@ import {
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoDriverRequest, DtoDriverResponse, DtoDriverUnavailabilityRequest } from '@/api/data-contracts';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -25,6 +26,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2, ChevronDown, Truck, Plane, Plus } from 'lucide-react';
+
+const PAGE_SIZE = 20;
 
 type PatenteCategoria = NonNullable<DtoDriverRequest['patente']>[number];
 
@@ -197,7 +200,10 @@ export default function DriversPage() {
   const [tripsDriver, setTripsDriver] = useState<DtoDriverResponse | null>(null);
   const [ferieDriver, setFerieDriver] = useState<DtoDriverResponse | null>(null);
 
-  const { data = [], isLoading: loading } = useGetDriversQuery(search);
+  const [page, setPage] = usePagination(search);
+  const { data: result, isLoading: loading } = useGetDriversQuery({ search, page, limit: PAGE_SIZE });
+  const data = result?.items ?? [];
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const [createDriver, { isLoading: creating }] = useCreateDriverMutation();
   const [updateDriver, { isLoading: updating }] = useUpdateDriverMutation();
   const [deleteDriver] = useDeleteDriverMutation();
@@ -223,6 +229,7 @@ export default function DriversPage() {
   return (
     <div data-testid="drivers-page">
       <DataTable columns={columns} data={data} loading={loading} searchValue={search} onSearchChange={setSearch} onAdd={openNew} addLabel="Nuovo Autista" testId="masterdata-table"
+        page={page} totalPages={totalPages} onPageChange={setPage}
         renderRow={(item) => (
           <TableRow key={item.id} className="hover:bg-muted/60">
             <TableCell className="py-2 font-medium">{item.cognome}</TableCell>

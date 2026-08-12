@@ -9,9 +9,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type CarrierService struct {
 	db *gorm.DB
@@ -32,22 +31,27 @@ func escapeLike(term string) string {
 // List and Create/Update/Delete mirror backend/routers/carriers.py — note
 // there is no GET-by-id endpoint there, so this service doesn't expose one.
 
-func (s *CarrierService) List(ctx context.Context, search string) ([]dto.CarrierResponse, error) {
+func (s *CarrierService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.CarrierResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Carrier{}).Where("active = ?", true)
 	if search != "" {
 		query = query.Where("LOWER(ragione_sociale) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
 	var carriers []models.Carrier
-	if err := query.Order("ragione_sociale ASC").Limit(listLimit).Find(&carriers).Error; err != nil {
-		return nil, err
+	if err := query.Order("ragione_sociale ASC").Offset(page.Offset()).Limit(page.Limit).Find(&carriers).Error; err != nil {
+		return nil, 0, err
 	}
 
 	result := make([]dto.CarrierResponse, len(carriers))
 	for i, c := range carriers {
 		result[i] = toResponse(c)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *CarrierService) Create(ctx context.Context, req dto.CarrierRequest) (*dto.CarrierResponse, error) {

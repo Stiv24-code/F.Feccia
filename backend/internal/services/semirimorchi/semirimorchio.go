@@ -9,9 +9,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type SemirimorchioService struct {
 	db *gorm.DB
@@ -29,20 +28,24 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
-func (s *SemirimorchioService) List(ctx context.Context, search string) ([]dto.SemirimorchioResponse, error) {
+func (s *SemirimorchioService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.SemirimorchioResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Semirimorchio{}).Where("active = ?", true)
 	if search != "" {
 		query = query.Where("LOWER(targa) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var items []models.Semirimorchio
-	if err := query.Order("targa ASC").Limit(listLimit).Find(&items).Error; err != nil {
-		return nil, err
+	if err := query.Order("targa ASC").Offset(page.Offset()).Limit(page.Limit).Find(&items).Error; err != nil {
+		return nil, 0, err
 	}
 	result := make([]dto.SemirimorchioResponse, len(items))
 	for i, r := range items {
 		result[i] = ToResponse(r)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *SemirimorchioService) Create(ctx context.Context, req dto.SemirimorchioRequest) (*dto.SemirimorchioResponse, error) {

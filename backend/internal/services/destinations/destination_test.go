@@ -11,6 +11,7 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
 
 func ptr(v float64) *float64 { return &v }
@@ -58,7 +59,9 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("Delete returned error: %v", err)
 	}
 
-	all, err := svc.List(ctx, "", false)
+	allPage := utils.PageParams{Page: 1, Limit: 20}
+
+	all, _, err := svc.List(ctx, "", false, allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -66,7 +69,7 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("expected only the active Sud destination, got %+v", all)
 	}
 
-	filtered, err := svc.List(ctx, "sud", false)
+	filtered, _, err := svc.List(ctx, "sud", false, allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -74,7 +77,7 @@ func TestDestinationService_List_FiltersInactiveAndSearches(t *testing.T) {
 		t.Fatalf("expected search to match Sud, got %+v", filtered)
 	}
 
-	withInactive, err := svc.List(ctx, "", true)
+	withInactive, _, err := svc.List(ctx, "", true, allPage)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -103,7 +106,7 @@ func TestDestinationService_Update_CanReactivate(t *testing.T) {
 		t.Fatalf("expected Update with Active:true to reactivate the destination, got %+v", updated)
 	}
 
-	all, err := svc.List(ctx, "", false)
+	all, _, err := svc.List(ctx, "", false, utils.PageParams{Page: 1, Limit: 20})
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}

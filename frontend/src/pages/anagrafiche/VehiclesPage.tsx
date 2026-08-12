@@ -6,6 +6,7 @@ import {
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import type { DtoMotriceRequest, DtoMotriceResponse, DtoSemirimorchioRequest, DtoSemirimorchioResponse } from '@/api/data-contracts';
 import { formatEuro } from '@/lib/format';
+import { usePagination } from '@/hooks/use-pagination';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TableRow, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Pencil, Trash2, Plus } from 'lucide-react';
+
+const PAGE_SIZE = 20;
+// Vista "Tutti i mezzi": due fonti indipendenti unite in un'unica lista —
+// una paginazione combinata correttamente numerata non è possibile (una
+// pagina conterrebbe righe di provenienza mista), quindi qui si richiede
+// l'elenco pressoché completo di entrambe, senza controlli di paginazione
+// (stessa strategia dei selettori "tutto" altrove, es. AssignOrderForm).
+const ALL_LIMIT = 500;
+// Referenza stabile per il fallback "nessun dato ancora" (vedi sotto) — mai
+// mutato, `never[]` è assegnabile a qualunque T[] per via della varianza
+// strutturale di TypeScript.
+const EMPTY_ROWS: never[] = [];
 
 type MezzoTipo = 'Motrice' | 'Semirimorchio';
 
@@ -120,12 +133,34 @@ export default function VehiclesPage() {
   const [motriceDialog, setMotriceDialog] = useState<{ open: boolean; item: DtoMotriceResponse | null }>({ open: false, item: null });
   const [semirimorchioDialog, setSemirimorchioDialog] = useState<{ open: boolean; item: DtoSemirimorchioResponse | null }>({ open: false, item: null });
 
-  const { data: motrici = [], isLoading: loadingMotrici } = useGetMotriciQuery(search, { skip: tipoFilter === 'Semirimorchio' });
-  const { data: semirimorchi = [], isLoading: loadingSemirimorchi } = useGetSemirimorchiQuery(search, { skip: tipoFilter === 'Motrice' });
+  // Paginazione reale solo quando un singolo tipo è selezionato (un'unica
+  // fonte, una sola pagina ha senso); nella vista combinata si richiede
+  // l'elenco quasi completo di entrambe le fonti (vedi ALL_LIMIT sopra).
+  const [page, setPage] = usePagination(`${search}|${tipoFilter}`);
+  const { data: motriciResult, isLoading: loadingMotrici } = useGetMotriciQuery(
+    { search, page: tipoFilter === 'Motrice' ? page : 1, limit: tipoFilter === 'Motrice' ? PAGE_SIZE : ALL_LIMIT },
+    { skip: tipoFilter === 'Semirimorchio' },
+  );
+  const { data: semirimorchiResult, isLoading: loadingSemirimorchi } = useGetSemirimorchiQuery(
+    { search, page: tipoFilter === 'Semirimorchio' ? page : 1, limit: tipoFilter === 'Semirimorchio' ? PAGE_SIZE : ALL_LIMIT },
+    { skip: tipoFilter === 'Motrice' },
+  );
+  // Fallback a EMPTY_ROWS (non `[]` inline) per una referenza stabile fra i
+  // render: altrimenti il useMemo di `rows` sotto ricalcolerebbe ad ogni
+  // render durante il caricamento, invece che solo quando i dati cambiano.
+  const motrici = motriciResult?.items ?? EMPTY_ROWS;
+  const semirimorchi = semirimorchiResult?.items ?? EMPTY_ROWS;
   const [deleteMotrice] = useDeleteMotriceMutation();
   const [deleteSemirimorchio] = useDeleteSemirimorchioMutation();
 
   const loading = (tipoFilter !== 'Semirimorchio' && loadingMotrici) || (tipoFilter !== 'Motrice' && loadingSemirimorchi);
+
+  // Solo con un tipo singolo la pagina ha un significato coerente.
+  const totalPages = tipoFilter === 'Motrice'
+    ? Math.max(1, Math.ceil((motriciResult?.total ?? 0) / PAGE_SIZE))
+    : tipoFilter === 'Semirimorchio'
+      ? Math.max(1, Math.ceil((semirimorchiResult?.total ?? 0) / PAGE_SIZE))
+      : undefined;
 
   const rows = useMemo<MezzoRow[]>(() => {
     const list: MezzoRow[] = [];
@@ -165,6 +200,9 @@ export default function VehiclesPage() {
         searchValue={search}
         onSearchChange={setSearch}
         testId="masterdata-table"
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
         filters={
           <Select value={tipoFilter || 'all'} onValueChange={(v) => setTipoFilter(v === 'all' ? '' : (v as MezzoTipo))}>
             <SelectTrigger className="h-9 w-[170px] text-sm" data-testid="vehicles-tipo-filter">

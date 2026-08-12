@@ -23,15 +23,17 @@ func NewProductHandler(service services.Product) *ProductHandler {
 // @Security BearerAuth
 // @Produce json
 // @Param search query string false "Filter by codice/descrizione"
-// @Success 200 {array} dto.ProductResponse
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 20, max 100)"
+// @Success 200 {object} dto.ProductListResponse
 // @Router /api/v1/products [get]
 func (h *ProductHandler) ListProducts(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
-	items, err := h.Service.List(ctx, c.Query("search"))
+	items, total, err := h.Service.List(ctx, c.Query("search"), utils.ParsePageParams(c))
 	if err != nil {
 		return utils.HandleDatabaseError(c, err)
 	}
-	return utils.SuccessResponse(c, 200, items)
+	return utils.SuccessResponse(c, 200, dto.ProductListResponse{Data: items, Total: total})
 }
 
 // CreateProduct godoc

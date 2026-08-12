@@ -36,7 +36,9 @@ export default function PriceListsPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { data: customers = [] } = useGetCustomersQuery();
+  // Selettore cliente: serve l'elenco completo, non una pagina.
+  const { data: customersPage } = useGetCustomersQuery({ limit: 500 });
+  const customers = customersPage?.items ?? [];
   const [destinations, setDestinations] = useState<DtoDestinationResponse[]>([]);
   const [products, setProducts] = useState<DtoProductResponse[]>([]);
   const [search, setSearch] = useState('');

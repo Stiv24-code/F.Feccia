@@ -9,9 +9,8 @@ import (
 
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
+	"fratelli-feccia/pkg/utils"
 )
-
-const listLimit = 1000
 
 type MotriceService struct {
 	db *gorm.DB
@@ -29,20 +28,24 @@ func escapeLike(term string) string {
 	return replacer.Replace(term)
 }
 
-func (s *MotriceService) List(ctx context.Context, search string) ([]dto.MotriceResponse, error) {
+func (s *MotriceService) List(ctx context.Context, search string, page utils.PageParams) ([]dto.MotriceResponse, int64, error) {
 	query := s.db.WithContext(ctx).Model(&models.Motrice{}).Where("active = ?", true)
 	if search != "" {
 		query = query.Where("LOWER(targa) LIKE ?", "%"+strings.ToLower(escapeLike(search))+"%")
 	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var items []models.Motrice
-	if err := query.Order("targa ASC").Limit(listLimit).Find(&items).Error; err != nil {
-		return nil, err
+	if err := query.Order("targa ASC").Offset(page.Offset()).Limit(page.Limit).Find(&items).Error; err != nil {
+		return nil, 0, err
 	}
 	result := make([]dto.MotriceResponse, len(items))
 	for i, m := range items {
 		result[i] = ToResponse(m)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *MotriceService) Create(ctx context.Context, req dto.MotriceRequest) (*dto.MotriceResponse, error) {
