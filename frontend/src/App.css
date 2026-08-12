@@ -2,8 +2,12 @@
 
 /* ── Stage editor template PDF (porting OrderMesh) ──
    Zone disegnabili sopra l'immagine di pagina: blocchi di testo rilevati
-   (tratteggio, clic → nuovo campo), zone mappate (verdi, trascinabili,
-   ridimensionabili dall'angolo; ambra quando selezionate) e rubber band. */
+   (tratteggio, clic → nuovo campo), zone mappate (blu, trascinabili,
+   ridimensionabili dall'angolo; bordo più marcato quando selezionate) e
+   rubber band — stessa tinta blu del mockup "TMS Unificato" (#2a6fdb,
+   coincide con --primary) per blocco rilevato/selezionato/disegno in corso;
+   ambra riservata al solo stato "non presente nel PDF" (vedi .missing sotto
+   e i badge in ImportPdfDialog), per non confondere le due semantiche. */
 .stage {
   position: relative;
   border: 1px solid hsl(var(--border));
@@ -33,30 +37,28 @@
 
 .stage-zone {
   position: absolute;
-  border: 2px solid #059669; /* emerald-600 */
-  background: rgba(5, 150, 105, 0.14);
+  border: 1.5px solid hsl(var(--primary) / 0.55);
+  background: hsl(var(--primary) / 0.07);
   cursor: move;
   border-radius: 2px;
 }
 .stage-zone.sel {
-  border-color: #d97706; /* amber-600 */
-  background: rgba(217, 119, 6, 0.16);
+  border-width: 2px;
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.13);
   z-index: 3;
 }
 .stage-zone .tag {
   position: absolute;
   top: -20px;
   left: -2px;
-  background: #059669;
-  color: white;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   font-size: 10px;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 3px;
   white-space: nowrap;
-}
-.stage-zone.sel .tag {
-  background: #d97706;
 }
 .stage-zone .rsz {
   position: absolute;
@@ -65,33 +67,33 @@
   width: 12px;
   height: 12px;
   background: hsl(var(--card));
-  border: 2px solid #059669;
+  border: 2px solid hsl(var(--primary));
   border-radius: 50%;
   cursor: nwse-resize;
-}
-.stage-zone.sel .rsz {
-  border-color: #d97706;
 }
 
 /* Variante read-only (revisione ordine da PDF): stessa zona mappata, ma
    senza interazione — cursore neutro, nessun handle di resize. Lo stato
-   "missing" segnala un campo non letto dal PDF o a bassa confidenza. */
+   "missing" segnala un campo non letto dal PDF o a bassa confidenza —
+   stessa ambra #e3c968/#8a6508 del badge/input "non presente nel PDF"
+   in ImportPdfDialog (mockup "TMS Unificato"), non il rosso destructive
+   (riservato ad azioni distruttive, semantica diversa). */
 .stage-zone.readonly {
   cursor: default;
 }
 .stage-zone.missing {
   border-style: dashed;
-  border-color: hsl(var(--destructive));
-  background: hsl(var(--destructive) / 0.12);
+  border-color: #E3C968;
+  background: rgba(227, 201, 104, 0.18);
 }
 .stage-zone.missing .tag {
-  background: hsl(var(--destructive));
+  background: #8A6508;
 }
 
 .stage-rubber {
   position: absolute;
-  border: 1.5px dashed #d97706;
-  background: rgba(217, 119, 6, 0.1);
+  border: 1.5px dashed hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
   z-index: 4;
   pointer-events: none;
 }
@@ -117,35 +119,42 @@
   font-weight: 600;
 }
 
-/* Le zone/tag/filebox usano hex letterali (non token) perché sono accenti
-   semantici fissi (verde = mappato, ambra = selezionato); in dark mode li
-   schiariamo per mantenere contrasto sufficiente sul canvas scuro. */
-.dark .stage-zone {
-  border-color: #34d399;
+/* .stage-zone/.stage-rubber sono su hsl(var(--primary)): si adattano da
+   soli al dark mode, nessun override qui. .missing resta ambra letterale
+   (nessun token "warning" nel design system) — schiarita per contrasto
+   sul canvas scuro, stessa convenzione delle .status-order-yellow ecc. */
+.dark .stage-zone.missing {
+  border-color: rgba(245, 158, 11, 0.6);
+  background: rgba(245, 158, 11, 0.14);
 }
-.dark .stage-zone .tag,
-.dark .stage-zone .rsz {
-  border-color: #34d399;
-  background: #34d399;
-}
-.dark .stage-zone .rsz {
-  background: hsl(var(--card));
-}
-.dark .stage-zone.sel {
-  border-color: #fbbf24;
-}
-.dark .stage-zone.sel .tag,
-.dark .stage-zone.sel .rsz {
-  border-color: #fbbf24;
-  background: #fbbf24;
-}
-.dark .stage-zone.sel .rsz {
-  background: hsl(var(--card));
-}
-.dark .stage-rubber {
-  border-color: #fbbf24;
+.dark .stage-zone.missing .tag {
+  background: #fcd34d;
+  color: #1c2534;
 }
 .dark .filebox.hasfile {
   border-color: #34d399;
   color: #34d399;
+}
+
+/* ── Campo assente nel PDF (revisione ordine #31) ──
+   Badge/input allineati 1:1 ai valori esatti del mockup "TMS Unificato"
+   (#8a6508 testo, #fdf6dc sfondo, #eedda0 bordo per il badge; #e3c968/
+   #fffdf4 per l'input evidenziato) — vedi ImportPdfDialog.tsx. */
+.pdf-missing-badge {
+  color: #8A6508;
+  background-color: #FDF6DC;
+  border-color: #EEDDA0;
+}
+.dark .pdf-missing-badge {
+  background-color: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.pdf-missing-input {
+  border-color: #E3C968;
+  background-color: #FFFDF4;
+}
+.dark .pdf-missing-input {
+  border-color: rgba(245, 158, 11, 0.45);
+  background-color: rgba(245, 158, 11, 0.06);
 }

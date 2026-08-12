@@ -308,7 +308,7 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
                 {extraction.n} campi estratti
               </Badge>
               {extraction.low > 0 && (
-                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                <Badge variant="outline" className="pdf-missing-badge">
                   {extraction.low} zone vuote o incerte — controlla i valori
                 </Badge>
               )}
@@ -356,13 +356,13 @@ export default function ImportPdfDialog({ open, onOpenChange, orders, onImported
                         <div className="flex min-h-[15px] items-center justify-between gap-1">
                           <Label className="text-[11px] text-muted-foreground uppercase">{label}</Label>
                           {missing && (
-                            <span className="whitespace-nowrap text-[10px] font-medium text-destructive">
+                            <Badge variant="outline" className="pdf-missing-badge rounded-full px-2 py-0 text-[10px] font-medium">
                               non nel PDF
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         <Input
-                          className="h-8 text-sm"
+                          className={`h-8 text-sm ${missing ? 'pdf-missing-input' : ''}`}
                           value={draft[k]}
                           onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
                         />

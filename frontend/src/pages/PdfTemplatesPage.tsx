@@ -440,7 +440,7 @@ export default function PdfTemplatesPage() {
                   key={f.id}
                   role="button"
                   tabIndex={0}
-                  className={`p-2 cursor-pointer ${f.id === selField ? 'ring-2 ring-amber-500' : ''}`}
+                  className={`p-2 cursor-pointer ${f.id === selField ? 'ring-2 ring-primary' : ''}`}
                   onClick={() => { setSelField(f.id ?? null); if (f.page !== curPage) setCurPage(f.page ?? 0); }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
