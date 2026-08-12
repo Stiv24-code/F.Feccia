@@ -175,9 +175,8 @@ export default function OrderDetailPage() {
           </div>
 
           {order.viaggio_id && (
-            <div className="rounded-lg border p-3 flex items-center justify-between gap-3 text-sm flex-wrap">
+            <div className="rounded-lg border p-3 flex items-center gap-3 text-sm flex-wrap">
               <span>Ordine assegnato al viaggio <b className="font-mono">{order.viaggio_id.slice(0, 8)}</b></span>
-              <Button variant="outline" size="sm" onClick={() => navigate('/viaggi')}>Apri Gestione Viaggi →</Button>
             </div>
           )}
 

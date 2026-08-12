@@ -36,7 +36,6 @@ const NAV_ITEMS = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, keywords: ['home', 'kpi'] },
   { label: 'Ordini', to: '/ordini', icon: ClipboardList, keywords: ['orders'] },
   { label: 'Planner', to: '/planner', icon: Calendar, keywords: ['pianificazione', 'plan'] },
-  { label: 'Viaggi', to: '/viaggi', icon: Truck, keywords: ['trips'] },
   { label: 'Mappa', to: '/mappa', icon: MapPin, keywords: ['map', 'gps'] },
   { label: 'Listini', to: '/listini', icon: PiggyBank, keywords: ['pricelist', 'tariffe'] },
   { label: 'Fatturazione', to: '/fatturazione', icon: FileText, keywords: ['invoices', 'fatture'] },

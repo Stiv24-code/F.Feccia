@@ -32,13 +32,11 @@ const InboundOrdersPage = lazy(() => import('@/pages/InboundOrdersPage'));
 const PdfTemplatesPage = lazy(() => import('@/pages/PdfTemplatesPage'));
 const PlannerPage = lazy(() => import('@/pages/PlannerPage'));
 const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage'));
-const TripsPage = lazy(() => import('@/pages/TripsPage'));
 const InvoicesPage = lazy(() => import('@/pages/InvoicesPage'));
 const PriceListsPage = lazy(() => import('@/pages/PriceListsPage'));
 const MapPage = lazy(() => import('@/pages/MapPage'));
 const CustomerDashboardPage = lazy(() => import('@/pages/CustomerDashboardPage'));
 const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
-const PlannerDnDPage = lazy(() => import('@/pages/PlannerDnDPage'));
 const ClientOrdersPage = lazy(() => import('@/pages/portale/ClientOrdersPage'));
 const ClientAnagraficaPage = lazy(() => import('@/pages/portale/ClientAnagraficaPage'));
 
@@ -81,8 +79,6 @@ function StaffRoutes() {
           <Route path="ordini-in-ingresso/template" element={<OrdiniTabsLayout><PdfTemplatesPage /></OrdiniTabsLayout>} />
           <Route path="planner" element={<PlannerPage />} />
           <Route path="planner/ordini/:id" element={<OrderDetailPage />} />
-          <Route path="planner/dnd" element={<PlannerDnDPage />} />
-          <Route path="viaggi" element={<TripsPage />} />
           <Route path="mappa" element={<MapPage />} />
           <Route path="fatturazione" element={<InvoicesPage />} />
           <Route path="admin/utenti" element={<UsersPage />} />

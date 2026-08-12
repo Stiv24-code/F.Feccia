@@ -403,7 +403,7 @@ export default function OrdersPage() {
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground pt-2 border-t">
-                Per creare il viaggio combinato vai su Viaggi → Nuovo viaggio e seleziona entrambi gli ordini, oppure aggiungi questo ritorno a un viaggio esistente da Viaggi.
+                Assegna lo stesso mezzo/autista a entrambi gli ordini dal Planner per pianificarli come un unico viaggio di andata e ritorno.
               </p>
             </div>
           ) : null}

@@ -193,16 +193,6 @@ export const getReturnSuggestions = (id, params = {}) => {
   return api.get(`/orders/${id}/return-suggestions?${qs.toString()}`);
 };
 
-// Trips
-export const getTrips = (stato = '') => api.get(`/trips?stato=${stato}`);
-export const createTrip = (data) => api.post('/trips', data);
-export const getTrip = (id) => api.get(`/trips/${id}`);
-export const startTrip = (id) => api.patch(`/trips/${id}/start`);
-export const completeTrip = (id) => api.patch(`/trips/${id}/complete`);
-export const addOrderToTrip = (tripId, orderId) => api.patch(`/trips/${tripId}/add-order?order_id=${orderId}`);
-export const recomputeTripSegments = (tripId) => api.post(`/trips/${tripId}/recompute-segments`);
-// PDF Istruzioni Operative per autista (issue #33)
-export const downloadTripInstructionsPdf = (tripId) => api.get(`/trips/${tripId}/instructions/pdf`, { responseType: 'blob' });
 // PDF CMR per ordine internazionale (issue #34)
 export const downloadOrderCmrPdf = (orderId) => api.get(`/orders/${orderId}/cmr/pdf`, { responseType: 'blob' });
 

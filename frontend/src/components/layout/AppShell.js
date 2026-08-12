@@ -8,7 +8,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
-  Package, Warehouse, ClipboardList, CalendarRange, Route, FileText,
+  Package, Warehouse, ClipboardList, CalendarRange, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
   Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon, Inbox,
   PanelLeftClose, PanelLeftOpen
@@ -45,8 +45,6 @@ const navItems = [
     ]
   },
   { label: 'Planner', path: '/planner', icon: CalendarRange, roles: ['admin', 'planner'] },
-  { label: 'Planner Drag&Drop', path: '/planner/dnd', icon: CalendarRange, roles: ['admin', 'planner'] },
-  { label: 'Gestione Viaggi', path: '/viaggi', icon: Route, roles: ['admin', 'planner'] },
   { label: 'Mappa Viaggi', path: '/mappa', icon: Map },
   { label: 'Fatturazione', path: '/fatturazione', icon: FileText, roles: ['admin', 'amministrazione'] },
   { label: 'Utenti', path: '/admin/utenti', icon: UserCog, roles: ['admin'] },
@@ -271,7 +269,6 @@ const AppShell = ({ children }) => {
     if (path.includes('listini')) return 'Listini';
     if (path.includes('/ordini')) return 'Ordini';
     if (path.includes('planner')) return 'Planner';
-    if (path.includes('viaggi')) return 'Gestione Viaggi';
     if (path.includes('mappa')) return 'Mappa Viaggi';
     if (path.includes('fatturazione')) return 'Fatturazione';
     return 'F.lli Feccia';
