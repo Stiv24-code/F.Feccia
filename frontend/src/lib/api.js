@@ -120,16 +120,16 @@ export const registerClient = (data) => api.post('/auth/register-cliente', data)
 // CRUD migrato su RTK Query (src/store/api/appApi.ts). Le liste restano qui
 // perché usate anche da pagine non ancora migrate (Orders, PriceLists,
 // Planner, Trips).
-export const getDestinations = (search = '') => api.get(`/destinations?search=${search}`);
+export const getDestinations = (search = '') => api.get(`/destinations?search=${search}&limit=100`);
 
-export const getMotrici = (search = '') => api.get(`/motrici?search=${search}`);
-export const getSemirimorchi = (search = '') => api.get(`/semirimorchi?search=${search}`);
+export const getMotrici = (search = '') => api.get(`/motrici?search=${search}&limit=100`);
+export const getSemirimorchi = (search = '') => api.get(`/semirimorchi?search=${search}&limit=100`);
 
-export const getDrivers = (search = '') => api.get(`/drivers?search=${search}`);
+export const getDrivers = (search = '') => api.get(`/drivers?search=${search}&limit=100`);
 
-export const getCarriers = (search = '') => api.get(`/carriers?search=${search}`);
+export const getCarriers = (search = '') => api.get(`/carriers?search=${search}&limit=100`);
 
-export const getProducts = (search = '') => api.get(`/products?search=${search}`);
+export const getProducts = (search = '') => api.get(`/products?search=${search}&limit=100`);
 
 export const getGarages = () => api.get('/garages');
 

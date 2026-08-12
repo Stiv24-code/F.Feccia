@@ -17,9 +17,9 @@ import type {
 } from '@/api/data-contracts';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LocationCombobox from '@/components/shared/LocationCombobox';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import OrderRouteMap from '@/components/shared/OrderRouteMap';
 import { toast } from 'sonner';
 import { Loader2, Warehouse, Droplets, Check, Route } from 'lucide-react';
@@ -88,7 +88,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     setRouteAlternatives([]);
     setSelectedRouteIdx(0);
     Promise.all([getMotrici(), getSemirimorchi(), getDrivers(), getCarriers()]).then(([m, s, d, c]) => {
-      setMotrici(m.data); setSemirimorchi(s.data); setDrivers(d.data); setCarriers(c.data);
+      setMotrici(m.data.data ?? []); setSemirimorchi(s.data.data ?? []); setDrivers(d.data.data ?? []); setCarriers(c.data.data ?? []);
     }).catch(err => logger.error('Errore caricamento lookup assegna:', err));
     const da = order.data_ritiro || '';
     const a = order.data_consegna || order.data_ritiro || '';
@@ -261,67 +261,78 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
             <>
               <div className="space-y-1.5">
                 <Label>Autista{disponibilitaLabel && <span className="text-muted-foreground font-normal"> · disponibilità {disponibilitaLabel}</span>}</Label>
-                <Select value={form.autista_id} onValueChange={setDriver}>
-                  <SelectTrigger><SelectValue placeholder="Autista" /></SelectTrigger>
-                  <SelectContent>
-                    {assignDriverList.map(d => {
-                      const disponibilita = (d as DtoDriverAvailabilityResponse).disponibilita;
-                      return (
-                        <SelectItem key={d.id} value={d.id || ''}>
-                          <span className="flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full shrink-0 ${disponibilita === 'busy' ? 'bg-red-500' : disponibilita === 'unavailable' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                            {d.nome} {d.cognome}
-                            {disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
-                            {disponibilita === 'unavailable' && <span className="text-[10px] text-amber-600">{(d as DtoDriverAvailabilityResponse).motivo_indisponibilita}</span>}
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.autista_id}
+                  onValueChange={setDriver}
+                  options={assignDriverList}
+                  getValue={(d) => d.id || ''}
+                  getLabel={(d) => `${d.nome} ${d.cognome}`}
+                  placeholder="Autista"
+                  searchPlaceholder="Cerca autista..."
+                  renderItem={(d) => {
+                    const disponibilita = (d as DtoDriverAvailabilityResponse).disponibilita;
+                    return (
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${disponibilita === 'busy' ? 'bg-red-500' : disponibilita === 'unavailable' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                        <span className="truncate">{d.nome} {d.cognome}</span>
+                        {disponibilita === 'busy' && <span className="text-[10px] text-red-600 shrink-0">occupato</span>}
+                        {disponibilita === 'unavailable' && <span className="text-[10px] text-amber-600 shrink-0">{(d as DtoDriverAvailabilityResponse).motivo_indisponibilita}</span>}
+                      </span>
+                    );
+                  }}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Motrice</Label>
-                <Select value={form.motrice_id} onValueChange={v => setForm(f => ({ ...f, motrice_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Motrice" /></SelectTrigger>
-                  <SelectContent>
-                    {assignMotrici.map(v => (
-                      <SelectItem key={v.id} value={v.id || ''}>
-                        <span className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                          {v.targa} - {v.marca}
-                          {(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.motrice_id}
+                  onValueChange={(v) => setForm(f => ({ ...f, motrice_id: v }))}
+                  options={assignMotrici}
+                  getValue={(v) => v.id || ''}
+                  getLabel={(v) => `${v.targa} - ${v.marca}`}
+                  placeholder="Motrice"
+                  searchPlaceholder="Cerca motrice..."
+                  renderItem={(v) => (
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                      <span className="truncate">{v.targa} - {v.marca}</span>
+                      {(v as DtoMotriceAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600 shrink-0">occupato</span>}
+                    </span>
+                  )}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Rimorchio</Label>
-                <Select value={form.semirimorchio_id} onValueChange={v => setForm(f => ({ ...f, semirimorchio_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Rimorchio" /></SelectTrigger>
-                  <SelectContent>
-                    {assignRimorchi.map(v => (
-                      <SelectItem key={v.id} value={v.id || ''}>
-                        <span className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                          {v.targa} - {v.tipo}
-                          {(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600">occupato</span>}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.semirimorchio_id}
+                  onValueChange={(v) => setForm(f => ({ ...f, semirimorchio_id: v }))}
+                  options={assignRimorchi}
+                  getValue={(v) => v.id || ''}
+                  getLabel={(v) => `${v.targa} - ${v.tipo}`}
+                  placeholder="Rimorchio"
+                  searchPlaceholder="Cerca rimorchio..."
+                  renderItem={(v) => (
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                      <span className="truncate">{v.targa} - {v.tipo}</span>
+                      {(v as DtoSemirimorchioAvailabilityResponse).disponibilita === 'busy' && <span className="text-[10px] text-red-600 shrink-0">occupato</span>}
+                    </span>
+                  )}
+                />
               </div>
             </>
           ) : (
             <div className="space-y-1.5">
               <Label>Vettore</Label>
-              <Select value={form.vettore_id} onValueChange={setVettore}>
-                <SelectTrigger><SelectValue placeholder="Vettore terzo" /></SelectTrigger>
-                <SelectContent>{carriers.map(c => <SelectItem key={c.id} value={c.id || ''}>{c.ragione_sociale}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.vettore_id}
+                onValueChange={setVettore}
+                options={carriers}
+                getValue={(c) => c.id || ''}
+                getLabel={(c) => c.ragione_sociale || ''}
+                placeholder="Vettore terzo"
+                searchPlaceholder="Cerca vettore..."
+              />
             </div>
           )}
         </div>

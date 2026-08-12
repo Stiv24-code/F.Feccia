@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Plus, Search, Download, Loader2, Eye, Trash2, FileText, ArrowLeftRight } from 'lucide-react';
@@ -67,7 +68,7 @@ export default function OrdersPage() {
   useEffect(() => {
     Promise.all([getDestinations(), getProducts(), getTransportCategories()])
       .then(([d, , cat]) => {
-        setDestinations(d.data);
+        setDestinations(d.data.data ?? []);
         setCategories(cat.data);
       });
   }, []);
@@ -273,24 +274,39 @@ export default function OrdersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2 space-y-1.5">
                 <Label>Cliente *</Label>
-                <Select value={form.cliente_id} onValueChange={setCustomer}>
-                  <SelectTrigger><SelectValue placeholder="Seleziona cliente" /></SelectTrigger>
-                  <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id || ''}>{c.ragione_sociale}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.cliente_id}
+                  onValueChange={setCustomer}
+                  options={customers}
+                  getValue={(c) => c.id || ''}
+                  getLabel={(c) => c.ragione_sociale || ''}
+                  placeholder="Seleziona cliente"
+                  searchPlaceholder="Cerca cliente..."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Destinazione Carico</Label>
-                <Select value={form.destinazione_carico_id} onValueChange={setCarico}>
-                  <SelectTrigger><SelectValue placeholder="Carico" /></SelectTrigger>
-                  <SelectContent>{destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.destinazione_carico_id}
+                  onValueChange={setCarico}
+                  options={destinations}
+                  getValue={(d) => d.id || ''}
+                  getLabel={(d) => d.nome || ''}
+                  placeholder="Carico"
+                  searchPlaceholder="Cerca destinazione..."
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Destinazione Scarico</Label>
-                <Select value={form.destinazione_scarico_id} onValueChange={setScarico}>
-                  <SelectTrigger><SelectValue placeholder="Scarico" /></SelectTrigger>
-                  <SelectContent>{destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.destinazione_scarico_id}
+                  onValueChange={setScarico}
+                  options={destinations}
+                  getValue={(d) => d.id || ''}
+                  getLabel={(d) => d.nome || ''}
+                  placeholder="Scarico"
+                  searchPlaceholder="Cerca destinazione..."
+                />
               </div>
               <div className="space-y-1.5"><Label>Data Ritiro</Label><Input type="date" value={form.data_ritiro} onChange={e => setForm({ ...form, data_ritiro: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Data Consegna</Label><Input type="date" value={form.data_consegna} onChange={e => setForm({ ...form, data_consegna: e.target.value })} /></div>

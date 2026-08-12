@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getPriceLists, getPriceList, createPriceList, deletePriceList, addPriceListItem, updatePriceListItem, deletePriceListItem, getDestinations, getProducts } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useGetCustomersQuery } from '@/store/api/appApi';
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { Plus, Trash2, Loader2, Search, Eye, ArrowLeft, Pencil } from 'lucide-react';
@@ -44,6 +45,10 @@ export default function PriceListsPage() {
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<DtoPriceListRequest>(emptyForm);
 
+  // Voce "Qualsiasi" (wildcard) in testa alle opzioni della regola tariffaria.
+  const productOptions = useMemo(() => [{ id: 'any' } as DtoProductResponse, ...products], [products]);
+  const destinationOptions = useMemo(() => [{ id: 'any' } as DtoDestinationResponse, ...destinations], [destinations]);
+
   // Dettaglio listino
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<DtoPriceListResponse | null>(null);
@@ -59,7 +64,7 @@ export default function PriceListsPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
     Promise.all([getDestinations(), getProducts()]).then(([d, p]) => {
-      setDestinations(d.data); setProducts(p.data);
+      setDestinations(d.data.data ?? []); setProducts(p.data.data ?? []);
     }).catch((err: unknown) => logger.error('Errore caricamento lookup listini:', err));
   }, []);
 
@@ -267,13 +272,15 @@ export default function PriceListsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Prodotto (opzionale)</Label>
-                  <Select value={ruleForm.prodotto_id || 'any'} onValueChange={setRuleProdotto}>
-                    <SelectTrigger><SelectValue placeholder="Qualsiasi" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Qualsiasi</SelectItem>
-                      {products.map(p => <SelectItem key={p.id} value={p.id || ''}>{p.codice} - {p.descrizione}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={ruleForm.prodotto_id || 'any'}
+                    onValueChange={setRuleProdotto}
+                    options={productOptions}
+                    getValue={(p) => p.id || ''}
+                    getLabel={(p) => p.id === 'any' ? 'Qualsiasi' : `${p.codice} - ${p.descrizione}`}
+                    placeholder="Qualsiasi"
+                    searchPlaceholder="Cerca prodotto..."
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Tipo Trasporto</Label>
@@ -287,23 +294,27 @@ export default function PriceListsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Dest. Carico (opzionale)</Label>
-                  <Select value={ruleForm.destinazione_carico_id || 'any'} onValueChange={setRuleCarico}>
-                    <SelectTrigger><SelectValue placeholder="Qualsiasi" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Qualsiasi</SelectItem>
-                      {destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={ruleForm.destinazione_carico_id || 'any'}
+                    onValueChange={setRuleCarico}
+                    options={destinationOptions}
+                    getValue={(d) => d.id || ''}
+                    getLabel={(d) => d.id === 'any' ? 'Qualsiasi' : (d.nome || '')}
+                    placeholder="Qualsiasi"
+                    searchPlaceholder="Cerca destinazione..."
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Dest. Scarico (opzionale)</Label>
-                  <Select value={ruleForm.destinazione_scarico_id || 'any'} onValueChange={setRuleScarico}>
-                    <SelectTrigger><SelectValue placeholder="Qualsiasi" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Qualsiasi</SelectItem>
-                      {destinations.map(d => <SelectItem key={d.id} value={d.id || ''}>{d.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={ruleForm.destinazione_scarico_id || 'any'}
+                    onValueChange={setRuleScarico}
+                    options={destinationOptions}
+                    getValue={(d) => d.id || ''}
+                    getLabel={(d) => d.id === 'any' ? 'Qualsiasi' : (d.nome || '')}
+                    placeholder="Qualsiasi"
+                    searchPlaceholder="Cerca destinazione..."
+                  />
                 </div>
               </div>
               <Separator />
@@ -417,10 +428,15 @@ export default function PriceListsPage() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Cliente *</Label>
-              <Select value={form.cliente_id} onValueChange={setCustomer}>
-                <SelectTrigger><SelectValue placeholder="Seleziona cliente" /></SelectTrigger>
-                <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id || ''}>{c.ragione_sociale}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.cliente_id}
+                onValueChange={setCustomer}
+                options={customers}
+                getValue={(c) => c.id || ''}
+                getLabel={(c) => c.ragione_sociale || ''}
+                placeholder="Seleziona cliente"
+                searchPlaceholder="Cerca cliente..."
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Data Inizio</Label><Input type="date" value={form.data_inizio} onChange={e => setForm({ ...form, data_inizio: e.target.value })} /></div>
