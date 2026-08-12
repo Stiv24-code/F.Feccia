@@ -67,7 +67,7 @@ export default function ClientOrdersPage() {
   };
 
   const handleSaveDestination = async () => {
-    if (destForm.lat == null || destForm.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
+    if (destForm.lat == null || destForm.lng == null) { toast.error('Cerca e seleziona un indirizzo per impostare la posizione'); return; }
     try {
       const created = await createMyDestination(destForm).unwrap();
       toast.success('Destinazione creata');
@@ -220,7 +220,7 @@ export default function ClientOrdersPage() {
         <div className="space-y-3">
           <div className="space-y-1.5"><Label>Nome *</Label><Input value={destForm.nome} onChange={e => setDestForm({ ...destForm, nome: e.target.value })} required /></div>
           <div className="space-y-1.5">
-            <Label>Indirizzo</Label>
+            <Label>Indirizzo *</Label>
             <AddressSearchInput
               value={destForm.indirizzo || ''}
               onChange={(v) => setDestForm(f => ({ ...f, indirizzo: v }))}
@@ -228,6 +228,7 @@ export default function ClientOrdersPage() {
                 setDestForm(f => ({ ...f, indirizzo: r.indirizzo, citta: r.citta || f.citta, lat: r.lat, lng: r.lng }));
                 setDestFlySignal(s => s + 1);
               }}
+              required
             />
           </div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={destForm.citta || ''} readOnly className="bg-muted/50" /></div>
@@ -235,7 +236,6 @@ export default function ClientOrdersPage() {
             <Label>Posizione *</Label>
             <MapPicker
               lat={destForm.lat ?? null} lng={destForm.lng ?? null}
-              onChange={(lat, lng) => setDestForm({ ...destForm, lat, lng })}
               flyToSignal={destFlySignal}
             />
           </div>

@@ -40,7 +40,7 @@ export default function WashStationsPage() {
   const openEdit = (item: DtoWashStationResponse) => { setForm({ nome: item.nome || '', tipo: item.tipo || '', indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, orario_da: item.orario_da || '', orario_a: item.orario_a || '', note: item.note || '', active: item.active }); setEditId(item.id || null); setDialogOpen(true); };
 
   const handleSave = async () => {
-    if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
+    if (form.lat == null || form.lng == null) { toast.error('Cerca e seleziona un indirizzo per impostare la posizione'); return; }
     try {
       const body: DtoWashStationRequest = { ...form, lat: form.lat, lng: form.lng };
       if (editId) { await updateWashStation({ id: editId, body }).unwrap(); toast.success('Punto di lavaggio aggiornato'); } else { await createWashStation(body).unwrap(); toast.success('Punto di lavaggio creato'); }
@@ -73,7 +73,7 @@ export default function WashStationsPage() {
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} required /></div>
           <div className="md:col-span-2 space-y-1.5"><Label>Tipo di lavaggio</Label><Input value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })} placeholder="Es. Lavaggio alimentare EFTCO" /></div>
           <div className="md:col-span-2 space-y-1.5">
-            <Label>Indirizzo</Label>
+            <Label>Indirizzo *</Label>
             <AddressSearchInput
               value={form.indirizzo || ''}
               onChange={(v) => setForm(f => ({ ...f, indirizzo: v }))}
@@ -81,6 +81,7 @@ export default function WashStationsPage() {
                 setForm(f => ({ ...f, indirizzo: r.indirizzo || f.indirizzo, citta: r.citta || f.citta, lat: r.lat ?? f.lat, lng: r.lng ?? f.lng }));
                 setFlySignal(s => s + 1);
               }}
+              required
             />
           </div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} readOnly className="bg-muted/50" /></div>
@@ -88,7 +89,6 @@ export default function WashStationsPage() {
             <Label>Posizione *</Label>
             <MapPicker
               lat={form.lat} lng={form.lng}
-              onChange={(lat, lng) => setForm({ ...form, lat, lng })}
               flyToSignal={flySignal}
             />
           </div>

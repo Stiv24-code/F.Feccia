@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Stesso fix icone di MapPage.js — necessario ovunque venga montata una
@@ -19,15 +19,6 @@ const DEFAULT_ZOOM = 5;
 const POINT_ZOOM = 12;
 const FLY_ZOOM = 15;
 
-function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onPick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
 // Vola verso il punto quando flyToSignal cambia (selezione da un indirizzo
 // cercato altrove — vedi AddressSearchInput, usato per il campo Indirizzo
 // nei form Destinazioni/Garage/Punti di Lavaggio) — non ad ogni click/drag
@@ -46,23 +37,18 @@ function FlyToOnSignal({ lat, lng, flyToSignal }: { lat: number | null; lng: num
 export interface MapPickerProps {
   lat: number | null;
   lng: number | null;
-  onChange: (lat: number, lng: number) => void;
   flyToSignal?: number | null;
 }
 
-// Mappa cliccabile per impostare lat/lng di un punto (destinazione, garage,
-// stazione di lavaggio...): click per posizionare il marker, drag per
-// aggiustarlo. La ricerca per indirizzo vive nel campo Indirizzo del form
-// (AddressSearchInput) — passare flyToSignal (un valore che cambia ad ogni
-// selezione) per far volare la mappa lì. Non ricentra la mappa ad ogni click
-// per non spostare la vista sotto il cursore dell'utente mentre esplora.
-export function MapPicker({ lat, lng, onChange, flyToSignal }: MapPickerProps) {
+// Mappa di sola visualizzazione: il punto (destinazione, garage, stazione di
+// lavaggio...) si imposta esclusivamente cercando un indirizzo nel campo
+// Indirizzo del form (AddressSearchInput) — niente click né drag del marker,
+// così il punto salvato corrisponde sempre esattamente al risultato del
+// geocoding scelto. flyToSignal (un valore che cambia ad ogni selezione) fa
+// volare la mappa lì.
+export function MapPicker({ lat, lng, flyToSignal }: MapPickerProps) {
   const hasPoint = typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng);
   const center: [number, number] = hasPoint ? [lat as number, lng as number] : DEFAULT_CENTER;
-
-  const handlePick = useCallback((newLat: number, newLng: number) => {
-    onChange(Math.round(newLat * 1e6) / 1e6, Math.round(newLng * 1e6) / 1e6);
-  }, [onChange]);
 
   return (
     <div className="space-y-1">
@@ -77,26 +63,14 @@ export function MapPicker({ lat, lng, onChange, flyToSignal }: MapPickerProps) {
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
             attribution="Tiles &copy; Esri"
           />
-          <ClickHandler onPick={handlePick} />
           {flyToSignal != null && <FlyToOnSignal lat={lat} lng={lng} flyToSignal={flyToSignal} />}
-          {hasPoint && (
-            <Marker
-              position={[lat as number, lng as number]}
-              draggable
-              eventHandlers={{
-                dragend: (e) => {
-                  const { lat: newLat, lng: newLng } = e.target.getLatLng();
-                  handlePick(newLat, newLng);
-                },
-              }}
-            />
-          )}
+          {hasPoint && <Marker position={[lat as number, lng as number]} />}
         </MapContainer>
       </div>
       <p className="text-xs text-muted-foreground">
         {hasPoint
-          ? `Punto selezionato: ${(lat as number).toFixed(5)}, ${(lng as number).toFixed(5)} — trascina il marker per correggere`
-          : 'Cerca un indirizzo nel campo qui sopra o clicca sulla mappa per impostare il punto'}
+          ? `Punto selezionato: ${(lat as number).toFixed(5)}, ${(lng as number).toFixed(5)}`
+          : 'Cerca un indirizzo nel campo qui sopra per impostare il punto'}
       </p>
     </div>
   );

@@ -14,6 +14,7 @@ export interface AddressSearchInputProps {
   onChange: (value: string) => void;
   onSelect: (result: DtoGeocodeResultDTO) => void;
   placeholder?: string;
+  required?: boolean;
 }
 
 // Campo Indirizzo con autocomplete geocoding (ORS/OpenStreetMap): digitando
@@ -26,7 +27,7 @@ export interface AddressSearchInputProps {
 // (verificato: "Via X 4 Comune" trova indirizzi omonimi in città sbagliate,
 // "Via X 4, Comune" trova l'indirizzo esatto) — da qui il placeholder col
 // formato corretto invece di provare a correggere la query lato nostro.
-export function AddressSearchInput({ value, onChange, onSelect, placeholder = 'Es. Via Roma 10, Milano...' }: AddressSearchInputProps) {
+export function AddressSearchInput({ value, onChange, onSelect, placeholder = 'Es. Via Roma 10, Milano...', required }: AddressSearchInputProps) {
   const [results, setResults] = useState<DtoGeocodeResultDTO[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
@@ -68,6 +69,7 @@ export function AddressSearchInput({ value, onChange, onSelect, placeholder = 'E
             onChange={(e) => handleChange(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder={placeholder}
+            required={required}
             data-testid="address-search-input"
           />
           {searching && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />}

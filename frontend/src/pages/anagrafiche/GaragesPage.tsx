@@ -43,7 +43,7 @@ export default function GaragesPage() {
   const openEdit = (item: DtoGarageResponse) => { setForm({ nome: item.nome || '', indirizzo: item.indirizzo || '', citta: item.citta || '', lat: item.lat ?? null, lng: item.lng ?? null, note: item.note || '', active: item.active }); setEditId(item.id || null); setDialogOpen(true); };
 
   const handleSave = async () => {
-    if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
+    if (form.lat == null || form.lng == null) { toast.error('Cerca e seleziona un indirizzo per impostare la posizione'); return; }
     try {
       const body: DtoGarageRequest = { ...form, lat: form.lat, lng: form.lng };
       if (editId) { await updateGarage({ id: editId, body }).unwrap(); toast.success('Garage aggiornato'); } else { await createGarage(body).unwrap(); toast.success('Garage creato'); }
@@ -74,7 +74,7 @@ export default function GaragesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} required /></div>
           <div className="md:col-span-2 space-y-1.5">
-            <Label>Indirizzo</Label>
+            <Label>Indirizzo *</Label>
             <AddressSearchInput
               value={form.indirizzo || ''}
               onChange={(v) => setForm(f => ({ ...f, indirizzo: v }))}
@@ -82,6 +82,7 @@ export default function GaragesPage() {
                 setForm(f => ({ ...f, indirizzo: r.indirizzo || f.indirizzo, citta: r.citta || f.citta, lat: r.lat ?? f.lat, lng: r.lng ?? f.lng }));
                 setFlySignal(s => s + 1);
               }}
+              required
             />
           </div>
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} readOnly className="bg-muted/50" /></div>
@@ -89,7 +90,6 @@ export default function GaragesPage() {
             <Label>Posizione *</Label>
             <MapPicker
               lat={form.lat} lng={form.lng}
-              onChange={(lat, lng) => setForm({ ...form, lat, lng })}
               flyToSignal={flySignal}
             />
           </div>

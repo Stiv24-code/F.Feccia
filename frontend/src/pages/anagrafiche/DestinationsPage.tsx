@@ -42,7 +42,7 @@ export default function DestinationsPage() {
   const openEdit = (item: DtoDestinationResponse) => { setForm({ nome: item.nome || '', indirizzo: item.indirizzo || '', citta: item.citta || '', cap: item.cap || '', provincia: item.provincia || '', nazione: item.nazione || 'Italia', lat: item.lat ?? null, lng: item.lng ?? null, vincoli_scarico: item.vincoli_scarico || '', note: item.note || '', active: item.active }); setEditId(item.id || null); setDialogOpen(true); };
 
   const handleSave = async () => {
-    if (form.lat == null || form.lng == null) { toast.error('Seleziona un punto sulla mappa'); return; }
+    if (form.lat == null || form.lng == null) { toast.error('Cerca e seleziona un indirizzo per impostare la posizione'); return; }
     try {
       const body: DtoDestinationRequest = { ...form, lat: form.lat, lng: form.lng };
       if (editId) { await updateDestination({ id: editId, body }).unwrap(); toast.success('Destinazione aggiornata'); }
@@ -90,7 +90,7 @@ export default function DestinationsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="md:col-span-2 space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} required /></div>
           <div className="md:col-span-2 space-y-1.5">
-            <Label>Indirizzo</Label>
+            <Label>Indirizzo *</Label>
             <AddressSearchInput
               value={form.indirizzo || ''}
               onChange={(v) => setForm(f => ({ ...f, indirizzo: v }))}
@@ -98,18 +98,19 @@ export default function DestinationsPage() {
                 setForm(f => ({ ...f, indirizzo: r.indirizzo || f.indirizzo, citta: r.citta || f.citta, cap: r.cap || f.cap, provincia: r.provincia || f.provincia, nazione: r.nazione || f.nazione, lat: r.lat ?? f.lat, lng: r.lng ?? f.lng }));
                 setFlySignal(s => s + 1);
               }}
+              required
             />
           </div>
           {/* Sola lettura: valorizzati dalla ricerca su Indirizzo (geocoding ORS), non editabili a mano — coerenza garantita con l'indirizzo scelto. */}
           <div className="space-y-1.5"><Label>Città</Label><Input value={form.citta} readOnly className="bg-muted/50" /></div>
-          <div className="space-y-1.5"><Label>CAP</Label><Input value={form.cap} readOnly className="bg-muted/50" /></div>
+          {/* CAP editabile: il geocoding ORS non sempre restituisce il postalcode (dati OSM incompleti per alcune vie/comuni) — a differenza di città/provincia/nazione va quindi correggibile a mano. */}
+          <div className="space-y-1.5"><Label>CAP</Label><Input value={form.cap} onChange={e => setForm({ ...form, cap: e.target.value })} /></div>
           <div className="space-y-1.5"><Label>Provincia</Label><Input value={form.provincia} readOnly className="bg-muted/50" /></div>
           <div className="space-y-1.5"><Label>Nazione</Label><Input value={form.nazione} readOnly className="bg-muted/50" /></div>
           <div className="md:col-span-2 space-y-1.5">
             <Label>Posizione *</Label>
             <MapPicker
               lat={form.lat} lng={form.lng}
-              onChange={(lat, lng) => setForm({ ...form, lat, lng })}
               flyToSignal={flySignal}
             />
           </div>
