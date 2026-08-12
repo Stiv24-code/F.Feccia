@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<style>html,body,#map{margin:0;height:100%;width:100%}#map{background:#eef0f4}.lbl{font:600 10px Inter,system-ui,sans-serif;color:#1c2534;background:#fff;border:1px solid #d4dae4;border-radius:5px;padding:1px 6px;white-space:nowrap;box-shadow:0 1px 2px rgba(28,37,52,.15)}.no-bg{background:transparent;border:none;box-shadow:none;padding:0}.no-bg:before{display:none}@keyframes tpulse{0%{box-shadow:0 0 0 0 rgba(42,111,219,.45)}70%{box-shadow:0 0 0 12px rgba(42,111,219,0)}100%{box-shadow:0 0 0 0 rgba(42,111,219,0)}}.poi-ic{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);box-sizing:border-box}.truck-ic{width:26px;height:26px;border-radius:99px;background:#2a6fdb;border:2.5px solid #fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.35);animation:tpulse 1.8s ease-out infinite}</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var CITIES = {
+  'Deposito Milano Rho': [45.5306, 9.0400],
+  'Wormer (NL)': [52.4925, 4.7867],
+  'Induno Olona (VA)': [45.8542, 8.8394],
+  'Juelsminde (DK)': [55.7089, 10.0156],
+  'Perugia': [43.1107, 12.3908],
+  'Alba (CN)': [44.7009, 8.0353],
+  'Moretta (CN)': [44.7645, 7.5369],
+  'Carasco (GE)': [44.3478, 9.3444],
+  'Conselice (RA)': [44.5122, 11.8285],
+  'Zola Predosa (BO)': [44.4899, 11.2183],
+  'Vercelli': [45.3206, 8.4185],
+  'Gallarate (VA)': [45.6600, 8.7938],
+  'Villers-Écalles (FR)': [49.5423, 0.9260],
+  'Lummen (BE)': [50.9868, 5.1930],
+  'Grosseto': [42.7603, 11.1136],
+  'Montalcino (SI)': [43.0570, 11.4890],
+  'Monteriggioni (SI)': [43.3893, 11.2231],
+  'Sovicille (SI)': [43.2790, 11.2280],
+  'San Gimignano (SI)': [43.4677, 11.0431],
+  'Siena': [43.3188, 11.3308],
+  'Arezzo': [43.4633, 11.8797],
+  'Pienza (SI)': [43.0768, 11.6789],
+  'Milano': [45.4642, 9.1900],
+  'Bologna': [44.4949, 11.3426],
+  'Torino': [45.0703, 7.6869],
+  'Verona': [45.4384, 10.9916],
+  'München (DE)': [48.1351, 11.5820],
+  'Lyon (FR)': [45.7640, 4.8357],
+  'Paris (FR)': [48.8566, 2.3522],
+  'Zürich (CH)': [47.3769, 8.5417],
+  'Wien (AT)': [48.2082, 16.3738],
+  'Rotterdam (NL)': [51.9244, 4.4777],
+  'Garage Milano Rho': [45.5306, 9.0400],
+  'Garage Milano Opera': [45.3776, 9.2123],
+  'Garage Lainate': [45.5680, 9.0270],
+  'CleanTank Piacenza': [45.0526, 9.6930],
+  'LavaCisterne Modena': [44.6471, 10.9252],
+  'TankWash Verona': [45.4290, 11.0300],
+  'EcoWash Bologna': [44.4949, 11.3426],
+  'PuliCist Parma': [44.8015, 10.3279],
+  'IdroTank Brescia': [45.5416, 10.2118],
+  'CisternClean Torino': [45.0703, 7.6869]
+};
+var q = new URLSearchParams(location.search && location.search.length > 1 ? location.search.slice(1) : location.hash.slice(1));
+var map = L.map('map', { scrollWheelZoom: false, zoomControl: true, attributionControl: true });
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+function roadRoute(pts, onFail) {
+  var coords = pts.map(function(p) { return p[1] + ',' + p[0]; }).join(';');
+  return fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson')
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (!j.routes || !j.routes[0]) throw 0;
+      return j.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+    });
+}
+
+var PAL = ['#2a6fdb', '#7c3aed', '#0d9488', '#d97706', '#be185d'];
+var fleetQ = q.get('fleet');
+if (fleetQ !== null) {
+  var trucks = fleetQ.split('|').filter(Boolean).map(function(s) { return s.split('~'); });
+  var allPts = [];
+  trucks.forEach(function(t) { var a = CITIES[t[0]], b = CITIES[t[1]]; if (a) allPts.push(a); if (b) allPts.push(b); });
+  if (allPts.length) map.fitBounds(L.latLngBounds(allPts).pad(0.25)); else map.setView([44.6, 10.2], 6);
+  trucks.forEach(function(t, i) {
+    var A = CITIES[t[0]], B = CITIES[t[1]]; if (!A || !B) return;
+    var col = t[5] || PAL[i % PAL.length];
+    var rawPct = +t[2];
+    var isLive = !(rawPct < 0);
+    var pct = Math.max(0, Math.min(100, isLive ? (rawPct || 0) : 0));
+    var vid = t[3] || '', autista = t[4] || '';
+    var dash = isLive ? null : '6 8';
+    function clickSel(e) { L.DomEvent.stopPropagation(e); parent.postMessage({ tmsTrip: vid }, '*'); }
+    var line = L.polyline([A, B], { color: col, weight: 3, opacity: .3, dashArray: '5 7' }).addTo(map).on('click', clickSel);
+    var mA = L.circleMarker(A, { radius: 6, color: col, weight: 2.5, fillColor: col, fillOpacity: 1 }).addTo(map).on('click', clickSel);
+    var mB = L.circleMarker(B, { radius: 6, color: col, weight: 2.5, fillColor: '#fff', fillOpacity: 1 }).addTo(map).on('click', clickSel);
+    if (isLive) {
+      mA.bindTooltip('<span class="lbl">↑ ' + t[0] + '</span>', { direction: 'right', offset: [8, 0], className: 'no-bg', opacity: 1 });
+      mB.bindTooltip('<span class="lbl">↓ ' + t[1] + '</span>', { direction: 'right', offset: [8, 0], className: 'no-bg', opacity: 1 });
+    } else {
+      mA.bindTooltip('<span class="lbl">' + vid + ' · ↑ ' + t[0] + '</span>', { permanent: true, direction: 'top', offset: [0, -8], className: 'no-bg', opacity: 1 });
+      mB.bindTooltip('<span class="lbl">↓ ' + t[1] + '</span>', { direction: 'right', offset: [8, 0], className: 'no-bg', opacity: 1 });
+    }
+    function drop(coords) {
+      if (!isLive) return;
+      var idx = Math.round((coords.length - 1) * pct / 100);
+      var ic = L.divIcon({ className: '', html: '<div class="truck-ic" style="background:' + col + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v9H1z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="6" cy="18.2" r="1.7"/><circle cx="17.5" cy="18.2" r="1.7"/></svg></div>', iconSize: [26, 26], iconAnchor: [13, 13] });
+      L.marker(coords[idx], { icon: ic, zIndexOffset: 900 }).addTo(map)
+        .bindTooltip('<span class="lbl">' + vid + ' · ' + autista + ' · ' + Math.round(pct) + '%</span>', { permanent: true, direction: 'bottom', offset: [0, 14], className: 'no-bg', opacity: 1 })
+        .on('click', clickSel);
+    }
+    roadRoute([A, B]).then(function(coords) {
+      map.removeLayer(line);
+      L.polyline(coords, { color: col, weight: isLive ? 3 : 2.5, opacity: isLive ? 1 : .85, dashArray: dash }).addTo(map).on('click', clickSel);
+      drop(coords);
+    }).catch(function() { line.setStyle({ opacity: .7, dashArray: dash }); drop([A, B]); });
+  });
+  var depQ = q.get('dep');
+  if (depQ) depQ.split('|').filter(Boolean).forEach(function(d) {
+    var p = d.split('~'), ll = CITIES[p[0]]; if (!ll) return;
+    var ic = L.divIcon({ className: '', html: '<div style="position:relative"><div style="width:22px;height:22px;border-radius:6px;background:#1c2534;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:grid;place-items:center;color:#fff;font:700 11px Inter,system-ui,sans-serif">⌂</div><div style="position:absolute;top:-6px;right:-7px;min-width:15px;height:15px;border-radius:99px;background:#2a6fdb;color:#fff;font:700 9px Inter,system-ui,sans-serif;display:grid;place-items:center;padding:0 3px;border:1.5px solid #fff;box-sizing:border-box">' + (p[1] || '') + '</div></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+    L.marker(ll, { icon: ic, zIndexOffset: 800 }).addTo(map)
+      .bindTooltip('<span class="lbl">' + p[0] + ' · ' + p[1] + ' mezzi disponibili</span>', { direction: 'top', offset: [0, -12], className: 'no-bg', opacity: 1 })
+      .on('click', function(e) { L.DomEvent.stopPropagation(e); parent.postMessage({ tmsDep: p[0] }, '*'); });
+  });
+}
+if (q.get('poi')) {
+  var wrenchSvg = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+  var boxSvg = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>';
+  var dropSvg = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7S6 10 6 14a6 6 0 0 0 12 0c0-4-6-11.3-6-11.3z"/></svg>';
+  var POI_STYLE = { cs: ['#5b6b80', boxSvg, 'Carico/Scarico'], off: ['#b45309', wrenchSvg, 'Officina'], lav: ['#0d9488', dropSvg, 'Lavaggio'] };
+  var POIS = [];
+  [['Interporto Parma', [44.8300, 10.3100]], ['Magazzino Firenze Osmannoro', [43.8180, 11.2000]], ['Cantina Perugia Ovest', [43.1120, 12.3400]], ['Hub Genova Voltri', [44.4280, 8.7520]], ['Deposito Padova Interporto', [45.3850, 11.9400]], ['Cella Trento Sud', [46.0400, 11.1300]], ['Magazzino Ancona Baraccola', [43.5560, 13.5100]], ['Hub Brescia Est', [45.5200, 10.3000]]].forEach(function(p) { POIS.push(['cs', p[0], p[1]]); });
+  POIS.push(['off', 'Officina Milano Sud', [45.4010, 9.1750]]);
+  POIS.push(['off', 'Officina Bologna Interporto', [44.5520, 11.3850]]);
+  POIS.push(['off', 'Officina Firenze Nord', [43.8320, 11.2020]]);
+  POIS.push(['off', 'Officina Torino Stura', [45.1130, 7.7180]]);
+  ['CleanTank Piacenza', 'LavaCisterne Modena', 'TankWash Verona'].forEach(function(n) { POIS.push(['lav', n, CITIES[n]]); });
+  [['Hub Stuttgart (DE)', [48.7250, 9.1150]], ['Entrepôt Marseille (FR)', [43.3450, 5.3600]], ['Lager Innsbruck (AT)', [47.2600, 11.3500]], ['Dépôt Genève (CH)', [46.1900, 6.1100]], ['Lager Frankfurt (DE)', [50.0500, 8.6000]], ['Magazijn Antwerpen (BE)', [51.2600, 4.4200]]].forEach(function(p) { POIS.push(['cs', p[0], p[1]]); });
+  POIS.push(['off', 'Werkstatt München Süd', [48.0680, 11.5540]]);
+  POIS.push(['off', 'Atelier Lyon Corbas', [45.6660, 4.9020]]);
+  POIS.push(['off', 'Garage Rotterdam Botlek', [51.8850, 4.2900]]);
+  POIS.push(['off', 'Werkstatt Wien Simmering', [48.1660, 16.4430]]);
+  POIS.push(['lav', 'TankClean München', [48.1900, 11.6600]]);
+  POIS.push(['lav', 'LavagePro Lyon', [45.7200, 4.9400]]);
+  POIS.push(['lav', 'CleanTank Rotterdam', [51.9100, 4.3800]]);
+  POIS.push(['lav', 'TankWash Basel (CH)', [47.5340, 7.6100]]);
+  POIS.forEach(function(p) {
+    var s = POI_STYLE[p[0]], ll = p[2]; if (!ll) return;
+    L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="poi-ic" style="background:' + s[0] + '">' + s[1] + '</div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 400 }).addTo(map)
+      .bindTooltip('<span class="lbl">' + p[1] + ' · ' + s[2] + '</span>', { direction: 'top', offset: [0, -10], className: 'no-bg', opacity: 1 });
+  });
+}
+var stopsQ = q.get('stops');
+if (fleetQ !== null) {
+  // fleet handled above
+} else if (stopsQ !== null) {
+  var names = stopsQ.split('|').filter(Boolean);
+  var pts = names.map(function(n) { return CITIES[n]; }).filter(Boolean);
+  if (pts.length === 0) {
+    map.setView([44.6, 10.2], 6);
+  } else {
+    var draft = L.polyline(pts, { color: '#2a6fdb', weight: 3.5, opacity: .35, dashArray: '5 7' }).addTo(map);
+    names.forEach(function(n, i) {
+      var ll = CITIES[n]; if (!ll) return;
+      L.circleMarker(ll, { radius: 9, color: '#2a6fdb', weight: 2.5, fillColor: i === 0 ? '#2a6fdb' : '#fff', fillOpacity: 1 }).addTo(map)
+        .bindTooltip('<span class="lbl">' + (i + 1) + ' · ' + n + '</span>', { permanent: true, direction: 'right', offset: [10, 0], className: 'no-bg', opacity: 1 });
+    });
+    map.fitBounds(L.latLngBounds(pts).pad(0.2));
+    if (pts.length > 1) {
+      roadRoute(pts).then(function(coords) {
+        map.removeLayer(draft);
+        var road = L.polyline(coords, { color: '#2a6fdb', weight: 3.5 }).addTo(map);
+        map.fitBounds(road.getBounds().pad(0.1));
+      }).catch(function() { draft.setStyle({ opacity: 1, dashArray: null }); });
+    }
+  }
+} else {
+  var carico = q.get('c') || 'Siena', scarico = q.get('s') || 'Milano';
+  var A = CITIES[carico] || CITIES['Siena'], B = CITIES[scarico] || CITIES['Milano'];
+  var gQ = q.get('g'), wQ = q.get('w');
+  var G = gQ && CITIES[gQ] ? CITIES[gQ] : null, W = wQ && CITIES[wQ] ? CITIES[wQ] : null;
+  var routeLine = L.polyline([A, B], { color: '#2a6fdb', weight: 3.5, opacity: .35, dashArray: '5 7' }).addTo(map);
+  function dot(ll, fill, stroke) { return L.circleMarker(ll, { radius: 7, color: stroke, weight: 2.5, fillColor: fill, fillOpacity: 1 }).addTo(map); }
+  dot(A, '#2a6fdb', '#2a6fdb').bindTooltip('<span class="lbl">↑ ' + carico + '</span>', { permanent: true, direction: 'right', offset: [9, 0], className: 'no-bg', opacity: 1 });
+  dot(B, '#fff', '#2a6fdb').bindTooltip('<span class="lbl">↓ ' + scarico + '</span>', { permanent: true, direction: 'right', offset: [9, 0], className: 'no-bg', opacity: 1 });
+  var fitPts = [A, B]; if (G) fitPts.push(G); if (W) fitPts.push(W);
+  map.fitBounds(L.latLngBounds(fitPts).pad(0.22));
+  if (G) {
+    L.circleMarker(G, { radius: 7, color: '#38445a', weight: 2.5, fillColor: '#1c2534', fillOpacity: 1 }).addTo(map)
+      .bindTooltip('<span class="lbl">⌂ ' + gQ + '</span>', { permanent: true, direction: 'left', offset: [-9, 0], className: 'no-bg', opacity: 1 });
+    var gLine = L.polyline([G, A], { color: '#5b6b80', weight: 3.5, opacity: .8, dashArray: '5 7' }).addTo(map);
+    roadRoute([G, A]).then(function(coords) {
+      map.removeLayer(gLine);
+      L.polyline(coords, { color: '#5b6b80', weight: 3.5, opacity: .85 }).addTo(map);
+    }).catch(function() { gLine.setStyle({ opacity: .85, dashArray: null }); });
+  }
+  if (W) {
+    L.circleMarker(W, { radius: 7, color: '#0d9488', weight: 3, fillColor: '#fff', fillOpacity: 1 }).addTo(map)
+      .bindTooltip('<span class="lbl">⟳ ' + wQ + '</span>', { permanent: true, direction: 'right', offset: [9, 0], className: 'no-bg', opacity: 1 });
+    var wLine = L.polyline([B, W], { color: '#0d9488', weight: 3, opacity: .6, dashArray: '6 6' }).addTo(map);
+    roadRoute([B, W]).then(function(coords) {
+      map.removeLayer(wLine);
+      L.polyline(coords, { color: '#0d9488', weight: 3, dashArray: '7 7' }).addTo(map);
+    }).catch(function() {});
+  }
+  var truckPct = q.get('truck') ? Math.max(0, Math.min(100, +q.get('truck'))) : null;
+  function truckIcon() { return L.divIcon({ className: '', html: '<div class="truck-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v9H1z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="6" cy="18.2" r="1.7"/><circle cx="17.5" cy="18.2" r="1.7"/></svg></div>', iconSize: [26, 26], iconAnchor: [13, 13] }); }
+  function placeTruck(coords) {
+    if (truckPct === null || coords.length < 2) return;
+    var idx = Math.round((coords.length - 1) * truckPct / 100);
+    L.marker(coords[idx], { icon: truckIcon(), zIndexOffset: 900 }).addTo(map)
+      .bindTooltip('<span class="lbl">In transito · ' + Math.round(truckPct) + '%</span>', { permanent: true, direction: 'bottom', offset: [0, 14], className: 'no-bg', opacity: 1 });
+  }
+  var altQ = q.get('alt');
+  if (altQ !== null && G && W) {
+    // modalità percorsi alternativi: OSRM alternatives sul tratto principale,
+    // il canvas riceve km/durate via postMessage e seleziona con ?alt=N
+    var selIdx = Math.max(0, +altQ || 0);
+    // corridoi alternativi reali (valichi/direttrici) per le tratte dove OSRM
+    // non propone alternative native — scelti in base al paese di scarico
+    var VIA = { '(DE)': [[47.00, 11.50], [46.51, 13.58]], '(AT)': [[46.51, 13.58], [47.00, 11.50]], '(CH)': [[46.56, 8.56], [46.25, 8.03]], '(FR)': [[45.12, 6.70], [43.79, 7.61]], '(NL)': [[46.56, 8.56], [47.00, 11.50]], '(BE)': [[46.56, 8.56], [47.00, 11.50]], '(DK)': [[47.00, 11.50], [46.56, 8.56]] };
+    var suffix = (scarico.match(/\(([A-Z]{2})\)$/) || [])[0];
+    var vias = VIA[suffix] || [];
+    function fetchRoutes(url) {
+      return fetch(url).then(function(r) { return r.json(); }).then(function(j) {
+        return (j.routes || []).map(function(rt) {
+          return { coords: rt.geometry.coordinates.map(function(c) { return [c[1], c[0]]; }), km: Math.round(rt.distance / 1000), min: Math.round(rt.duration / 60) };
+        });
+      }).catch(function() { return []; });
+    }
+    var base = 'https://router.project-osrm.org/route/v1/driving/';
+    var tail = '?overview=full&geometries=geojson';
+    var reqs = [fetchRoutes(base + A[1] + ',' + A[0] + ';' + B[1] + ',' + B[0] + tail + '&alternatives=true')];
+    vias.forEach(function(v) { reqs.push(fetchRoutes(base + A[1] + ',' + A[0] + ';' + v[1] + ',' + v[0] + ';' + B[1] + ',' + B[0] + tail)); });
+    Promise.all(reqs)
+      .then(function(lists) {
+        var all = [].concat.apply([], lists);
+        if (!all.length) throw 0;
+        all.sort(function(a, b) { return a.km - b.km; });
+        var routes = [];
+        all.forEach(function(rt) {
+          var dup = routes.some(function(x) { return Math.abs(x.km - rt.km) <= Math.max(8, x.km * 0.03); });
+          if (!dup && routes.length < 3) routes.push(rt);
+        });
+        if (selIdx >= routes.length) selIdx = 0;
+        map.removeLayer(routeLine);
+        var LETT = ['A', 'B', 'C'];
+        routes.forEach(function(rt, i) {
+          if (i === selIdx) return;
+          L.polyline(rt.coords, { color: '#8aa0bf', weight: 3, opacity: .8, dashArray: '7 9' }).addTo(map)
+            .on('click', function(e) { L.DomEvent.stopPropagation(e); parent.postMessage({ tmsRoute: i }, '*'); })
+            .bindTooltip('<span class="lbl">' + LETT[i] + ' · ' + rt.km + ' km</span>', { permanent: true, direction: 'center', className: 'no-bg', opacity: 1 });
+        });
+        var sel = L.polyline(routes[selIdx].coords, { color: '#2a6fdb', weight: 4 }).addTo(map)
+          .bindTooltip('<span class="lbl" style="border-color:#2a6fdb;color:#1d55ad">' + LETT[selIdx] + ' · ' + routes[selIdx].km + ' km</span>', { permanent: true, direction: 'center', className: 'no-bg', opacity: 1 });
+        parent.postMessage({ tmsAlts: routes.map(function(rt) { return { km: rt.km, min: rt.min }; }) }, '*');
+        placeTruck(routes[selIdx].coords);
+      })
+      .catch(function() { routeLine.setStyle({ opacity: 1, dashArray: null }); parent.postMessage({ tmsAlts: [] }, '*'); });
+  } else {
+  // se il canvas aspetta le alternative ma partenza/lavaggio non sono risolvibili,
+  // rispondi comunque: senza questo il "Calcolo dei percorsi…" resterebbe appeso
+  if (altQ !== null) parent.postMessage({ tmsAlts: [] }, '*');
+  roadRoute([A, B]).then(function(coords) {
+    map.removeLayer(routeLine);
+    var road = L.polyline(coords, { color: '#2a6fdb', weight: 3.5 }).addTo(map);
+    if (!G && !W) map.fitBounds(road.getBounds().pad(0.12));
+    placeTruck(coords);
+  }).catch(function() { routeLine.setStyle({ opacity: 1, dashArray: null }); placeTruck([A, B].concat()); placeTruck === null; });
+  }
+}
+</script>
+</body>
+</html>
