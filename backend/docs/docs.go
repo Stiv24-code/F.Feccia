@@ -6452,6 +6452,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/wash-stations/all": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Elenco completo, senza paginazione — per i picker (select) che devono poter ordinare/filtrare sull'intero set invece di una pagina.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WashStations"
+                ],
+                "summary": "List all active wash stations (no pagination)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.WashStationResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/wash-stations/{id}": {
             "put": {
                 "security": [

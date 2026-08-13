@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { assignOrder, getMotrici, getSemirimorchi, getDrivers, getCarriers, getMotriceAvailability, getSemirimorchioAvailability, getDriverAvailability, getOrderRouteAlternatives } from '@/lib/api';
-import { useGetGaragesQuery, useGetWashStationsQuery } from '@/store/api/appApi';
+import { useGetGaragesQuery, useGetAllWashStationsQuery } from '@/store/api/appApi';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { haversineKm } from '@/lib/geo';
 import type {
   DtoOrderResponse,
   DtoOrderAssignRequest,
@@ -74,9 +75,33 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
   // Selettore mezzi/garage: serve l'elenco completo, non una pagina — limit
   // alto per replicare il comportamento pre-paginazione (cap lato backend).
   const { data: garagesPage } = useGetGaragesQuery({ limit: 500 });
-  const { data: washStationsPage } = useGetWashStationsQuery({ limit: 500 });
+  const { data: washStationsData } = useGetAllWashStationsQuery();
   const garages = garagesPage?.items ?? [];
-  const washStations = washStationsPage?.items ?? [];
+  const washStations = useMemo(() => washStationsData ?? [], [washStationsData]);
+
+  // Punto di lavaggio: la stazione si usa dopo lo scarico, quindi ordiniamo
+  // per vicinanza (linea d'aria) alla destinazione di scarico e mostriamo
+  // solo le 5 più vicine — con centinaia di stazioni in anagrafica la lista
+  // completa era poco utile per questa scelta. Se lo scarico non ha
+  // coordinate non possiamo ordinare: mostriamo l'elenco intero com'era
+  // prima. La stazione già assegnata (edit di un ordine esistente) resta
+  // sempre visibile anche se non è tra le 5 più vicine.
+  const scarico = order.destinazione_scarico;
+  const washStationsWithDist = useMemo(
+    () => washStations.map(w => ({ ...w, distanceKm: haversineKm(scarico, w) })),
+    [washStations, scarico]
+  );
+  const nearestWashStations = useMemo(() => {
+    if (scarico?.lat == null || scarico?.lng == null) return washStationsWithDist;
+    const ranked = [...washStationsWithDist].sort((a, b) => {
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+    const nearest5 = ranked.slice(0, 5);
+    const selected = ranked.find(w => w.id === form.wash_station_id);
+    return selected && !nearest5.some(w => w.id === selected.id) ? [selected, ...nearest5] : nearest5;
+  }, [washStationsWithDist, scarico, form.wash_station_id]);
 
   useEffect(() => {
     if (!order) return;
@@ -181,13 +206,13 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
             <LocationCombobox
               value={form.wash_station_id}
               onChange={setWashStation}
-              options={washStations}
+              options={nearestWashStations}
               placeholder="Seleziona punto di lavaggio..."
               searchPlaceholder="Cerca stazione o tipo lavaggio..."
               icon={Droplets}
               iconBg="#e6f4f2"
               iconColor="#0d9488"
-              getSubtitle={(w) => w.tipo || w.indirizzo}
+              getSubtitle={(w) => [w.tipo || w.indirizzo, w.distanceKm != null ? `~${w.distanceKm} km da scarico` : null].filter(Boolean).join(' · ')}
             />
           </div>
         </div>

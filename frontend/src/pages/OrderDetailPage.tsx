@@ -13,23 +13,7 @@ import AssignOrderForm from '@/components/planner/AssignOrderForm';
 import { toast } from 'sonner';
 import { ArrowLeft, PlayCircle, CheckCircle, Ban, Warehouse, Droplets, RotateCcw } from 'lucide-react';
 import { logger } from '@/lib/logger';
-
-interface LatLng {
-  lat?: number | null;
-  lng?: number | null;
-}
-
-// Distanza in linea d'aria (non un percorso stradale reale — non abbiamo
-// ancora un routing calcolato lato backend per il singolo ordine).
-const haversineKm = (a?: LatLng | null, b?: LatLng | null) => {
-  if (a?.lat == null || a?.lng == null || b?.lat == null || b?.lng == null) return null;
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return Math.round(2 * R * Math.asin(Math.sqrt(s)));
-};
+import { haversineKm } from '@/lib/geo';
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();

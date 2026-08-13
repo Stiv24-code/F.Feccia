@@ -36,6 +36,23 @@ func (h *WashStationHandler) ListWashStations(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, dto.WashStationListResponse{Data: items, Total: total})
 }
 
+// ListAllWashStations godoc
+// @Summary List all active wash stations (no pagination)
+// @Description Elenco completo, senza paginazione — per i picker (select) che devono poter ordinare/filtrare sull'intero set invece di una pagina.
+// @Tags WashStations
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} dto.WashStationResponse
+// @Router /api/v1/wash-stations/all [get]
+func (h *WashStationHandler) ListAllWashStations(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+	items, err := h.Service.ListAll(ctx)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, items)
+}
+
 // CreateWashStation godoc
 // @Summary Create wash station
 // @Tags WashStations

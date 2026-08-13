@@ -235,6 +235,13 @@ export const appApi = createApi({
       queryFn: (args: { includeInactive?: boolean } & PagedListArgs = {}) => toPagedQueryResult(apiClient.v1WashStationsList({ include_inactive: args.includeInactive || undefined, page: args.page, limit: args.limit })),
       providesTags: ['WashStation'],
     }),
+    // Elenco completo senza paginazione — per i picker (select "punto di
+    // lavaggio") che devono ordinare/filtrare sull'intero set, non su una
+    // pagina troncata a un limite arbitrario.
+    getAllWashStations: builder.query<DtoWashStationResponse[], void>({
+      queryFn: () => toQueryResult(apiClient.v1WashStationsAllList()),
+      providesTags: ['WashStation'],
+    }),
     createWashStation: builder.mutation<DtoWashStationResponse, DtoWashStationRequest>({
       queryFn: (body) => toQueryResult(apiClient.v1WashStationsCreate(body)),
       invalidatesTags: ['WashStation'],
@@ -412,6 +419,7 @@ export const {
   useUpdateGarageMutation,
   useDeleteGarageMutation,
   useGetWashStationsQuery,
+  useGetAllWashStationsQuery,
   useCreateWashStationMutation,
   useUpdateWashStationMutation,
   useDeleteWashStationMutation,

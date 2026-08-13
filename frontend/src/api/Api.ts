@@ -3048,6 +3048,23 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
+   * @description Elenco completo, senza paginazione — per i picker (select) che devono poter ordinare/filtrare sull'intero set invece di una pagina.
+   *
+   * @tags WashStations
+   * @name V1WashStationsAllList
+   * @summary List all active wash stations (no pagination)
+   * @request GET:/api/v1/wash-stations/all
+   * @secure
+   */
+  v1WashStationsAllList = (params: RequestParams = {}) =>
+    this.http.request<DtoWashStationResponse[], any>({
+      path: `/api/v1/wash-stations/all`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
    * No description
    *
    * @tags WashStations

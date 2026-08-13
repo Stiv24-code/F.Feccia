@@ -6530,6 +6530,24 @@ paths:
       summary: Update wash station (full replace)
       tags:
       - WashStations
+  /api/v1/wash-stations/all:
+    get:
+      description: Elenco completo, senza paginazione — per i picker (select) che
+        devono poter ordinare/filtrare sull'intero set invece di una pagina.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.WashStationResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all active wash stations (no pagination)
+      tags:
+      - WashStations
 schemes:
 - https
 - http

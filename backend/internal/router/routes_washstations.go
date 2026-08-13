@@ -11,6 +11,7 @@ import (
 // registerWashStationRoutes wires up the punti-di-lavaggio CRUD.
 func registerWashStationRoutes(authAll fiber.Router, handlers *app_handlers.Handler) {
 	authAll.Get("/wash-stations", handlers.WashStations.ListWashStations)
+	authAll.Get("/wash-stations/all", handlers.WashStations.ListAllWashStations)
 
 	writeGroup := authAll.Group("/wash-stations", middleware.RequireRole(utils.RoleAdmin, utils.RoleOperatore))
 	writeGroup.Post("", handlers.WashStations.CreateWashStation)

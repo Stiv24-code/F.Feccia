@@ -687,6 +687,21 @@ func (mr *MockWashStationMockRecorder) List(ctx, includeInactive, page interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockWashStation)(nil).List), ctx, includeInactive, page)
 }
 
+// ListAll mocks base method.
+func (m *MockWashStation) ListAll(ctx context.Context) ([]dto.WashStationResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAll", ctx)
+	ret0, _ := ret[0].([]dto.WashStationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAll indicates an expected call of ListAll.
+func (mr *MockWashStationMockRecorder) ListAll(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MockWashStation)(nil).ListAll), ctx)
+}
+
 // Update mocks base method.
 func (m *MockWashStation) Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error) {
 	m.ctrl.T.Helper()

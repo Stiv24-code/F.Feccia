@@ -42,6 +42,23 @@ func (s *WashStationService) List(ctx context.Context, includeInactive bool, pag
 	return result, total, nil
 }
 
+// ListAll ritorna tutti i punti di lavaggio attivi senza paginazione — usata
+// dai picker (es. select "punto di lavaggio" nell'assegnazione trasporto)
+// che devono poter ordinare/filtrare per vicinanza sull'elenco intero invece
+// di un sottoinsieme troncato a un limite arbitrario.
+func (s *WashStationService) ListAll(ctx context.Context) ([]dto.WashStationResponse, error) {
+	var stations []models.WashStation
+	if err := s.db.WithContext(ctx).Where("active = ?", true).Order("nome ASC").Find(&stations).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.WashStationResponse, len(stations))
+	for i, w := range stations {
+		result[i] = toResponse(w)
+	}
+	return result, nil
+}
+
 func (s *WashStationService) Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error) {
 	w := models.WashStation{
 		ID:        uuid.New(),

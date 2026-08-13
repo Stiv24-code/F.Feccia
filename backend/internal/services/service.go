@@ -92,6 +92,7 @@ type Garage interface {
 
 type WashStation interface {
 	List(ctx context.Context, includeInactive bool, page utils.PageParams) ([]dto.WashStationResponse, int64, error)
+	ListAll(ctx context.Context) ([]dto.WashStationResponse, error)
 	Create(ctx context.Context, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req dto.WashStationRequest) (*dto.WashStationResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
