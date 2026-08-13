@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LocationCombobox from '@/components/shared/LocationCombobox';
 import SearchableSelect from '@/components/shared/SearchableSelect';
 import OrderRouteMap from '@/components/shared/OrderRouteMap';
+import RouteItinerary, { type ItineraryStop } from '@/components/shared/RouteItinerary';
 import { toast } from 'sonner';
 import { Loader2, Warehouse, Droplets, Check, Route } from 'lucide-react';
 import { logger } from '@/lib/logger';
@@ -163,6 +164,26 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
   const assignDriverList = useMemo(() => availDrivers.length > 0 ? availDrivers : drivers, [availDrivers, drivers]);
   const disponibilitaLabel = useMemo(() => formatDataBreve(order?.data_ritiro), [order]);
 
+  // Tappe dell'itinerario: se un percorso è stato calcolato usiamo le sue
+  // waypoint (coordinate reali, coerenti col percorso selezionato — stessa
+  // fonte già usata per OrderRouteMap nelle card sopra); altrimenti fallback
+  // ai soli carico/scarico dell'ordine (nessun garage/lavaggio scelto).
+  const itineraryStops = useMemo<ItineraryStop[]>(() => {
+    const alt = routeAlternatives[selectedRouteIdx];
+    const carico = alt ? waypointByTipo(alt.waypoints, 'destinazione', 0) : order.destinazione_carico;
+    const scarico = alt ? waypointByTipo(alt.waypoints, 'destinazione', 1) : order.destinazione_scarico;
+    const garageWp = alt ? waypointByTipo(alt.waypoints, 'garage') : undefined;
+    const washWp = alt ? waypointByTipo(alt.waypoints, 'wash_station') : undefined;
+    const ritiroChip = order.ora_ritiro_da || order.ora_ritiro_a ? `${order.ora_ritiro_da ?? ''}${order.ora_ritiro_a ? `–${order.ora_ritiro_a}` : ''}` : undefined;
+    const consegnaChip = order.ora_consegna_da || order.ora_consegna_a ? `${order.ora_consegna_da ?? ''}${order.ora_consegna_a ? `–${order.ora_consegna_a}` : ''}` : undefined;
+    const stops: ItineraryStop[] = [];
+    if (garageWp) stops.push({ variant: 'garage', nome: garageWp.nome, lat: garageWp.lat, lng: garageWp.lng });
+    stops.push({ variant: 'carico', nome: carico?.nome, sub: order.data_ritiro, chip: ritiroChip, lat: carico?.lat, lng: carico?.lng });
+    stops.push({ variant: 'scarico', nome: scarico?.nome, sub: order.data_consegna, chip: consegnaChip, lat: scarico?.lat, lng: scarico?.lng });
+    if (washWp) stops.push({ variant: 'wash', nome: washWp.nome, lat: washWp.lat, lng: washWp.lng });
+    return stops;
+  }, [routeAlternatives, selectedRouteIdx, order]);
+
   // "Assegna Viaggio" richiede: chi effettua il trasporto (autista se mezzo
   // proprio, vettore se terzo) E un percorso calcolato/selezionato — nessuno
   // dei due è opzionale per assegnare davvero l'ordine.
@@ -271,6 +292,8 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
           </>
         )}
       </div>
+
+      <RouteItinerary stops={itineraryStops} />
 
       <div>
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-3">Chi effettua il trasporto?</p>

@@ -101,7 +101,7 @@ export default function OrderRouteMap({ carico, scarico, garage, washStation, ro
           </Marker>
         )}
         {hasCoords(washStation) && (
-          <Marker position={[washStation.lat, washStation.lng]} icon={pointIcon('#38BDF8')}>
+          <Marker position={[washStation.lat, washStation.lng]} icon={pointIcon('#0d9488')}>
             <Tooltip direction="top" offset={[0, -10]} permanent>Lavaggio · {washStation.nome}</Tooltip>
           </Marker>
         )}
