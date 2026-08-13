@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Tooltip, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useAppSelector } from '@/store/hooks';
 
 // Fix icone Leaflet di default (stesso workaround di MapPage.js — necessario
 // qui perché MapPage è una rotta lazy separata e potrebbe non essere mai
@@ -55,6 +56,11 @@ export interface OrderRouteMapProps {
 // da OrderRoute/RouteAlternative — vera geometria stradale truck-aware via
 // ORS) si disegna quello al suo posto, una polilinea piena invece che tratteggiata.
 export default function OrderRouteMap({ carico, scarico, garage, washStation, routePoints: roadPoints, height = 220 }: OrderRouteMapProps) {
+  // Tema letto dallo store centralizzato (store/themeSlice.ts) invece che
+  // dalla classe "dark" sul DOM — le tile OSM chiare stonano pesantemente
+  // su sfondo scuro: in dark mode si passa a CartoDB Dark Matter (stesso
+  // schema tile, nessuna API key).
+  const isDark = useAppSelector((s) => s.theme.theme === 'dark');
   const routePoints: [number, number][] = [];
   if (hasCoords(carico)) routePoints.push([carico.lat, carico.lng]);
   if (hasCoords(scarico)) routePoints.push([scarico.lat, scarico.lng]);
@@ -74,11 +80,19 @@ export default function OrderRouteMap({ carico, scarico, garage, washStation, ro
   return (
     <div className="rounded-lg overflow-hidden border" style={{ height }} data-testid="order-route-map">
       <MapContainer center={allPoints[0]} zoom={6} style={{ height: '100%', width: '100%' }} zoomControl={true} scrollWheelZoom={true}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-        />
+        {isDark ? (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            maxZoom={19}
+          />
+        ) : (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+        )}
         <FitPoints points={allPoints} />
         {roadPoints && roadPoints.length > 1 ? (
           <Polyline positions={roadPoints} pathOptions={{ color: '#2a6fdb', weight: 4, opacity: 0.9 }} />

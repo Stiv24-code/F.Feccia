@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
-import { getInitialTheme, applyTheme } from '@/lib/theme';
+import { applyTheme } from '@/lib/theme';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { toggleTheme as toggleThemeAction } from '@/store/themeSlice';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -239,7 +241,8 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
 
 const AppShell = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [theme, setTheme] = useState(getInitialTheme);
+  const theme = useAppSelector((s) => s.theme.theme);
+  const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(() => {
     try { return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'; } catch { return false; }
   });
@@ -247,7 +250,7 @@ const AppShell = ({ children }) => {
 
   useEffect(() => { applyTheme(theme); }, [theme]);
 
-  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => dispatch(toggleThemeAction());
   const toggleCollapsed = () => setCollapsed(c => {
     const next = !c;
     try { window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0'); } catch { /* ignore */ }

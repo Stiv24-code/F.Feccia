@@ -89,7 +89,7 @@ export default function RouteItinerary({ stops }: RouteItineraryProps) {
                 isLast && 'items-end text-right',
                 !isFirst && !isLast && 'items-center text-center',
               )}>
-                {(stop.variant === 'garage' || stop.variant === 'wash') && <StopMarker variant={stop.variant} />}
+                <StopMarker variant={stop.variant} />
                 <span
                   className={cn('text-[10px] font-bold', stop.variant === 'carico' || stop.variant === 'scarico' ? 'text-primary' : 'text-muted-foreground')}
                   style={stop.variant === 'wash' ? { color: WASH_COLOR } : undefined}
