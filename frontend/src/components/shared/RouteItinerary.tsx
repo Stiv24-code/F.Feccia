@@ -68,57 +68,69 @@ export interface RouteItineraryProps {
 // ogni tratta è una distanza in linea d'aria fra le coordinate delle due
 // tappe, non un percorso stradale — coerente con l'uso di haversineKm già
 // fatto altrove in questa pagina/form quando non c'è un routing calcolato.
+//
+// La riga di pallini+linea è un flex "stretto" senza gap, tutta allo stesso
+// livello — i pallini/cerchi toccano direttamente il segmento successivo,
+// così la linea resta visivamente continua (un solo tratto, colorato a
+// tratti). L'etichetta di ogni tappa (nome/data/orario) NON sta dentro
+// quella riga: è posizionata in absolute sotto al pallino, così il suo
+// contenuto (anche multi-riga) non spinge la riga della linea e non la
+// interrompe.
 export default function RouteItinerary({ stops }: RouteItineraryProps) {
   if (stops.length < 2) return null;
 
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-4">Itinerario stimato</p>
-      <div className="flex items-start gap-2">
-        {stops.map((stop, i) => {
-          const isFirst = i === 0;
-          const isLast = i === stops.length - 1;
-          const next = stops[i + 1];
-          const km = next && hasCoords(stop) && hasCoords(next) ? haversineKm(stop, next) : null;
-          const seg = next ? segmentFor(stop.variant, next.variant) : null;
-          return (
-            <Fragment key={`${stop.variant}-${i}`}>
-              <div className={cn(
-                'flex flex-col gap-1 w-32 shrink-0',
-                isFirst && 'items-start text-left',
-                isLast && 'items-end text-right',
-                !isFirst && !isLast && 'items-center text-center',
-              )}>
-                <StopMarker variant={stop.variant} />
-                <span
-                  className={cn('text-[10px] font-bold', stop.variant === 'carico' || stop.variant === 'scarico' ? 'text-primary' : 'text-muted-foreground')}
-                  style={stop.variant === 'wash' ? { color: WASH_COLOR } : undefined}
-                >
-                  {LABELS[stop.variant]}
-                </span>
-                <span className="text-sm font-bold leading-tight">{stop.nome}</span>
-                {stop.sub && <span className="text-xs text-muted-foreground">{stop.sub}</span>}
-                {stop.chip && (
-                  <span className="inline-flex w-fit items-center text-[11px] font-medium border rounded px-1.5 py-0.5 bg-muted/50">
-                    {stop.chip}
-                  </span>
-                )}
-              </div>
-              {seg && (
-                <div className={cn('relative mt-[7px] h-0.5', seg.flexClass, seg.lineClassName)} style={seg.lineStyle}>
-                  {km != null && (
+      <div className="relative pb-24">
+        <div className="flex items-center">
+          {stops.map((stop, i) => {
+            const isFirst = i === 0;
+            const isLast = i === stops.length - 1;
+            const next = stops[i + 1];
+            const km = next && hasCoords(stop) && hasCoords(next) ? haversineKm(stop, next) : null;
+            const seg = next ? segmentFor(stop.variant, next.variant) : null;
+            return (
+              <Fragment key={`${stop.variant}-${i}`}>
+                <div className="relative flex-none">
+                  <StopMarker variant={stop.variant} />
+                  <div className={cn(
+                    'absolute top-5 flex w-36 flex-col gap-1',
+                    isFirst && 'left-0 items-start text-left',
+                    isLast && 'right-0 items-end text-right',
+                    !isFirst && !isLast && 'left-1/2 -translate-x-1/2 items-center text-center',
+                  )}>
                     <span
-                      className={cn('absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold', seg.labelClassName)}
-                      style={seg.labelStyle}
+                      className={cn('text-[10px] font-bold', stop.variant === 'carico' || stop.variant === 'scarico' ? 'text-primary' : 'text-muted-foreground')}
+                      style={stop.variant === 'wash' ? { color: WASH_COLOR } : undefined}
                     >
-                      {km} km
+                      {LABELS[stop.variant]}
                     </span>
-                  )}
+                    <span className="text-sm font-bold leading-tight">{stop.nome}</span>
+                    {stop.sub && <span className="text-xs text-muted-foreground">{stop.sub}</span>}
+                    {stop.chip && (
+                      <span className="inline-flex w-fit items-center text-[11px] font-medium border rounded px-1.5 py-0.5 bg-muted/50">
+                        {stop.chip}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </Fragment>
-          );
-        })}
+                {seg && (
+                  <div className={cn('relative h-0.5', seg.flexClass, seg.lineClassName)} style={seg.lineStyle}>
+                    {km != null && (
+                      <span
+                        className={cn('absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold', seg.labelClassName)}
+                        style={seg.labelStyle}
+                      >
+                        {km} km
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
