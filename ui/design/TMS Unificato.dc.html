@@ -69,6 +69,7 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
   <!-- sidebar -->
   <div style="{{ mSideWrapStyle }}">
     <div style="{{ mSideHeadStyle }}"><span style="width:26px;height:26px;border-radius:6px;background:#2a6fdb;display:grid;place-items:center;font:800 12px Inter,sans-serif;color:#fff;flex:none">FF</span><span style="{{ mSideBrandStyle }}">TMS <span style="font-weight:400;color:#8ea0bd">· F.lli Feccia</span></span><span onClick="{{ mToggleSide }}" title="{{ mSideToggleTitle }}" style="{{ mSideToggleStyle }}" style-hover="color:#fff;background:rgba(255,255,255,.1)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18"></path></svg></span></div>
+    <span onClick="{{ mGoDash }}" title="Dashboard" style="{{ mSideDash }}" style-hover="color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg><span style="{{ mSideLabelStyle }}">Dashboard</span></span>
     <span onClick="{{ mGoPlanner }}" title="Ordini" style="{{ mSideOrdini }}" style-hover="color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span style="{{ mSideLabelStyle }}">Ordini</span><span title="Ci sono ordini che richiedono attenzione" style="{{ mSideDotStyle }}"></span><span style="{{ mOrdChevStyle }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></span></span>
     <div style="{{ mSideSubWrapOrd }}">
       <div style="margin:3px 0 5px 19px;border-left:1px solid rgba(255,255,255,.13);display:flex;flex-direction:column">
@@ -95,6 +96,148 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
     <div style="{{ mSideUserStyle2 }}"><span style="width:28px;height:28px;border-radius:99px;background:#3a4a63;display:grid;place-items:center;font:600 11px Inter,sans-serif;color:#fff;flex:none">GP</span><div style="{{ mSideUserTextStyle }}"><div style="font:600 11.5px Inter,sans-serif;color:#fff">G. Pieroni</div><div style="font:400 10px Inter,sans-serif;color:#8ea0bd">mer 8 lug 2026</div></div><span onClick="{{ mDoLogout }}" title="Esci" style="{{ mLogoutStyle }}" style-hover="background:rgba(255,255,255,.08);color:#fff"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span></div>
   </div>
   <div style="display:flex;flex-direction:column;flex:1;min-width:0">
+
+  <!-- ── DASHBOARD (#33) ── -->
+  <sc-if value="{{ mIsDash }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <div style="display:flex;align-items:center;gap:12px;padding:0 20px;min-height:57px;background:#fff;border-bottom:1px solid #e3e6ec;flex:none">
+      <span style="font:700 15px Inter,sans-serif;color:#1c2534">Dashboard</span>
+      <span style="font:400 12px Inter,sans-serif;color:#7c879a">{{ mDashDate }}</span>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <span onClick="{{ mQuickPdf }}" style="display:inline-flex;align-items:center;gap:6px;font:600 12px Inter,sans-serif;color:#38445a;background:#fff;border:1px solid #d4dae4;border-radius:7px;padding:8px 13px;cursor:pointer" style-hover="background:#f4f6f9;border-color:#9aa4b4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M12 18v-6M9 15l3 3 3-3"></path></svg>Carica PDF</span>
+        <span onClick="{{ mGoTrips }}" style="display:inline-flex;align-items:center;gap:6px;font:600 12px Inter,sans-serif;color:#38445a;background:#fff;border:1px solid #d4dae4;border-radius:7px;padding:8px 13px;cursor:pointer" style-hover="background:#f4f6f9;border-color:#9aa4b4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Apri planner</span>
+        <span onClick="{{ mGoOrder }}" style="font:600 12px Inter,sans-serif;color:#fff;background:#2a6fdb;border-radius:7px;padding:8px 14px;cursor:pointer" style-hover="background:#1d55ad">+ Nuovo ordine</span>
+      </div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:16px 20px 22px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+        <div onClick="{{ mGoOrdiniReg }}" style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:14px 16px;cursor:pointer" style-hover="box-shadow:0 3px 10px rgba(28,37,52,.13)">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:29px;height:29px;border-radius:8px;background:#eef3fb;display:grid;place-items:center;color:#2a6fdb;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></span><span style="font:600 11.5px Inter,sans-serif;color:#7c879a">Ordini · luglio</span></div>
+          <div style="font:700 23px Inter,sans-serif;color:#1c2534;margin-top:9px">{{ mDashKpiOrd }}</div>
+          <div style="font:500 10.5px Inter,sans-serif;color:#1f7a4d;margin-top:2px">+12% su giugno</div>
+        </div>
+        <div onClick="{{ mGoTrips }}" style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:14px 16px;cursor:pointer" style-hover="box-shadow:0 3px 10px rgba(28,37,52,.13)">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:29px;height:29px;border-radius:8px;background:#e4eefc;display:grid;place-items:center;color:#1d55ad;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></span><span style="font:600 11.5px Inter,sans-serif;color:#7c879a">Viaggi in corso</span></div>
+          <div style="font:700 23px Inter,sans-serif;color:#1c2534;margin-top:9px">{{ mDashKpiTrip }}</div>
+          <div style="font:500 10.5px Inter,sans-serif;color:#5b6b80;margin-top:2px">{{ mDashKpiTripSub }}</div>
+        </div>
+        <div onClick="{{ mDashGoPlanQueue }}" style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:14px 16px;cursor:pointer" style-hover="box-shadow:0 3px 10px rgba(28,37,52,.13)">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:29px;height:29px;border-radius:8px;background:#fdf1c7;display:grid;place-items:center;color:#8a6508;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span><span style="font:600 11.5px Inter,sans-serif;color:#7c879a">Da pianificare</span></div>
+          <div style="font:700 23px Inter,sans-serif;color:#1c2534;margin-top:9px">{{ mDashKpiPlan }}</div>
+          <div style="{{ mDashKpiPlanSubStyle }}">{{ mDashKpiPlanSub }}</div>
+        </div>
+        <div onClick="{{ mGoOrdiniReg }}" style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:14px 16px;cursor:pointer" style-hover="box-shadow:0 3px 10px rgba(28,37,52,.13)">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:29px;height:29px;border-radius:8px;background:#e9f5ee;display:grid;place-items:center;color:#1f7a4d;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M4 14h9"></path><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"></path></svg></span><span style="font:600 11.5px Inter,sans-serif;color:#7c879a">Fatturato · luglio</span></div>
+          <div style="font:700 23px Inter,sans-serif;color:#1c2534;margin-top:9px">{{ mDashKpiFatt }}</div>
+          <div style="font:500 10.5px Inter,sans-serif;color:#1f7a4d;margin-top:2px">+8% su giugno</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:14px">
+        <div style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:15px 18px 12px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font:700 13px Inter,sans-serif;color:#1c2534">Andamento ordini</span>
+            <span style="font:400 11px Inter,sans-serif;color:#9aa4b4">ultime 8 settimane</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font:400 10.5px Inter,sans-serif;color:#7c879a"><span style="width:8px;height:8px;border-radius:3px;background:#2a6fdb;flex:none"></span>settimana corrente</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:12px;margin-top:16px;padding:0 4px">
+            <sc-for list="{{ mDashBars }}" as="b" hint-placeholder-count="8">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+                <span style="font:600 10.5px Inter,sans-serif;color:#38445a">{{ b.n }}</span>
+                <span style="{{ b.barStyle }}"></span>
+                <span style="font:400 9.5px Inter,sans-serif;color:#9aa4b4;white-space:nowrap">{{ b.w }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:15px 18px">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font:700 13px Inter,sans-serif;color:#1c2534">Flotta</span>
+            <span style="margin-left:auto;font:400 11px Inter,sans-serif;color:#9aa4b4">{{ mDashFleetSub }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;margin-top:6px">
+            <sc-for list="{{ mDashFleet }}" as="fl" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid #f2f4f7">
+                <span style="{{ fl.dotStyle }}"></span>
+                <span style="font:500 12px Inter,sans-serif;color:#38445a">{{ fl.label }}</span>
+                <span style="margin-left:auto;font:700 13px Inter,sans-serif;color:#1c2534">{{ fl.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span onClick="{{ mGoMap }}" style="display:inline-flex;align-items:center;gap:5px;font:600 11.5px Inter,sans-serif;color:#2a6fdb;margin-top:10px;cursor:pointer" style-hover="color:#1d55ad">Vedi sulla mappa →</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:15px 18px 10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font:700 13px Inter,sans-serif;color:#1c2534">Da approvare</span>
+            <span style="font:700 10px Inter,sans-serif;color:#c0392b;background:#fdecec;border:1px solid #f0c5c0;border-radius:99px;padding:2px 8px">{{ mNInbox }}</span>
+            <span onClick="{{ mGoOrdiniInbox }}" style="margin-left:auto;font:600 11.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer" style-hover="color:#1d55ad">In arrivo →</span>
+          </div>
+          <sc-if value="{{ mDashInboxEmpty }}" hint-placeholder-val="{{ false }}"><div style="font:400 12px Inter,sans-serif;color:#9aa4b4;padding:16px 0 10px">Nessun ordine in attesa di approvazione ✓</div></sc-if>
+          <div style="display:flex;flex-direction:column;margin-top:4px">
+            <sc-for list="{{ mDashInboxTop }}" as="di" hint-placeholder-count="4">
+              <div onClick="{{ di.open }}" style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f2f4f7;cursor:pointer" style-hover="background:#f6f9fe">
+                <span style="{{ di.canaleStyle }}">{{ di.canale }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:600 12px Inter,sans-serif;color:#1c2534;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ di.cliente }}</div>
+                  <div style="font:400 10.5px Inter,sans-serif;color:#7c879a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ di.tratta }}</div>
+                </div>
+                <div style="text-align:right;flex:none">
+                  <div style="font:500 11px Inter,sans-serif;color:#38445a;white-space:nowrap">carico {{ di.win }}</div>
+                  <div style="font:400 10px Inter,sans-serif;color:#9aa4b4;white-space:nowrap">{{ di.ricevuto }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:15px 18px 10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font:700 13px Inter,sans-serif;color:#1c2534">Da pianificare</span>
+            <span style="font:700 10px Inter,sans-serif;color:#8a6508;background:#fdf1c7;border:1px solid #eedda0;border-radius:99px;padding:2px 8px">{{ mDashKpiPlan }}</span>
+            <span onClick="{{ mDashGoPlanQueue }}" style="margin-left:auto;font:600 11.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer" style-hover="color:#1d55ad">Registro →</span>
+          </div>
+          <sc-if value="{{ mDashPlanEmpty }}" hint-placeholder-val="{{ false }}"><div style="font:400 12px Inter,sans-serif;color:#9aa4b4;padding:16px 0 10px">Niente da pianificare ✓</div></sc-if>
+          <div style="display:flex;flex-direction:column;margin-top:4px">
+            <sc-for list="{{ mDashPlanTop }}" as="dp" hint-placeholder-count="4">
+              <div onClick="{{ dp.open }}" style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f2f4f7;cursor:pointer" style-hover="background:#f6f9fe">
+                <span style="font:700 11px Inter,sans-serif;color:#2a6fdb;flex:none;width:66px">{{ dp.id }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font:600 12px Inter,sans-serif;color:#1c2534;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dp.cliente }}</div>
+                  <div style="font:400 10.5px Inter,sans-serif;color:#7c879a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dp.tratta }}</div>
+                </div>
+                <div style="text-align:right;flex:none">
+                  <div style="{{ dp.ritiroStyle }}">ritiro {{ dp.ritiro }}</div>
+                  <div style="{{ dp.urgStyle }}">{{ dp.urgLabel }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:11px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:15px 18px 8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font:700 13px Inter,sans-serif;color:#1c2534">Viaggi in corso e pianificati</span>
+          <span onClick="{{ mGoTrips }}" style="margin-left:auto;font:600 11.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer" style-hover="color:#1d55ad">Apri planner →</span>
+        </div>
+        <div style="display:flex;flex-direction:column;margin-top:6px">
+          <sc-for list="{{ mDashTrips }}" as="dt" hint-placeholder-count="6">
+            <div onClick="{{ dt.open }}" style="display:grid;grid-template-columns:76px 104px 1fr 1.3fr 130px 92px;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f2f4f7;cursor:pointer" style-hover="background:#f6f9fe">
+              <span style="font:700 12px Inter,sans-serif;color:#1c2534;display:inline-flex;align-items:center;gap:6px"><span style="{{ dt.liveDotStyle }}"></span>{{ dt.id }}</span>
+              <span style="{{ dt.badgeStyle }}">{{ dt.stato }}</span>
+              <div style="min-width:0">
+                <div style="font:600 11.5px Inter,sans-serif;color:#1c2534;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dt.autista }}</div>
+                <div style="font:400 10px Inter,sans-serif;color:#9aa4b4;white-space:nowrap">{{ dt.mezzo }}</div>
+              </div>
+              <span style="font:500 11.5px Inter,sans-serif;color:#38445a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ dt.tratta }}</span>
+              <span style="font:400 11px Inter,sans-serif;color:#7c879a;white-space:nowrap">{{ dt.eta }}</span>
+              <div style="{{ dt.progWrapStyle }}"><div style="{{ dt.progStyle }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
 
   <!-- ── ORDINI ── -->
   <sc-if value="{{ mIsPlanner }}" hint-placeholder-val="{{ true }}">
@@ -2261,7 +2404,7 @@ class Component extends DCLogic {
   }
   init() {
     return {
-      screen: 'planner', detailId: 'ORD-2612', q: '', tripsQ: '', filter: null, tipoFilter: null, tripsFilter: null, ordersView: 'list', tripsView: 'cal', dateFrom: '2026-07-01', dateTo: '2026-07-31', dateOpen: false, tripsDateFrom: '2026-07-01', tripsDateTo: '2026-07-31', tripsDateOpen: false,
+      screen: 'dashboard', detailId: 'ORD-2612', q: '', tripsQ: '', filter: null, tipoFilter: null, tripsFilter: null, ordersView: 'list', tripsView: 'cal', dateFrom: '2026-07-01', dateTo: '2026-07-31', dateOpen: false, tripsDateFrom: '2026-07-01', tripsDateTo: '2026-07-31', tripsDateOpen: false,
       deleteAsk: null, deleted: [], newOrders: [],
       form: { cliente: '', ref: '', carico: '', consegna: '', ritiro: '', ritiroDa: '', ritiroA: '', consData: '', consDa: '', consA: '', prodotti: '', peso: '', cat: '', serv: '', note: '', tariffa: 'listino', manuale: '', touched: {} },
       draftOrders: [], mode: 'own', truck: null, garage: null, wash: null, washQ: '', drvQ: '', garQ: '', dd: null, vettore: '',
@@ -3177,7 +3320,73 @@ class Component extends DCLogic {
         style: 'font:600 11px Inter,sans-serif;color:' + tx + ';background:' + bg + ';border:1px solid ' + bd + ';border-radius:99px;padding:5px 12px;cursor:pointer;white-space:nowrap' + (dim ? ';opacity:.45' : '') + (active ? ';box-shadow:0 0 0 2px rgba(28,37,52,.3)' : '') };
     });
 
+    // ── dashboard (#33) — cruscotto operativo, dati derivati da ordini/inbox/viaggi ──
+    const dashLive = tripsList.filter(t => t.stato === 'In corso');
+    const dashPlanned = tripsList.filter(t => t.stato === 'Pianificato');
+    const dashTarghe = Object.keys(drivers);
+    const dashMezziLive = {}; dashLive.forEach(t => { if (drivers[t.mezzo]) dashMezziLive[t.mezzo] = 1; });
+    const dashMezziPlan = {}; dashPlanned.forEach(t => { if (drivers[t.mezzo] && !dashMezziLive[t.mezzo]) dashMezziPlan[t.mezzo] = 1; });
+    const dashNLive = Object.keys(dashMezziLive).length, dashNPlan = Object.keys(dashMezziPlan).length;
+    const dashTerzi = dashLive.filter(t => !drivers[t.mezzo]).length;
+    const dashDrvBusy = {}; dashLive.forEach(t => { dashDrvBusy[t.autista] = 1; });
+    const dashDrvFree = Object.values(drivers).filter(d => !dashDrvBusy[d[0]] && /disponibile(?! da)/.test(d[2])).length;
+    const dashFatt = orders.reduce((s, o) => s + ((routes[o.id] || {}).tariffa || 0), 0);
+    // "oggi" nel mock è l'8 luglio: prima → ritiro in ritardo, 8–10/07 → entro 48 h
+    const dashLateN = queue.filter(o => ritiroIso(o) < '2026-07-08').length;
+    const dashSoonN = queue.filter(o => { const r = ritiroIso(o); return r >= '2026-07-08' && r <= '2026-07-10'; }).length;
+    const dashFleet = [
+      ['#1d55ad', 'Mezzi in viaggio', dashNLive, true],
+      ['#8a6508', 'Su viaggi pianificati', dashNPlan, false],
+      ['#1f7a4d', 'Disponibili in garage', dashTarghe.length - dashNLive - dashNPlan, false],
+      ['#7c3aed', 'Vettori terzi attivi', dashTerzi, false],
+      ['#0d9488', 'Autisti disponibili', dashDrvFree, false]
+    ].map(([c, label, n, blink]) => ({ label, n: String(n),
+      dotStyle: 'width:8px;height:8px;border-radius:99px;background:' + c + ';flex:none' + (blink ? ';animation:tmsblink 1.3s ease-in-out infinite' : '') }));
+    const dashBars = [['18 mag', 22], ['25 mag', 27], ['1 giu', 24], ['8 giu', 29], ['15 giu', 26], ['22 giu', 31], ['29 giu', 28], ['6 lug', 34]]
+      .map(([w, n], i, arr) => ({ w, n: String(n),
+        barStyle: 'display:block;width:100%;max-width:36px;border-radius:7px 7px 3px 3px;height:' + Math.round(n / 34 * 96) + 'px;background:' + (i === arr.length - 1 ? '#2a6fdb' : '#cdddf5') }));
+    const dashInboxTop = inboxAlive.filter(o => !inboxApproved[o.id] && o.stato === 'new')
+      .sort((a, b) => (a.data || '9999').localeCompare(b.data || '9999')).slice(0, 4)
+      .map(o => ({ canale: o.canale, cliente: o.cliente, win: o.win, ricevuto: o.ricevuto,
+        tratta: o.carico + ' → ' + o.scarico, canaleStyle: canaleChip(o.canale),
+        open: () => set({ inboxSel: o.id, screen: 'inboxDetail' }) }));
+    const dashPlanTop = queue.slice().sort((a, b) => ritiroIso(a).localeCompare(ritiroIso(b))).slice(0, 4)
+      .map(o => { const r = ritiroIso(o); const late = r < '2026-07-08'; const soon = !late && r <= '2026-07-10';
+        return { id: o.id, cliente: o.cliente, tratta: o.tratta, ritiro: o.ritiro,
+          ritiroStyle: 'font:600 11px Inter,sans-serif;white-space:nowrap;color:' + (late ? '#c0392b' : soon ? '#8a6508' : '#38445a'),
+          urgLabel: late ? 'ritiro in ritardo' : 'entro 48 h',
+          urgStyle: late ? 'font:500 9.5px Inter,sans-serif;color:#c0392b;white-space:nowrap'
+            : soon ? 'font:500 9.5px Inter,sans-serif;color:#8a6508;white-space:nowrap' : 'display:none',
+          open: () => set({ detailId: o.id, screen: 'orderDetail', detailFrom: 'planner' }) }; });
+    const dashTrips = tripsList.filter(t => t.stato !== 'Chiuso')
+      .sort((a, b) => ((a.stato === 'In corso') ? 0 : 1) - ((b.stato === 'In corso') ? 0 : 1) || a.id.localeCompare(b.id))
+      .slice(0, 6)
+      .map(t => ({ id: t.id, stato: t.stato, badgeStyle: t.badgeStyle, autista: t.autista, mezzo: t.mezzo, tratta: t.tratta, eta: t.eta, open: t.open,
+        liveDotStyle: t.stato === 'In corso' ? 'width:7px;height:7px;border-radius:99px;background:#1d55ad;animation:tmsblink 1.3s ease-in-out infinite;flex:none' : 'display:none',
+        progWrapStyle: t.stato === 'In corso' ? 'width:80px;height:4px;background:#e6eaf0;border-radius:99px;overflow:hidden;flex:none;justify-self:end' : 'display:none',
+        progStyle: 'height:100%;border-radius:99px;background:#2e8b57;width:' + (t.progVal || 0) + '%' }));
+
     return {
+      // ── dashboard (#33) ──
+      isDash: st.screen === 'dashboard',
+      sideDash: st.screen === 'dashboard' ? sideOn : sideOff,
+      goDash: go('dashboard'),
+      dashDate: 'mercoledì 8 luglio 2026',
+      quickPdf: () => set({ screen: 'planner', filter: 'inbox', pdfModal: true, pdfPicked: false, pdfClient: '', pdfProcessing: false }),
+      dashKpiOrd: String(orders.length),
+      dashKpiTrip: String(dashLive.length),
+      dashKpiTripSub: dashNLive + ' mezzi propri · ' + dashTerzi + (dashTerzi === 1 ? ' vettore terzo' : ' vettori terzi'),
+      dashKpiPlan: String(queue.length),
+      dashKpiPlanSub: dashLateN > 0 || dashSoonN > 0
+        ? (dashLateN ? dashLateN + ' in ritardo' + (dashSoonN ? ' · ' : '') : '') + (dashSoonN ? dashSoonN + ' entro 48 h' : '')
+        : 'nessun ritiro urgente',
+      dashKpiPlanSubStyle: 'font:500 10.5px Inter,sans-serif;margin-top:2px;color:' + (dashLateN > 0 ? '#c0392b' : dashSoonN > 0 ? '#8a6508' : '#1f7a4d'),
+      dashKpiFatt: '€ ' + fmt(dashFatt),
+      dashFleet, dashBars, dashInboxTop, dashPlanTop, dashTrips,
+      dashFleetSub: dashTarghe.length + ' motrici · ' + dashTarghe.length + ' autisti',
+      dashInboxEmpty: dashInboxTop.length === 0,
+      dashPlanEmpty: dashPlanTop.length === 0,
+      dashGoPlanQueue: () => set({ screen: 'planner', filter: 'plan' }),
       // anagrafiche
       sideAnag: anagScreen ? sideOnSoft : sideOff,
       goAnag: () => set({ screen: 'anag' }),
@@ -3552,7 +3761,7 @@ class Component extends DCLogic {
       setLoginEmail: e => set({ loginEmail: e.target.value }),
       loginPw: st.loginPw != null ? st.loginPw : 'feccia2026',
       setLoginPw: e => set({ loginPw: e.target.value }),
-      doLogin: () => set({ screen: 'planner', filter: null }),
+      doLogin: () => set({ screen: 'dashboard', filter: null }),
       doLogout: () => set({ screen: 'login', dd: null, tripMenu: null, pdfModal: false }),
       logoutStyle: sideC ? 'display:none' : 'margin-left:auto;display:inline-flex;padding:5px;border-radius:6px;color:#8ea0bd;cursor:pointer;flex:none',
       sideOrdini: ordersSection ? sideOnSoft : sideOff,
