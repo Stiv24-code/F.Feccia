@@ -73,7 +73,7 @@ export default function RouteItinerary({ stops }: RouteItineraryProps) {
 
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-4">Itinerario</p>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-4">Itinerario stimato</p>
       <div className="flex items-start gap-2">
         {stops.map((stop, i) => {
           const isFirst = i === 0;
