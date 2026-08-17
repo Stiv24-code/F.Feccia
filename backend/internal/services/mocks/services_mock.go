@@ -2524,6 +2524,21 @@ func (mr *MockInboundOrderMockRecorder) List(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockInboundOrder)(nil).List), ctx)
 }
 
+// ListForClient mocks base method.
+func (m *MockInboundOrder) ListForClient(ctx context.Context, clienteID uuid.UUID) ([]dto.InboundOrderResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListForClient", ctx, clienteID)
+	ret0, _ := ret[0].([]dto.InboundOrderResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListForClient indicates an expected call of ListForClient.
+func (mr *MockInboundOrderMockRecorder) ListForClient(ctx, clienteID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListForClient", reflect.TypeOf((*MockInboundOrder)(nil).ListForClient), ctx, clienteID)
+}
+
 // Modify mocks base method.
 func (m *MockInboundOrder) Modify(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error) {
 	m.ctrl.T.Helper()

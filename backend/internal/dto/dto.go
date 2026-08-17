@@ -1167,9 +1167,13 @@ type InboundOrderRequest struct {
 	Notes         string     `json:"notes"`
 	Portal        bool       `json:"portal"`
 	Status        string     `json:"status" validate:"omitempty,oneof=pending accepted modify"`
-	Source        string     `json:"source" validate:"omitempty,oneof=seed mail pdf"`
+	Source        string     `json:"source" validate:"omitempty,oneof=seed mail pdf portal"`
 	TemplateID    *uuid.UUID `json:"template_id"`
 	ReceivedAt    *time.Time `json:"received_at"`
+	// ClienteID is set internally by CreateMyInboundOrder (client portal) —
+	// never trusted from external request bodies for the staff-facing
+	// /inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.
+	ClienteID *uuid.UUID `json:"cliente_id,omitempty"`
 }
 
 type InboundOrderResponse struct {
@@ -1192,6 +1196,7 @@ type InboundOrderResponse struct {
 	ReceivedAt    time.Time  `json:"received_at"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
+	ClienteID     *uuid.UUID `json:"cliente_id,omitempty"`
 }
 
 // InboundOrderActionResponse is returned by the accept action: the updated

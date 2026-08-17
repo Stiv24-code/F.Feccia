@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import {
   useGetMyOrdersQuery,
-  useCreateMyOrderMutation,
+  useGetMyInboundOrdersQuery,
+  useCreateMyInboundOrderMutation,
   useDeleteMyOrderMutation,
   useGetDestinationsQuery,
   useCreateMyDestinationMutation,
@@ -11,13 +12,14 @@ import type { DtoOrderRequest, DtoOrderResponse, DtoDestinationRequest } from '@
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { STATUS_BADGE } from '@/components/inbound/constants';
 import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { MapPicker } from '@/components/shared/MapPicker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import SearchableSelect from '@/components/shared/SearchableSelect';
-import { TableRow, TableCell } from '@/components/ui/table';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { formatEuro } from '@/lib/format';
@@ -25,7 +27,7 @@ import { toast } from 'sonner';
 import { Eye, Trash2, Plus } from 'lucide-react';
 
 // cliente_id è richiesto dal tipo generato ma il backend lo sovrascrive
-// sempre con l'id del cliente autenticato (vedi OrderHandler.CreateMyOrder)
+// sempre con l'id del cliente autenticato (vedi InboundOrderHandler.CreateMyInboundOrder)
 // — qui resta vuoto, nessun campo lo mostra in form.
 const emptyForm: DtoOrderRequest = {
   cliente_id: '',
@@ -50,13 +52,18 @@ export default function ClientOrdersPage() {
   const [destFlySignal, setDestFlySignal] = useState(0);
 
   const { data = [], isLoading: loading } = useGetMyOrdersQuery();
+  // Richieste inviate ma non ancora confermate da un operatore — non sono
+  // ancora un Order (vedi createMyInboundOrder più sotto), quindi vivono in
+  // una lista separata con badge "Da confermare"/"In modifica" (stessa
+  // palette usata dallo staff su /ordini-in-ingresso, STATUS_BADGE).
+  const { data: pendingRequests = [] } = useGetMyInboundOrdersQuery();
   // Pool condiviso con lo staff: la mutation createMyDestination invalida il
   // tag 'Destination', questa query lo fornisce — nessun refetch manuale
   // necessario dopo aver creato una nuova destinazione qui sotto. Serve
   // l'elenco completo, non una pagina.
   const { data: destinationsPage } = useGetDestinationsQuery({ limit: 500 });
   const destinations = destinationsPage?.items ?? [];
-  const [createMyOrder, { isLoading: saving }] = useCreateMyOrderMutation();
+  const [createMyInboundOrder, { isLoading: saving }] = useCreateMyInboundOrderMutation();
   const [deleteMyOrder] = useDeleteMyOrderMutation();
   const [createMyDestination, { isLoading: destSaving }] = useCreateMyDestinationMutation();
 
@@ -81,8 +88,8 @@ export default function ClientOrdersPage() {
 
   const handleSave = async () => {
     try {
-      await createMyOrder(form).unwrap();
-      toast.success('Ordine creato');
+      await createMyInboundOrder(form).unwrap();
+      toast.success('Richiesta inviata: sarà confermata da un operatore');
       setDialogOpen(false);
     } catch (e) { toast.error(getMutationErrorMessage(e) || 'Errore'); }
   };
@@ -109,6 +116,41 @@ export default function ClientOrdersPage() {
 
   return (
     <div data-testid="client-orders-page">
+      {pendingRequests.length > 0 && (
+        <div className="mb-4 rounded-lg border">
+          <div className="px-3 py-2 border-b">
+            <p className="text-sm font-medium">Richieste in attesa di conferma</p>
+            <p className="text-xs text-muted-foreground">Inviate ma non ancora confermate da un operatore.</p>
+          </div>
+          <Table data-testid="client-pending-inbound-orders-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rif./Prodotto</TableHead>
+                <TableHead>Carico</TableHead>
+                <TableHead>Scarico</TableHead>
+                <TableHead>Nolo</TableHead>
+                <TableHead>Stato</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingRequests.map((r) => {
+                const badge = STATUS_BADGE[r.status || 'pending'] || STATUS_BADGE.pending;
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="py-2">{r.ref || r.product || '—'}</TableCell>
+                    <TableCell className="py-2">{r.load_place || '—'}{r.load_date ? ` · ${r.load_date}` : ''}</TableCell>
+                    <TableCell className="py-2">{r.delivery_place || '—'}{r.delivery_date ? ` · ${r.delivery_date}` : ''}</TableCell>
+                    <TableCell className="py-2">{r.rate || '—'}</TableCell>
+                    <TableCell className="py-2">
+                      <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       <DataTable
         columns={columns}
         data={data}

@@ -50,6 +50,7 @@ export default function InboundOrderDetail({ order, onOpenChange, busy, onAction
                   )}
                   {order.source === 'mail' && <Badge variant="outline">da e-mail</Badge>}
                   {order.source === 'pdf' && <Badge variant="outline">da PDF</Badge>}
+                  {order.source === 'portal' && <Badge variant="outline">da portale clienti</Badge>}
                 </div>
                 <DialogDescription>{order.client}</DialogDescription>
               </DialogHeader>
@@ -92,7 +93,12 @@ export default function InboundOrderDetail({ order, onOpenChange, busy, onAction
                   <Field label="Mittente" value={order.sender_email} />
                   <Field
                     label="Origine"
-                    value={order.source === 'mail' ? 'e-mail' : order.source === 'pdf' ? 'import PDF' : order.source}
+                    value={
+                      order.source === 'mail' ? 'e-mail'
+                      : order.source === 'pdf' ? 'import PDF'
+                      : order.source === 'portal' ? 'portale clienti'
+                      : order.source
+                    }
                   />
                   <Field label="Ricevuto" value={fmtDateTime(order.received_at)} />
                 </div>

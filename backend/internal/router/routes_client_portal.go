@@ -31,8 +31,15 @@ func registerClientPortalRoutes(api fiber.Router, handlers *app_handlers.Handler
 
 	api.Get("/me/orders", jwtAuth, requireCliente, handlers.Orders.ListMyOrders)
 	api.Get("/me/orders/:id", jwtAuth, requireCliente, handlers.Orders.GetMyOrderByID)
-	api.Post("/me/orders", jwtAuth, requireCliente, handlers.Orders.CreateMyOrder)
 	api.Delete("/me/orders/:id", jwtAuth, requireCliente, handlers.Orders.DeleteMyOrder)
+
+	// Il vecchio POST /me/orders (creazione diretta di un Order, senza revisione)
+	// è stato sostituito da questa coppia: una richiesta del cliente entra
+	// come InboundOrder "da confermare" (stessa coda di revisione di
+	// mail/PDF, tag source=portal) — GET per farla vedere al cliente stesso
+	// finché è in attesa, POST per crearla.
+	api.Get("/me/inbound-orders", jwtAuth, requireCliente, handlers.InboundOrders.ListMyInboundOrders)
+	api.Post("/me/inbound-orders", jwtAuth, requireCliente, handlers.InboundOrders.CreateMyInboundOrder)
 
 	// Shared pool with staff (registerDestinationReadRoutes) — a client can
 	// add a new pickup/delivery address to pick from, but not edit/delete

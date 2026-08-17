@@ -1730,6 +1730,45 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
+   * @description Only source=portal drafts still pending or under revision — once staff accepts one it becomes a normal Order and drops off this list (see GET /me/orders instead).
+   *
+   * @tags Auth
+   * @name V1MeInboundOrdersList
+   * @summary List the logged-in client's own pending/under-revision requests (self-service portal)
+   * @request GET:/api/v1/me/inbound-orders
+   * @secure
+   */
+  v1MeInboundOrdersList = (params: RequestParams = {}) =>
+    this.http.request<DtoInboundOrderResponse[], Record<string, string>>({
+      path: `/api/v1/me/inbound-orders`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Creates a pending InboundOrder draft (source=portal) — visible to staff on /inbound-orders and to the client itself on GET /me/inbound-orders — instead of creating a live Order directly. An operator must accept it (same review step already applied to mail/PDF-sourced orders) before it becomes a plannable Order.
+   *
+   * @tags Auth
+   * @name V1MeInboundOrdersCreate
+   * @summary Submit a new transport request as the logged-in client (self-service portal)
+   * @request POST:/api/v1/me/inbound-orders
+   * @secure
+   */
+  v1MeInboundOrdersCreate = (
+    order: DtoOrderRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoInboundOrderResponse, Record<string, string>>({
+      path: `/api/v1/me/inbound-orders`,
+      method: "POST",
+      body: order,
+      secure: true,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
    * No description
    *
    * @tags Auth
@@ -1754,25 +1793,6 @@ export class Api<SecurityDataType = unknown> {
       method: "GET",
       query: query,
       secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * @description cliente_id in the body is ignored — the order is always created under the caller's own anagrafica.
-   *
-   * @tags Auth
-   * @name V1MeOrdersCreate
-   * @summary Create an order as the logged-in client
-   * @request POST:/api/v1/me/orders
-   * @secure
-   */
-  v1MeOrdersCreate = (order: DtoOrderRequest, params: RequestParams = {}) =>
-    this.http.request<DtoOrderResponse, Record<string, string>>({
-      path: `/api/v1/me/orders`,
-      method: "POST",
-      body: order,
-      secure: true,
-      type: ContentType.Json,
       format: "json",
       ...params,
     });

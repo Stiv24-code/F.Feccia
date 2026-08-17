@@ -89,6 +89,6 @@ func NewHandler(services *services.Service, auditLogger *audit.Logger, jwtCfg ut
 		Geocode:              geocode_handlers.NewGeocodeHandler(services.GeocodeGroup.Geocode),
 		PdfTemplates:         pdftemplates_handlers.NewPdfTemplateHandler(services.PdfTemplates.PdfTemplate),
 		PdfImport:            pdfimport_handlers.NewPdfImportHandler(services.PdfTemplates.PdfTemplate, services.PdfEngineGroup.PdfEngine),
-		InboundOrders:        inboundorders_handlers.NewInboundOrderHandler(services.InboundOrders.InboundOrder, services.MailScraperGroup.MailScraper, services.PdfEngineGroup.PdfEngine),
+		InboundOrders:        inboundorders_handlers.NewInboundOrderHandler(services.InboundOrders.InboundOrder, services.MailScraperGroup.MailScraper, services.PdfEngineGroup.PdfEngine, services.Customers.Customer, services.Destinations.Destination),
 	}
 }

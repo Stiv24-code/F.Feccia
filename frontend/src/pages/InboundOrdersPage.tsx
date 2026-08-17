@@ -33,6 +33,13 @@ function ChannelBadge({ source }: { source?: string }) {
       </Badge>
     );
   }
+  if (source === 'portal') {
+    return (
+      <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+        Portale clienti
+      </Badge>
+    );
+  }
   return <Badge variant="outline">Manuale</Badge>;
 }
 

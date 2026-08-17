@@ -371,43 +371,6 @@ func (h *OrderHandler) GetMyOrderByID(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, item)
 }
 
-// CreateMyOrder godoc
-// @Summary Create an order as the logged-in client
-// @Description cliente_id in the body is ignored — the order is always created under the caller's own anagrafica.
-// @Tags Auth
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param order body dto.OrderRequest true "Order data"
-// @Success 201 {object} dto.OrderResponse
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Router /api/v1/me/orders [post]
-func (h *OrderHandler) CreateMyOrder(c *fiber.Ctx) error {
-	customerID, err := utils.RequestCustomerID(c)
-	if err != nil {
-		return utils.ErrorResponse(c, 401, "Account cliente non valido")
-	}
-
-	var req dto.OrderRequest
-	if err := c.BodyParser(&req); err != nil {
-		return utils.ErrorResponse(c, 400, "Invalid request body")
-	}
-	// Always the caller's own customer, regardless of whatever (if anything)
-	// was sent in the body — a client must never be able to create an order
-	// under another customer's name.
-	req.ClienteID = customerID.String()
-	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
-		return utils.ValidationErrorResponse(c, validationErrors)
-	}
-
-	item, err := h.Service.Create(utils.RequestContext(c), req)
-	if err != nil {
-		return utils.HandleDatabaseError(c, err)
-	}
-	return utils.SuccessResponse(c, 201, item)
-}
-
 // DeleteMyOrder godoc
 // @Summary Delete one of the logged-in client's own orders (only PIANIFICABILE, hard delete)
 // @Tags Auth

@@ -926,6 +926,12 @@ definitions:
     properties:
       client:
         type: string
+      cliente_id:
+        description: |-
+          ClienteID is set internally by CreateMyInboundOrder (client portal) —
+          never trusted from external request bodies for the staff-facing
+          /inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.
+        type: string
       delivery_date:
         type: string
       delivery_place:
@@ -955,6 +961,7 @@ definitions:
         - seed
         - mail
         - pdf
+        - portal
         type: string
       status:
         enum:
@@ -970,6 +977,8 @@ definitions:
   dto.InboundOrderResponse:
     properties:
       client:
+        type: string
+      cliente_id:
         type: string
       created_at:
         type: string
@@ -4617,6 +4626,73 @@ paths:
       summary: Create destination as the logged-in client
       tags:
       - Auth
+  /api/v1/me/inbound-orders:
+    get:
+      description: Only source=portal drafts still pending or under revision — once
+        staff accepts one it becomes a normal Order and drops off this list (see GET
+        /me/orders instead).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.InboundOrderResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List the logged-in client's own pending/under-revision requests (self-service
+        portal)
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: Creates a pending InboundOrder draft (source=portal) — visible
+        to staff on /inbound-orders and to the client itself on GET /me/inbound-orders
+        — instead of creating a live Order directly. An operator must accept it (same
+        review step already applied to mail/PDF-sourced orders) before it becomes
+        a plannable Order.
+      parameters:
+      - description: Same shape as the internal order form (destinazione ids, tariffa,
+          date/orari, note)
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.InboundOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Submit a new transport request as the logged-in client (self-service
+        portal)
+      tags:
+      - Auth
   /api/v1/me/orders:
     get:
       parameters:
@@ -4650,42 +4726,6 @@ paths:
       security:
       - BearerAuth: []
       summary: List the logged-in client's own orders
-      tags:
-      - Auth
-    post:
-      consumes:
-      - application/json
-      description: cliente_id in the body is ignored — the order is always created
-        under the caller's own anagrafica.
-      parameters:
-      - description: Order data
-        in: body
-        name: order
-        required: true
-        schema:
-          $ref: '#/definitions/dto.OrderRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/dto.OrderResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create an order as the logged-in client
       tags:
       - Auth
   /api/v1/me/orders/{id}:

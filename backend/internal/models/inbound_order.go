@@ -20,9 +20,10 @@ const (
 
 // InboundOrder source values (where the draft came from).
 const (
-	InboundOrderSourceSeed = "seed"
-	InboundOrderSourceMail = "mail"
-	InboundOrderSourcePDF  = "pdf"
+	InboundOrderSourceSeed   = "seed"
+	InboundOrderSourceMail   = "mail"
+	InboundOrderSourcePDF    = "pdf"
+	InboundOrderSourcePortal = "portal"
 )
 
 // InboundOrder is a transport-order draft ingested from the mailbox scraper
@@ -54,6 +55,11 @@ type InboundOrder struct {
 	Source        string             `gorm:"type:varchar(20);not null;default:mail" json:"source"`
 	TemplateID    *uuid.UUID         `gorm:"type:uuid" json:"template_id,omitempty"`
 	ReceivedAt    time.Time          `json:"received_at"`
+	// ClienteID is set only for Source == InboundOrderSourcePortal — the
+	// authenticated customer that submitted the request via the self-service
+	// portal, used to scope "my pending requests" (GET /me/inbound-orders).
+	// Left nil for mail/pdf/seed drafts, which have no such account to tie to.
+	ClienteID *uuid.UUID `gorm:"type:uuid;index" json:"cliente_id,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

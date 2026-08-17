@@ -241,6 +241,7 @@ type PdfTemplate interface {
 
 type InboundOrder interface {
 	List(ctx context.Context) ([]dto.InboundOrderResponse, error)
+	ListForClient(ctx context.Context, clienteID uuid.UUID) ([]dto.InboundOrderResponse, error)
 	Create(ctx context.Context, req dto.InboundOrderRequest) (*dto.InboundOrderResponse, error)
 	Accept(ctx context.Context, id uuid.UUID) (*dto.InboundOrderActionResponse, error)
 	Modify(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error)

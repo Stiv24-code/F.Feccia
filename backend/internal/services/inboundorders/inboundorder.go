@@ -49,6 +49,26 @@ func (s *InboundOrderService) List(ctx context.Context) ([]dto.InboundOrderRespo
 	return out, nil
 }
 
+// ListForClient returns a customer's own open requests submitted via the
+// self-service portal (Source == portal) — pending or under revision, i.e.
+// "in attesa di conferma" from the client's point of view. Accepted requests
+// drop out of this list: once staff accepts one, the client tracks it as a
+// normal models.Order instead (GET /me/orders), not as a draft here.
+func (s *InboundOrderService) ListForClient(ctx context.Context, clienteID uuid.UUID) ([]dto.InboundOrderResponse, error) {
+	var items []models.InboundOrder
+	if err := s.db.WithContext(ctx).
+		Where("cliente_id = ? AND status IN (?)", clienteID, []models.InboundOrderStatus{models.InboundOrderStatusPending, models.InboundOrderStatusModify}).
+		Order("received_at DESC").
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	out := make([]dto.InboundOrderResponse, len(items))
+	for i, o := range items {
+		out[i] = toResponse(o)
+	}
+	return out, nil
+}
+
 // Create persists a confirmed draft. Duplicates by (ref, client) — the same
 // key as the inbound_orders_ref_client_key index — answer 409, so mailbox
 // re-reads and double submissions never create twin rows. The pre-check
@@ -90,6 +110,7 @@ func (s *InboundOrderService) Create(ctx context.Context, req dto.InboundOrderRe
 		Source:        models.InboundOrderSourcePDF,
 		TemplateID:    req.TemplateID,
 		ReceivedAt:    time.Now(),
+		ClienteID:     req.ClienteID,
 	}
 	if req.Status != "" {
 		o.Status = models.InboundOrderStatus(req.Status)
@@ -196,5 +217,6 @@ func toResponse(o models.InboundOrder) dto.InboundOrderResponse {
 		ReceivedAt:    o.ReceivedAt,
 		CreatedAt:     o.CreatedAt,
 		UpdatedAt:     o.UpdatedAt,
+		ClienteID:     o.ClienteID,
 	}
 }

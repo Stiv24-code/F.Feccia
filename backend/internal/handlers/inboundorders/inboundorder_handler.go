@@ -1,22 +1,28 @@
 package handlers
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 
 	"fratelli-feccia/internal/dto"
+	"fratelli-feccia/internal/models"
 	"fratelli-feccia/internal/services"
 	"fratelli-feccia/pkg/utils"
 )
 
 type InboundOrderHandler struct {
-	Service services.InboundOrder
-	Scraper services.MailScraper
-	Engine  services.PdfEngine
+	Service      services.InboundOrder
+	Scraper      services.MailScraper
+	Engine       services.PdfEngine
+	Customers    services.Customer
+	Destinations services.Destination
 }
 
-func NewInboundOrderHandler(service services.InboundOrder, scraper services.MailScraper, engine services.PdfEngine) *InboundOrderHandler {
-	return &InboundOrderHandler{Service: service, Scraper: scraper, Engine: engine}
+func NewInboundOrderHandler(service services.InboundOrder, scraper services.MailScraper, engine services.PdfEngine, customers services.Customer, destinations services.Destination) *InboundOrderHandler {
+	return &InboundOrderHandler{Service: service, Scraper: scraper, Engine: engine, Customers: customers, Destinations: destinations}
 }
 
 // ListInboundOrders godoc
@@ -141,6 +147,117 @@ func (h *InboundOrderHandler) GetInboundConfig(c *fiber.Ctx) error {
 	status.PdfReady = h.Engine.Ready()
 	status.VisionReady = h.Engine.VisionReady()
 	return utils.SuccessResponse(c, 200, status)
+}
+
+// CreateMyInboundOrder godoc
+// @Summary Submit a new transport request as the logged-in client (self-service portal)
+// @Description Creates a pending InboundOrder draft (source=portal) — visible to staff on /inbound-orders and to the client itself on GET /me/inbound-orders — instead of creating a live Order directly. An operator must accept it (same review step already applied to mail/PDF-sourced orders) before it becomes a plannable Order.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param order body dto.OrderRequest true "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note)"
+// @Success 201 {object} dto.InboundOrderResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/me/inbound-orders [post]
+func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+
+	var req dto.OrderRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+
+	customer, err := h.Customers.GetByID(ctx, customerID)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	var caricoName, scaricoName string
+	if id, perr := uuid.Parse(req.DestinazioneCaricoID); perr == nil {
+		if d, derr := h.Destinations.GetByID(ctx, id); derr == nil && d != nil {
+			caricoName = d.Nome
+		}
+	}
+	if id, perr := uuid.Parse(req.DestinazioneScaricoID); perr == nil {
+		if d, derr := h.Destinations.GetByID(ctx, id); derr == nil && d != nil {
+			scaricoName = d.Nome
+		}
+	}
+
+	// InboundOrderRequest requires ref-or-product non-empty (Create's own
+	// business rule) — rif_ordine_cliente is optional on the client form, so
+	// Product always carries a fallback description to guarantee that rule
+	// is met regardless of what the client filled in.
+	product := "Richiesta di trasporto"
+	if caricoName != "" || scaricoName != "" {
+		product = fmt.Sprintf("Trasporto %s -> %s", firstNonEmpty(caricoName, "?"), firstNonEmpty(scaricoName, "?"))
+	}
+
+	notesParts := make([]string, 0, 3)
+	if req.Note != "" {
+		notesParts = append(notesParts, req.Note)
+	}
+	if req.OraRitiroDa != "" || req.OraRitiroA != "" {
+		notesParts = append(notesParts, fmt.Sprintf("Orario ritiro: %s-%s", req.OraRitiroDa, req.OraRitiroA))
+	}
+	if req.OraConsegnaDa != "" || req.OraConsegnaA != "" {
+		notesParts = append(notesParts, fmt.Sprintf("Orario consegna: %s-%s", req.OraConsegnaDa, req.OraConsegnaA))
+	}
+
+	inboundReq := dto.InboundOrderRequest{
+		Client:        customer.RagioneSociale,
+		SenderEmail:   customer.Email,
+		Ref:           req.RifOrdineCliente,
+		Product:       product,
+		LoadDate:      req.DataRitiro,
+		LoadPlace:     caricoName,
+		DeliveryDate:  req.DataConsegna,
+		DeliveryPlace: scaricoName,
+		Rate:          fmt.Sprintf("€ %.2f", req.Tariffa),
+		Notes:         strings.Join(notesParts, " | "),
+		Source:        models.InboundOrderSourcePortal,
+		ClienteID:     &customerID,
+	}
+
+	item, err := h.Service.Create(ctx, inboundReq)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 201, item)
+}
+
+func firstNonEmpty(v, fallback string) string {
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+// ListMyInboundOrders godoc
+// @Summary List the logged-in client's own pending/under-revision requests (self-service portal)
+// @Description Only source=portal drafts still pending or under revision — once staff accepts one it becomes a normal Order and drops off this list (see GET /me/orders instead).
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} dto.InboundOrderResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/me/inbound-orders [get]
+func (h *InboundOrderHandler) ListMyInboundOrders(c *fiber.Ctx) error {
+	customerID, err := utils.RequestCustomerID(c)
+	if err != nil {
+		return utils.ErrorResponse(c, 401, "Account cliente non valido")
+	}
+	items, err := h.Service.ListForClient(utils.RequestContext(c), customerID)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, items)
 }
 
 // ResetInboundOrder godoc

@@ -3514,6 +3514,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/me/inbound-orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Only source=portal drafts still pending or under revision — once staff accepts one it becomes a normal Order and drops off this list (see GET /me/orders instead).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "List the logged-in client's own pending/under-revision requests (self-service portal)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.InboundOrderResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a pending InboundOrder draft (source=portal) — visible to staff on /inbound-orders and to the client itself on GET /me/inbound-orders — instead of creating a live Order directly. An operator must accept it (same review step already applied to mail/PDF-sourced orders) before it becomes a plannable Order.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Submit a new transport request as the logged-in client (self-service portal)",
+                "parameters": [
+                    {
+                        "description": "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note)",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InboundOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/me/orders": {
             "get": {
                 "security": [
@@ -3555,61 +3647,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/dto.OrderResponse"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "cliente_id in the body is ignored — the order is always created under the caller's own anagrafica.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Create an order as the logged-in client",
-                "parameters": [
-                    {
-                        "description": "Order data",
-                        "name": "order",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.OrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
                             }
                         }
                     },
@@ -7931,6 +7968,10 @@ const docTemplate = `{
                 "client": {
                     "type": "string"
                 },
+                "cliente_id": {
+                    "description": "ClienteID is set internally by CreateMyInboundOrder (client portal) —\nnever trusted from external request bodies for the staff-facing\n/inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.",
+                    "type": "string"
+                },
                 "delivery_date": {
                     "type": "string"
                 },
@@ -7972,7 +8013,8 @@ const docTemplate = `{
                     "enum": [
                         "seed",
                         "mail",
-                        "pdf"
+                        "pdf",
+                        "portal"
                     ]
                 },
                 "status": {
@@ -7992,6 +8034,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "client": {
+                    "type": "string"
+                },
+                "cliente_id": {
                     "type": "string"
                 },
                 "created_at": {

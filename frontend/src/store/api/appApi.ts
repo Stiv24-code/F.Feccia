@@ -42,6 +42,7 @@ import type {
   DtoDriverUnavailabilityResponse,
   DtoGarageRequest,
   DtoGarageResponse,
+  DtoInboundOrderResponse,
   DtoMotriceRequest,
   DtoMotriceResponse,
   DtoOrderRequest,
@@ -63,7 +64,7 @@ export const appApi = createApi({
   tagTypes: [
     'Customer', 'Dashboard', 'Destination', 'Motrice', 'Semirimorchio', 'Driver', 'DriverUnavailability',
     'Carrier', 'Product', 'Garage', 'WashStation', 'Country', 'Bank', 'AccountingEntry', 'AdminUser',
-    'MyAnagrafica', 'MyOrder',
+    'MyAnagrafica', 'MyOrder', 'MyInboundOrder',
   ],
   endpoints: (builder) => ({
     getDashboardStats: builder.query<DtoDashboardStatsResponse, void>({
@@ -361,9 +362,18 @@ export const appApi = createApi({
       queryFn: (id) => toQueryResult(apiClient.v1MeOrdersDetail(id)),
       providesTags: ['MyOrder'],
     }),
-    createMyOrder: builder.mutation<DtoOrderResponse, DtoOrderRequest>({
-      queryFn: (body) => toQueryResult(apiClient.v1MeOrdersCreate(body)),
-      invalidatesTags: ['MyOrder'],
+    // Una richiesta del cliente non crea più direttamente un Order: entra
+    // come InboundOrder "da confermare" (stessa coda di revisione di
+    // mail/PDF) — GET per farla vedere al cliente stesso finché è in attesa,
+    // POST per crearla. Una volta accettata dall'operatore compare tra i
+    // 'MyOrder' normali, non più qui.
+    getMyInboundOrders: builder.query<DtoInboundOrderResponse[], void>({
+      queryFn: () => toQueryResult(apiClient.v1MeInboundOrdersList()),
+      providesTags: ['MyInboundOrder'],
+    }),
+    createMyInboundOrder: builder.mutation<DtoInboundOrderResponse, DtoOrderRequest>({
+      queryFn: (body) => toQueryResult(apiClient.v1MeInboundOrdersCreate(body)),
+      invalidatesTags: ['MyInboundOrder'],
     }),
     deleteMyOrder: builder.mutation<void, string>({
       queryFn: (id) => toQueryResult(apiClient.v1MeOrdersDelete(id)),
@@ -443,7 +453,8 @@ export const {
   useUpdateMyAnagraficaMutation,
   useGetMyOrdersQuery,
   useGetMyOrderQuery,
-  useCreateMyOrderMutation,
   useDeleteMyOrderMutation,
+  useGetMyInboundOrdersQuery,
+  useCreateMyInboundOrderMutation,
   useCreateMyDestinationMutation,
 } = appApi;

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +30,6 @@ func newOrderMineTestApp(svc services.Order, customerID string) *fiber.App {
 	})
 	app.Get("/me/orders", h.ListMyOrders)
 	app.Get("/me/orders/:id", h.GetMyOrderByID)
-	app.Post("/me/orders", h.CreateMyOrder)
 	app.Delete("/me/orders/:id", h.DeleteMyOrder)
 
 	return app
@@ -126,34 +124,6 @@ func TestOrderHandler_GetMyOrderByID_OwnOrderReturns200(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
-	}
-}
-
-func TestOrderHandler_CreateMyOrder_ForcesOwnClienteIDIgnoringBody(t *testing.T) {
-	t.Parallel()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	myCustomerID := uuid.New()
-	someoneElsesID := uuid.New()
-	var capturedClienteID string
-
-	mockSvc := mocks.NewMockOrder(ctrl)
-	mockSvc.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, req dto.OrderRequest) (*dto.OrderResponse, error) {
-		capturedClienteID = req.ClienteID
-		return &dto.OrderResponse{ClienteID: req.ClienteID}, nil
-	})
-
-	app := newOrderMineTestApp(mockSvc, myCustomerID.String())
-	// Body tries to create the order under a different customer — must be
-	// silently overridden, never trusted.
-	resp := doOrderRequest(t, app, http.MethodPost, "/me/orders", dto.OrderRequest{ClienteID: someoneElsesID.String(), Tariffa: 100})
-
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("expected status %d, got %d", http.StatusCreated, resp.StatusCode)
-	}
-	if capturedClienteID != myCustomerID.String() {
-		t.Fatalf("expected ClienteID forced to %q, got %q", myCustomerID.String(), capturedClienteID)
 	}
 }
 

@@ -541,6 +541,12 @@ export interface DtoInboundOrderDraftDTO {
 
 export interface DtoInboundOrderRequest {
   client: string;
+  /**
+   * ClienteID is set internally by CreateMyInboundOrder (client portal) —
+   * never trusted from external request bodies for the staff-facing
+   * /inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.
+   */
+  cliente_id?: string;
   delivery_date?: string;
   delivery_place?: string;
   kg?: number;
@@ -553,13 +559,14 @@ export interface DtoInboundOrderRequest {
   received_at?: string;
   ref?: string;
   sender_email?: string;
-  source?: "seed" | "mail" | "pdf";
+  source?: "seed" | "mail" | "pdf" | "portal";
   status?: "pending" | "accepted" | "modify";
   template_id?: string;
 }
 
 export interface DtoInboundOrderResponse {
   client?: string;
+  cliente_id?: string;
   created_at?: string;
   delivery_date?: string;
   delivery_place?: string;
