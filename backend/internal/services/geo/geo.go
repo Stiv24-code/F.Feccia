@@ -119,7 +119,7 @@ func NewGeoService(db *gorm.DB, orsApiKey, orsBaseURL string) *GeoService {
 		db:         db,
 		ORSApiKey:  orsApiKey,
 		ORSBaseURL: orsBaseURL,
-		HTTPClient: &http.Client{Timeout: 10 * time.Second},
+		HTTPClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -343,7 +343,7 @@ func (s *GeoService) callORS(ctx context.Context, coords [][2]float64, altCount 
 	}
 
 	url := fmt.Sprintf("%s/v2/directions/driving-hgv/geojson", s.ORSBaseURL)
-	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {

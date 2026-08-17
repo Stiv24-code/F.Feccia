@@ -65,7 +65,7 @@ func (a *App) setupRequestLoggingMiddleware() {
 }
 
 func (a *App) setupContextMiddleware() {
-	a.Router.Use(middleware.ContextMiddleware(10 * time.Second))
+	a.Router.Use(middleware.ContextMiddleware(30 * time.Second))
 }
 
 func (a *App) setupCORSMiddleware() {
