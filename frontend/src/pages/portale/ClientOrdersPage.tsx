@@ -8,11 +8,11 @@ import {
   useCreateMyDestinationMutation,
 } from '@/store/api/appApi';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
-import type { DtoOrderRequest, DtoOrderResponse, DtoDestinationRequest } from '@/api/data-contracts';
+import type { DtoClientInboundOrderRequest, DtoOrderResponse, DtoDestinationRequest, DtoInboundOrderResponse } from '@/api/data-contracts';
 import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { STATUS_BADGE } from '@/components/inbound/constants';
+import { STATUS_BADGE, fmtKg } from '@/components/inbound/constants';
 import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { MapPicker } from '@/components/shared/MapPicker';
 import { Input } from '@/components/ui/input';
@@ -28,13 +28,16 @@ import { Eye, Trash2, Plus } from 'lucide-react';
 
 // cliente_id è richiesto dal tipo generato ma il backend lo sovrascrive
 // sempre con l'id del cliente autenticato (vedi InboundOrderHandler.CreateMyInboundOrder)
-// — qui resta vuoto, nessun campo lo mostra in form.
-const emptyForm: DtoOrderRequest = {
+// — qui resta vuoto, nessun campo lo mostra in form. product/kg sono testo
+// libero (l'InboundOrder generato non ha un FK al catalogo Prodotti, a
+// differenza degli Items di un Order vero e proprio).
+const emptyForm: DtoClientInboundOrderRequest = {
   cliente_id: '',
   destinazione_carico_id: '', destinazione_scarico_id: '',
   data_ritiro: '', ora_ritiro_da: '', ora_ritiro_a: '',
   data_consegna: '', ora_consegna_da: '', ora_consegna_a: '',
   tariffa: 0, rif_ordine_cliente: '', note: '',
+  product: '', kg: 0,
 };
 
 type DestinationTarget = 'carico' | 'scarico';
@@ -43,8 +46,9 @@ const emptyDestinationForm: DtoDestinationRequest = { nome: '', indirizzo: '', c
 
 export default function ClientOrdersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<DtoOrderRequest>(emptyForm);
+  const [form, setForm] = useState<DtoClientInboundOrderRequest>(emptyForm);
   const [detailOrder, setDetailOrder] = useState<DtoOrderResponse | null>(null);
+  const [detailPending, setDetailPending] = useState<DtoInboundOrderResponse | null>(null);
 
   const [destDialogOpen, setDestDialogOpen] = useState(false);
   const [destTarget, setDestTarget] = useState<DestinationTarget | null>(null);
@@ -130,6 +134,7 @@ export default function ClientOrdersPage() {
                 <TableHead>Scarico</TableHead>
                 <TableHead>Nolo</TableHead>
                 <TableHead>Stato</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,6 +148,11 @@ export default function ClientOrdersPage() {
                     <TableCell className="py-2">{r.rate || '—'}</TableCell>
                     <TableCell className="py-2">
                       <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDetailPending(r)}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -205,6 +215,30 @@ export default function ClientOrdersPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!detailPending} onOpenChange={(open) => !open && setDetailPending(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio Richiesta</DialogTitle></DialogHeader>
+          {detailPending && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Riferimento:</span><span className="font-mono font-medium">{detailPending.ref || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Prodotto:</span><span>{detailPending.product || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Kg:</span><span>{fmtKg(detailPending.kg)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Carico:</span><span>{detailPending.load_place || '—'} {detailPending.load_date ? `· ${detailPending.load_date}` : ''}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Scarico:</span><span>{detailPending.delivery_place || '—'} {detailPending.delivery_date ? `· ${detailPending.delivery_date}` : ''}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nolo:</span><span className="font-medium">{detailPending.rate || '—'}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Stato:</span>
+                {(() => {
+                  const badge = STATUS_BADGE[detailPending.status || 'pending'] || STATUS_BADGE.pending;
+                  return <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${badge.className}`}>{badge.label}</span>;
+                })()}
+              </div>
+              {detailPending.notes && <div><span className="text-muted-foreground">Note:</span><p className="mt-1">{detailPending.notes}</p></div>}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <FormDialog open={dialogOpen} onClose={setDialogOpen} title="Nuovo Ordine" onSubmit={handleSave} loading={saving} submitLabel="Crea Ordine">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -259,6 +293,8 @@ export default function ClientOrdersPage() {
               <Input type="time" value={form.ora_consegna_a} onChange={e => setForm({ ...form, ora_consegna_a: e.target.value })} />
             </div>
           </div>
+          <div className="space-y-1.5"><Label>Prodotto</Label><Input value={form.product} onChange={e => setForm({ ...form, product: e.target.value })} placeholder="Es. Pasta alimentare" /></div>
+          <div className="space-y-1.5"><Label>Kg</Label><Input type="number" value={form.kg} onChange={e => setForm({ ...form, kg: Number(e.target.value) })} /></div>
           <div className="space-y-1.5"><Label>Tariffa desiderata (€)</Label><Input type="number" value={form.tariffa} onChange={e => setForm({ ...form, tariffa: Number(e.target.value) })} /></div>
           <div className="space-y-1.5"><Label>Rif. Vostro Ordine</Label><Input value={form.rif_ordine_cliente} onChange={e => setForm({ ...form, rif_ordine_cliente: e.target.value })} /></div>
           <div className="md:col-span-2 space-y-1.5"><Label>Note</Label><Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} /></div>

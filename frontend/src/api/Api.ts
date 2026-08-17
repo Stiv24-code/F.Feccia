@@ -23,6 +23,7 @@ import {
   DtoCarrierListResponse,
   DtoCarrierRequest,
   DtoCarrierResponse,
+  DtoClientInboundOrderRequest,
   DtoClientRegisterRequest,
   DtoCountryListResponse,
   DtoCountryRequest,
@@ -1756,7 +1757,7 @@ export class Api<SecurityDataType = unknown> {
    * @secure
    */
   v1MeInboundOrdersCreate = (
-    order: DtoOrderRequest,
+    order: DtoClientInboundOrderRequest,
     params: RequestParams = {},
   ) =>
     this.http.request<DtoInboundOrderResponse, Record<string, string>>({

@@ -196,6 +196,60 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.ClientInboundOrderRequest:
+    properties:
+      andata_ritorno:
+        type: boolean
+      categoria_trasporto:
+        type: string
+      cliente_id:
+        type: string
+      costi_accessori:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      data_consegna:
+        type: string
+      data_ritiro:
+        type: string
+      destinazione_carico_id:
+        type: string
+      destinazione_scarico_id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItemRequestDTO'
+        type: array
+      kg:
+        type: integer
+      note:
+        type: string
+      ora_consegna_a:
+        type: string
+      ora_consegna_da:
+        type: string
+      ora_ritiro_a:
+        type: string
+      ora_ritiro_da:
+        type: string
+      product:
+        type: string
+      rif_ordine_cliente:
+        type: string
+      servizi_accessori:
+        items:
+          type: string
+        type: array
+      tariffa:
+        type: number
+      tipo_tariffa:
+        type: string
+      tipologia:
+        type: string
+    required:
+    - cliente_id
+    type: object
   dto.ClientRegisterRequest:
     properties:
       cap:
@@ -4662,12 +4716,13 @@ paths:
         a plannable Order.
       parameters:
       - description: Same shape as the internal order form (destinazione ids, tariffa,
-          date/orari, note)
+          date/orari, note), plus product/kg as plain text (InboundOrder has no product
+          master-data FK)
         in: body
         name: order
         required: true
         schema:
-          $ref: '#/definitions/dto.OrderRequest'
+          $ref: '#/definitions/dto.ClientInboundOrderRequest'
       produces:
       - application/json
       responses:

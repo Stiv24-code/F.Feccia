@@ -156,7 +156,7 @@ func (h *InboundOrderHandler) GetInboundConfig(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param order body dto.OrderRequest true "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note)"
+// @Param order body dto.ClientInboundOrderRequest true "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note), plus product/kg as plain text (InboundOrder has no product master-data FK)"
 // @Success 201 {object} dto.InboundOrderResponse
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
@@ -168,7 +168,7 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, 401, "Account cliente non valido")
 	}
 
-	var req dto.OrderRequest
+	var req dto.ClientInboundOrderRequest
 	if err := c.BodyParser(&req); err != nil {
 		return utils.ErrorResponse(c, 400, "Invalid request body")
 	}
@@ -192,11 +192,14 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 
 	// InboundOrderRequest requires ref-or-product non-empty (Create's own
 	// business rule) — rif_ordine_cliente is optional on the client form, so
-	// Product always carries a fallback description to guarantee that rule
-	// is met regardless of what the client filled in.
-	product := "Richiesta di trasporto"
-	if caricoName != "" || scaricoName != "" {
-		product = fmt.Sprintf("Trasporto %s -> %s", firstNonEmpty(caricoName, "?"), firstNonEmpty(scaricoName, "?"))
+	// when the client leaves Product blank too, a fallback description
+	// guarantees that rule is met regardless of what was filled in.
+	product := strings.TrimSpace(req.Product)
+	if product == "" {
+		product = "Richiesta di trasporto"
+		if caricoName != "" || scaricoName != "" {
+			product = fmt.Sprintf("Trasporto %s -> %s", firstNonEmpty(caricoName, "?"), firstNonEmpty(scaricoName, "?"))
+		}
 	}
 
 	notesParts := make([]string, 0, 3)
@@ -215,6 +218,7 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 		SenderEmail:   customer.Email,
 		Ref:           req.RifOrdineCliente,
 		Product:       product,
+		Kg:            req.Kg,
 		LoadDate:      req.DataRitiro,
 		LoadPlace:     caricoName,
 		DeliveryDate:  req.DataConsegna,

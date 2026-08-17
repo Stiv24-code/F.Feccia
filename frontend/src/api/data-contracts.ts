@@ -120,6 +120,30 @@ export interface DtoCarrierResponse {
   updated_at?: string;
 }
 
+export interface DtoClientInboundOrderRequest {
+  andata_ritorno?: boolean;
+  categoria_trasporto?: string;
+  cliente_id: string;
+  costi_accessori?: Record<string, any>[];
+  data_consegna?: string;
+  data_ritiro?: string;
+  destinazione_carico_id?: string;
+  destinazione_scarico_id?: string;
+  items?: DtoOrderItemRequestDTO[];
+  kg?: number;
+  note?: string;
+  ora_consegna_a?: string;
+  ora_consegna_da?: string;
+  ora_ritiro_a?: string;
+  ora_ritiro_da?: string;
+  product?: string;
+  rif_ordine_cliente?: string;
+  servizi_accessori?: string[];
+  tariffa?: number;
+  tipo_tariffa?: string;
+  tipologia?: string;
+}
+
 export interface DtoClientRegisterRequest {
   cap?: string;
   citta?: string;

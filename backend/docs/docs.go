@@ -3569,12 +3569,12 @@ const docTemplate = `{
                 "summary": "Submit a new transport request as the logged-in client (self-service portal)",
                 "parameters": [
                     {
-                        "description": "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note)",
+                        "description": "Same shape as the internal order form (destinazione ids, tariffa, date/orari, note), plus product/kg as plain text (InboundOrder has no product master-data FK)",
                         "name": "order",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderRequest"
+                            "$ref": "#/definitions/dto.ClientInboundOrderRequest"
                         }
                     }
                 ],
@@ -6906,6 +6906,87 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ClientInboundOrderRequest": {
+            "type": "object",
+            "required": [
+                "cliente_id"
+            ],
+            "properties": {
+                "andata_ritorno": {
+                    "type": "boolean"
+                },
+                "categoria_trasporto": {
+                    "type": "string"
+                },
+                "cliente_id": {
+                    "type": "string"
+                },
+                "costi_accessori": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "data_consegna": {
+                    "type": "string"
+                },
+                "data_ritiro": {
+                    "type": "string"
+                },
+                "destinazione_carico_id": {
+                    "type": "string"
+                },
+                "destinazione_scarico_id": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OrderItemRequestDTO"
+                    }
+                },
+                "kg": {
+                    "type": "integer"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "ora_consegna_a": {
+                    "type": "string"
+                },
+                "ora_consegna_da": {
+                    "type": "string"
+                },
+                "ora_ritiro_a": {
+                    "type": "string"
+                },
+                "ora_ritiro_da": {
+                    "type": "string"
+                },
+                "product": {
+                    "type": "string"
+                },
+                "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "servizi_accessori": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tariffa": {
+                    "type": "number"
+                },
+                "tipo_tariffa": {
+                    "type": "string"
+                },
+                "tipologia": {
                     "type": "string"
                 }
             }

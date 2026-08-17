@@ -40,12 +40,12 @@ import type {
   DtoDriverResponse,
   DtoDriverUnavailabilityRequest,
   DtoDriverUnavailabilityResponse,
+  DtoClientInboundOrderRequest,
   DtoGarageRequest,
   DtoGarageResponse,
   DtoInboundOrderResponse,
   DtoMotriceRequest,
   DtoMotriceResponse,
-  DtoOrderRequest,
   DtoOrderResponse,
   DtoProductRequest,
   DtoProductResponse,
@@ -371,7 +371,7 @@ export const appApi = createApi({
       queryFn: () => toQueryResult(apiClient.v1MeInboundOrdersList()),
       providesTags: ['MyInboundOrder'],
     }),
-    createMyInboundOrder: builder.mutation<DtoInboundOrderResponse, DtoOrderRequest>({
+    createMyInboundOrder: builder.mutation<DtoInboundOrderResponse, DtoClientInboundOrderRequest>({
       queryFn: (body) => toQueryResult(apiClient.v1MeInboundOrdersCreate(body)),
       invalidatesTags: ['MyInboundOrder'],
     }),

@@ -78,7 +78,11 @@ func TestInboundOrderHandler_CreateMyInboundOrder_ForcesOwnClienteIDAndPortalSou
 	app := newInboundOrderMineTestApp(mockInbound, mockCustomers, mockDestinations, myCustomerID.String())
 	// No destinazione ids in the body — the handler must still fall back
 	// gracefully (no Destinations.GetByID call expected) instead of erroring.
-	resp := doInboundRequest(t, app, http.MethodPost, "/me/inbound-orders", dto.OrderRequest{Tariffa: 1200, Note: "Test"})
+	resp := doInboundRequest(t, app, http.MethodPost, "/me/inbound-orders", dto.ClientInboundOrderRequest{
+		OrderRequest: dto.OrderRequest{Tariffa: 1200, Note: "Test"},
+		Product:      "Pasta alimentare",
+		Kg:           9462,
+	})
 
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, resp.StatusCode)
@@ -88,6 +92,9 @@ func TestInboundOrderHandler_CreateMyInboundOrder_ForcesOwnClienteIDAndPortalSou
 	}
 	if captured.Source != models.InboundOrderSourcePortal {
 		t.Fatalf("expected Source %q, got %q", models.InboundOrderSourcePortal, captured.Source)
+	}
+	if captured.Product != "Pasta alimentare" || captured.Kg != 9462 {
+		t.Fatalf("expected client-supplied Product/Kg to pass through, got %q/%d", captured.Product, captured.Kg)
 	}
 	if captured.Client != "ACME S.p.A." {
 		t.Fatalf("expected Client resolved from the authenticated customer, got %q", captured.Client)

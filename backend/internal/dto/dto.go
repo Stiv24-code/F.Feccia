@@ -456,6 +456,19 @@ type OrderRequest struct {
 	CostiAccessori        []map[string]interface{} `json:"costi_accessori"`
 }
 
+// ClientInboundOrderRequest is the body of POST /me/inbound-orders — the
+// same fields as OrderRequest (destinazioni/date/tariffa/note), plus the two
+// free-text fields InboundOrder itself needs (product/kg) that OrderRequest
+// has no equivalent for (real Order captures product+weight per line via
+// Items/ProductID, but the client-portal form is a plain draft, not a
+// priced order — matches how mail/PDF-sourced drafts already carry these as
+// plain strings, see InboundOrder.Product/Kg).
+type ClientInboundOrderRequest struct {
+	OrderRequest
+	Product string `json:"product"`
+	Kg      int    `json:"kg"`
+}
+
 type OrderAssignRequest struct {
 	GarageID        string `json:"garage_id"`
 	MotriceID       string `json:"motrice_id"`
