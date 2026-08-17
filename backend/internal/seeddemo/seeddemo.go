@@ -83,6 +83,19 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d clienti\n", len(customers))
 
+	// Login pronto per il portale cliente (ruolo "cliente", legato al primo
+	// cliente seedato) — comodo in dev/demo per non dover passare da
+	// /register-client ogni volta. Credenziali fisse ma sovrascrivibili,
+	// stesso pattern di SEED_ADMIN_EMAIL/PASSWORD sopra.
+	clientEmail := getEnv("SEED_CLIENT_EMAIL", "client@gmail.com")
+	clientPassword := getEnv("SEED_CLIENT_PASSWORD", "12345")
+	clientUser := mustUser(clientEmail, customers[0].RagioneSociale, utils.RoleCliente, clientPassword)
+	clientUser.CustomerID = &customers[0].ID
+	if err := db.Create(&clientUser).Error; err != nil {
+		return fmt.Errorf("utente cliente: %w", err)
+	}
+	fmt.Printf("✓ utente cliente (%s / %s) -> %s\n", clientEmail, clientPassword, customers[0].RagioneSociale)
+
 	// ─────────────────────────── DESTINAZIONI ───────────────────────────
 	// Caricate da un export reale Visirun (POI Carico-Scarico) invece di una
 	// manciata di città curate a mano — vedi poi_data.go.
