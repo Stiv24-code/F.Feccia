@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { DtoClientRegisterRequest, DtoGeocodeResultDTO } from '@/api/data-contracts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/shared/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPicker } from '@/components/shared/MapPicker';
@@ -136,7 +137,7 @@ export default function ClientRegisterPage() {
                   </div>
                   <div className="md:col-span-2 space-y-1.5">
                     <Label htmlFor="password">Password *</Label>
-                    <Input id="password" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} autoComplete="new-password" minLength={12} placeholder="Almeno 12 caratteri" required />
+                    <PasswordInput id="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} autoComplete="new-password" minLength={12} placeholder="Almeno 12 caratteri" required />
                   </div>
                 </div>
 

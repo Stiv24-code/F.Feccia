@@ -11,6 +11,7 @@ import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/shared/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import SearchableSelect from '@/components/shared/SearchableSelect';
@@ -265,7 +266,7 @@ export default function UsersPage() {
             </div>
             <div>
               <Label>Password * (min 12 caratteri)</Label>
-              <Input type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} />
+              <PasswordInput value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} />
             </div>
             <div>
               <Label>Ruolo *</Label>
