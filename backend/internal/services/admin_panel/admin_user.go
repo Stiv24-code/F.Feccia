@@ -233,7 +233,13 @@ func (s *AdminService) PatchUser(ctx context.Context, id int64, req dto.PatchUse
 }
 
 func toAdminUserResponse(u models.User) dto.AuthUserResponse {
+	var customerID *string
+	if u.CustomerID != nil {
+		id := u.CustomerID.String()
+		customerID = &id
+	}
 	return dto.AuthUserResponse{
-		ID: u.ID, Email: u.Login, Name: u.Name, Role: u.Role, ProfileID: nil, Active: u.Active,
+		ID: u.ID, Email: u.Login, Name: u.Name, Role: u.Role, ProfileID: nil,
+		CustomerID: customerID, Active: u.Active,
 	}
 }

@@ -258,6 +258,45 @@ func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, result)
 }
 
+// ResendVerification godoc
+// @Summary Resend the registration confirmation link (public)
+// @Description Lighter alternative to re-submitting RegisterClient's whole form again — just the email, for an already self-registered client whose link is expired, lost, or never arrived.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.ResendVerificationRequest true "Account email"
+// @Success 200 {object} dto.RegisterClientResult
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/auth/resend-verification [post]
+func (h *AuthHandler) ResendVerification(c *fiber.Ctx) error {
+	var req dto.ResendVerificationRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if errs := utils.NewValidator().Validate(&req); len(errs) > 0 {
+		return utils.ValidationErrorResponse(c, errs)
+	}
+
+	ctx := utils.RequestContext(c)
+	ip, ua := c.IP(), c.Get("User-Agent")
+
+	result, err := h.Service.ResendVerificationEmail(req.Email)
+	if err != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.resend_verification", Resource: "user", StatusCode: 400, Success: false,
+			IP: ip, UserAgent: ua, Error: err.Error(), Metadata: map[string]interface{}{"email": req.Email},
+		})
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	h.AuditLogger.Log(ctx, audit.Entry{
+		Action: "auth.resend_verification", Resource: "user", StatusCode: 200, Success: true,
+		IP: ip, UserAgent: ua, Metadata: map[string]interface{}{"email": req.Email},
+	})
+	return utils.SuccessResponse(c, 200, result)
+}
+
 // Logout godoc
 // @Summary Logout
 // @Description Clears the refresh cookie; best-effort, works without a valid token

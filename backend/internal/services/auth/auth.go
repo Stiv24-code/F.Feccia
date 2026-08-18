@@ -29,9 +29,9 @@ type Mailer interface {
 	SendHTML(ctx context.Context, to, subject, htmlBody string) error
 }
 
-// TODO: 2 minuti è un valore di test (per verificare comodamente la scadenza
-// del link) — riportare a qualcosa come 24h prima di produzione.
-const verificationTTL = 2 * time.Minute
+// TODO: 10 minuti è un valore di test (per verificare comodamente la
+// scadenza del link) — riportare a qualcosa come 24h prima di produzione.
+const verificationTTL = 10 * time.Minute
 
 type AuthService struct {
 	db         *gorm.DB
@@ -295,6 +295,32 @@ func (s *AuthService) resendVerification(user models.User) (*dto.RegisterClientR
 		Message:  "Un link di conferma era già stato inviato: te ne abbiamo mandato uno nuovo.",
 		Email:    user.Login,
 	}, nil, nil
+}
+
+// ResendVerificationEmail mirrors POST /auth/resend-verification (public) —
+// a lighter path than RegisterClient for the common case of an already
+// self-registered client who just needs a fresh link (expired, lost, or
+// never arrived): unlike RegisterClient it doesn't require re-submitting
+// the whole registration form (ragione sociale, indirizzo, ...), just the
+// email. Delegates to the same resendVerification used internally by
+// RegisterClient's own "stuck" branch.
+func (s *AuthService) ResendVerificationEmail(email string) (*dto.RegisterClientResult, error) {
+	var user models.User
+	if err := s.db.Where("login = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewAPIError(404, "Nessun account trovato con questa email")
+		}
+		return nil, err
+	}
+	if user.Role != utils.RoleCliente || user.VerificationToken == nil || user.EmailVerifiedAt != nil {
+		return nil, utils.NewAPIError(400, "Questo account non ha una verifica email in sospeso")
+	}
+
+	pending, _, err := s.resendVerification(user)
+	if err != nil {
+		return nil, err
+	}
+	return pending, nil
 }
 
 // VerifyEmail confirms a registration link's token (POST /auth/verify-email)

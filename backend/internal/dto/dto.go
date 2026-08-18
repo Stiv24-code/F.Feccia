@@ -114,6 +114,13 @@ type VerifyEmailRequest struct {
 	Token string `json:"token" validate:"required"`
 }
 
+// ResendVerificationRequest asks for a fresh confirmation link (POST
+// /auth/resend-verification) without re-submitting the whole
+// ClientRegisterRequest form again.
+type ResendVerificationRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
 type CreateUserRequest struct {
 	Login    string `json:"login" validate:"required,min=3,max=150"`
 	Name     string `json:"name"`

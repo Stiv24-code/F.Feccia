@@ -64,6 +64,7 @@ type Auth interface {
 	// verify anything in that case).
 	RegisterClient(req dto.ClientRegisterRequest) (pending *dto.RegisterClientResult, login *dto.LoginResult, err error)
 	VerifyEmail(token string) (*dto.LoginResult, error)
+	ResendVerificationEmail(email string) (*dto.RegisterClientResult, error)
 }
 
 type Customer interface {

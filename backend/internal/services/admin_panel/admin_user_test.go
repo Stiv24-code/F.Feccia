@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/glebarez/sqlite"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"fratelli-feccia/internal/dto"
@@ -52,6 +53,25 @@ func TestListAllUsers_ReturnsEmailShapedResponse(t *testing.T) {
 	}
 	if result[0].ProfileID != nil {
 		t.Fatalf("expected ProfileID nil (profiles out of scope), got %v", result[0].ProfileID)
+	}
+}
+
+func TestListAllUsers_IncludesCustomerIDForClienteAccounts(t *testing.T) {
+	db := newAdminTestDB(t)
+	svc := NewAdminService(db, utils.JWTConfig{})
+
+	customerID := uuid.New()
+	u := models.User{Login: "client@example.it", PasswordHash: "hash", Role: utils.RoleCliente, Name: "Client", CustomerID: &customerID}
+	if err := db.Create(&u).Error; err != nil {
+		t.Fatalf("failed to seed cliente user: %v", err)
+	}
+
+	result, err := svc.ListAllUsers(context.Background())
+	if err != nil {
+		t.Fatalf("ListAllUsers returned error: %v", err)
+	}
+	if len(result) != 1 || result[0].CustomerID == nil || *result[0].CustomerID != customerID.String() {
+		t.Fatalf("expected CustomerID %q in the response, got %+v", customerID, result)
 	}
 }
 

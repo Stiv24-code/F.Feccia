@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   useGetAdminUsersQuery,
   useCreateAdminUserMutation,
@@ -196,7 +197,13 @@ export default function UsersPage() {
                   <TableRow key={u.id} className="hover:bg-muted/60">
                     <TableCell className="py-2 font-mono">{u.email}</TableCell>
                     <TableCell className="py-2">{u.name}</TableCell>
-                    <TableCell className="py-2">{(u.customer_id && customerNameById.get(u.customer_id)) || '—'}</TableCell>
+                    <TableCell className="py-2">
+                      {u.customer_id && customerNameById.get(u.customer_id) ? (
+                        <Link to={`/anagrafiche/clienti/${u.customer_id}/cruscotto`} className="underline hover:text-primary">
+                          {customerNameById.get(u.customer_id)}
+                        </Link>
+                      ) : '—'}
+                    </TableCell>
                     <TableCell className="py-2">
                       {u.active ? <Badge variant="default" className="text-[10px]">Attivo</Badge> : <Badge variant="secondary" className="text-[10px]">Disattivato</Badge>}
                     </TableCell>
