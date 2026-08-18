@@ -43,6 +43,11 @@ services:
       TRUSTED_PROXIES: ${TRUSTED_PROXIES}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      # Origine pubblica del frontend — usata solo per costruire il link di
+      # conferma email nella mail di registrazione cliente
+      # (auth.RegisterClient). Senza questa, il link nella mail punterebbe al
+      # default di sviluppo (localhost), inutilizzabile per un utente reale.
+      APP_BASE_URL: ${APP_BASE_URL:-https://ffeccia.homes}
       ORS_API_KEY: ${ORS_API_KEY:-}
       ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
       # ── Ingestion ordini (OrderMesh) — tutto opzionale: senza credenziali
