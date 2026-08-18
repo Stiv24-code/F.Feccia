@@ -409,3 +409,70 @@ func TestAuthService_VerifyEmail_InvalidTokenRejected(t *testing.T) {
 		t.Fatalf("expected an error for an unknown token")
 	}
 }
+
+func TestAuthService_ResendVerificationEmail_SendsNewLinkForPendingAccount(t *testing.T) {
+	db := newModelsTestDB(t)
+	svc := newAuthServiceForTest(t, db)
+	fm := &fakeMailer{}
+	svc.mailer = fm
+	svc.appBaseURL = "https://ffeccia.homes"
+
+	pending, _, err := svc.RegisterClient(dto.ClientRegisterRequest{
+		RagioneSociale: "Resend S.r.l.", Email: "resend-me@example.it",
+		Name: "Mario Rossi", Password: "supersecretpw12",
+	})
+	if err != nil || pending == nil {
+		t.Fatalf("setup: expected a pending registration, got pending=%+v err=%v", pending, err)
+	}
+	firstBody := fm.body
+
+	result, err := svc.ResendVerificationEmail("resend-me@example.it")
+	if err != nil {
+		t.Fatalf("ResendVerificationEmail returned error: %v", err)
+	}
+	if result == nil || result.Verified || result.Email != "resend-me@example.it" {
+		t.Fatalf("expected a pending result, got %+v", result)
+	}
+	if fm.body == firstBody {
+		t.Fatalf("expected a freshly generated token/mail, got the same body as the original registration mail")
+	}
+
+	// The new token (not the original one) must be the one that verifies.
+	idx := strings.Index(fm.body, "token=")
+	token := fm.body[idx+len("token="):]
+	if end := strings.IndexAny(token, "\n\r \""); end != -1 {
+		token = token[:end]
+	}
+	if _, err := svc.VerifyEmail(token); err != nil {
+		t.Fatalf("expected the resent token to verify successfully, got error: %v", err)
+	}
+}
+
+func TestAuthService_ResendVerificationEmail_UnknownEmailRejected(t *testing.T) {
+	db := newModelsTestDB(t)
+	svc := newAuthServiceForTest(t, db)
+
+	result, err := svc.ResendVerificationEmail("nobody@example.it")
+	if result != nil {
+		t.Fatalf("expected nil result for an unknown email, got %+v", result)
+	}
+	apiErr, ok := err.(utils.APIError)
+	if !ok || apiErr.StatusCode() != 404 {
+		t.Fatalf("expected a 404 APIError, got %v (%T)", err, err)
+	}
+}
+
+func TestAuthService_ResendVerificationEmail_AlreadyVerifiedAccountRejected(t *testing.T) {
+	db := newModelsTestDB(t)
+	svc := newAuthServiceForTest(t, db)
+	seedModelsUser(t, db, "already-verified@example.it", "whatever12345", "operatore", true)
+
+	result, err := svc.ResendVerificationEmail("already-verified@example.it")
+	if result != nil {
+		t.Fatalf("expected nil result for an account with nothing pending, got %+v", result)
+	}
+	apiErr, ok := err.(utils.APIError)
+	if !ok || apiErr.StatusCode() != 400 {
+		t.Fatalf("expected a 400 APIError, got %v (%T)", err, err)
+	}
+}

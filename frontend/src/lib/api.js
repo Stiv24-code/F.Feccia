@@ -114,6 +114,9 @@ export const registerClient = (data) => api.post('/auth/register-cliente', data)
 // Conferma il link di verifica mandato da registerClient — successo si
 // comporta esattamente come login (stessa risposta shape).
 export const verifyEmail = (token) => api.post('/auth/verify-email', { token });
+// Richiede un nuovo link di conferma (link scaduto/perso/mai arrivato) senza
+// dover ripresentare tutto il form di registrazione — solo l'email.
+export const resendVerification = (email) => api.post('/auth/resend-verification', { email });
 
 // Admin: gestione utenti migrata su RTK Query (src/store/api/appApi.ts,
 // client generato da swagger). I profili RBAC custom non sono mai stati

@@ -258,6 +258,21 @@ func (mr *MockAuthMockRecorder) RegisterClient(req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterClient", reflect.TypeOf((*MockAuth)(nil).RegisterClient), req)
 }
 
+// ResendVerificationEmail mocks base method.
+func (m *MockAuth) ResendVerificationEmail(email string) (*dto.RegisterClientResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResendVerificationEmail", email)
+	ret0, _ := ret[0].(*dto.RegisterClientResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResendVerificationEmail indicates an expected call of ResendVerificationEmail.
+func (mr *MockAuthMockRecorder) ResendVerificationEmail(email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResendVerificationEmail", reflect.TypeOf((*MockAuth)(nil).ResendVerificationEmail), email)
+}
+
 // VerifyEmail mocks base method.
 func (m *MockAuth) VerifyEmail(token string) (*dto.LoginResult, error) {
 	m.ctrl.T.Helper()

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/apiError';
+import { resendVerification } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,17 +15,40 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Non-null quando l'ultimo tentativo di login è stato respinto perché
+  // l'account cliente non ha ancora confermato l'email — mostra un link per
+  // richiedere un nuovo link di conferma senza ripresentare la registrazione.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setUnverifiedEmail(null);
     try {
       await login(email, password);
       toast.success('Accesso effettuato');
     } catch (err) {
-      toast.error(getApiErrorMessage(err) || 'Credenziali non valide');
+      const message = getApiErrorMessage(err);
+      if (getApiErrorStatus(err) === 403 && message?.includes('non confermata')) {
+        setUnverifiedEmail(email);
+      }
+      toast.error(message || 'Credenziali non valide');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    try {
+      const res = await resendVerification(unverifiedEmail);
+      toast.success(res.data.message || 'Email di conferma inviata di nuovo');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err) || 'Errore durante l\'invio');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -97,6 +121,14 @@ export default function LoginPage() {
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
                   Entra
                 </Button>
+                {unverifiedEmail && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Non hai confermato l&apos;email?{' '}
+                    <button type="button" onClick={handleResend} disabled={resending} className="underline hover:text-primary disabled:opacity-50">
+                      {resending ? 'Invio…' : 'Invia di nuovo il link di conferma'}
+                    </button>
+                  </p>
+                )}
                 <p className="text-sm text-center text-muted-foreground">
                   Sei un cliente? <Link to="/registrati" className="underline hover:text-primary">Registrati</Link>
                 </p>

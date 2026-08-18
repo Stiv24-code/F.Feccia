@@ -90,6 +90,7 @@ import {
   DtoRecomputeSegmentsResult,
   DtoRegisterClientResult,
   DtoRegisterRequest,
+  DtoResendVerificationRequest,
   DtoSemirimorchioAvailabilityResponse,
   DtoSemirimorchioListResponse,
   DtoSemirimorchioRequest,
@@ -499,6 +500,26 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/auth/register-cliente`,
       method: "POST",
       body: registration,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Lighter alternative to re-submitting RegisterClient's whole form again — just the email, for an already self-registered client whose link is expired, lost, or never arrived.
+   *
+   * @tags Auth
+   * @name V1AuthResendVerificationCreate
+   * @summary Resend the registration confirmation link (public)
+   * @request POST:/api/v1/auth/resend-verification
+   */
+  v1AuthResendVerificationCreate = (
+    body: DtoResendVerificationRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoRegisterClientResult, Record<string, string>>({
+      path: `/api/v1/auth/resend-verification`,
+      method: "POST",
+      body: body,
       type: ContentType.Json,
       format: "json",
       ...params,

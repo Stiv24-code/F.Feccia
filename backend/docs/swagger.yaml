@@ -2015,6 +2015,13 @@ definitions:
     - password
     - role
     type: object
+  dto.ResendVerificationRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.RouteAlternativeDTO:
     properties:
       distance_km:
@@ -3065,6 +3072,42 @@ paths:
               type: string
             type: object
       summary: Self-service client registration (public)
+      tags:
+      - Auth
+  /api/v1/auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Lighter alternative to re-submitting RegisterClient's whole form
+        again — just the email, for an already self-registered client whose link is
+        expired, lost, or never arrived.
+      parameters:
+      - description: Account email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResendVerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RegisterClientResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend the registration confirmation link (public)
       tags:
       - Auth
   /api/v1/auth/verify-email:

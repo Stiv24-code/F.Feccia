@@ -1121,6 +1121,10 @@ export interface DtoRegisterRequest {
   role: "admin" | "amministrazione" | "planner" | "operatore" | "cliente";
 }
 
+export interface DtoResendVerificationRequest {
+  email: string;
+}
+
 export interface DtoRouteAlternativeDTO {
   distance_km?: number;
   duration_min?: number;

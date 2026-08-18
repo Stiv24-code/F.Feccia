@@ -876,6 +876,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/resend-verification": {
+            "post": {
+                "description": "Lighter alternative to re-submitting RegisterClient's whole form again — just the email, for an already self-registered client whose link is expired, lost, or never arrived.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Resend the registration confirmation link (public)",
+                "parameters": [
+                    {
+                        "description": "Account email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResendVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterClientResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/verify-email": {
             "post": {
                 "description": "Completes RegisterClient's pending verification — success behaves exactly like Login (access token in body, refresh token as httpOnly cookie).",
@@ -9636,6 +9688,17 @@ const docTemplate = `{
                         "operatore",
                         "cliente"
                     ]
+                }
+            }
+        },
+        "dto.ResendVerificationRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
                 }
             }
         },
