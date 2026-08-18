@@ -49,10 +49,23 @@ func (s *MailerService) SendAcceptance(ctx context.Context, o dto.InboundOrderRe
 }
 
 // Send delivers a plain-text UTF-8 mail through the configured SMTP server.
-// Port 587 (and any other) uses smtp.SendMail, which upgrades with STARTTLS
-// when the server advertises it; port 465 needs an implicit-TLS dial.
 // (net/smtp has no context support — ctx is accepted for interface symmetry.)
-func (s *MailerService) Send(_ context.Context, to, subject, body string) error {
+func (s *MailerService) Send(ctx context.Context, to, subject, body string) error {
+	return s.send(ctx, to, subject, "text/plain", strings.ReplaceAll(body, "\n", "\r\n"))
+}
+
+// SendHTML delivers an HTML mail — used where the body needs a real
+// clickable link (an <a href> — a bare URL in a text/plain body isn't
+// always auto-linkified by the recipient's mail client) rather than
+// plain multi-line text like the inbound-order acceptance mail above.
+func (s *MailerService) SendHTML(ctx context.Context, to, subject, htmlBody string) error {
+	return s.send(ctx, to, subject, "text/html", htmlBody)
+}
+
+// send delivers a UTF-8 mail through the configured SMTP server. Port 587
+// (and any other) uses smtp.SendMail, which upgrades with STARTTLS when the
+// server advertises it; port 465 needs an implicit-TLS dial.
+func (s *MailerService) send(_ context.Context, to, subject, contentType, body string) error {
 	cfg := s.cfg
 	if !cfg.SMTPConfigured() {
 		return fmt.Errorf("SMTP non configurato (SMTP_HOST vuoto)")
@@ -66,9 +79,9 @@ func (s *MailerService) Send(_ context.Context, to, subject, body string) error 
 		"To: " + to,
 		"Subject: " + mime.QEncoding.Encode("utf-8", subject),
 		"MIME-Version: 1.0",
-		"Content-Type: text/plain; charset=utf-8",
+		"Content-Type: " + contentType + "; charset=utf-8",
 		"",
-		strings.ReplaceAll(body, "\n", "\r\n"),
+		body,
 	}, "\r\n")
 
 	addr := cfg.SMTPHost + ":" + cfg.SMTPPort

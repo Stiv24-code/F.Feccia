@@ -342,7 +342,7 @@ type fakeMailer struct {
 	sendErr           error
 }
 
-func (m *fakeMailer) Send(_ context.Context, to, subject, body string) error {
+func (m *fakeMailer) SendHTML(_ context.Context, to, subject, body string) error {
 	m.to, m.subject, m.body = to, subject, body
 	return m.sendErr
 }
@@ -384,7 +384,7 @@ func TestAuthService_RegisterClient_WithMailerSendsVerificationAndBlocksLogin(t 
 		t.Fatalf("expected the mail body to contain a verification link, got %q", fm.body)
 	}
 	token := fm.body[idx+len("token="):]
-	if end := strings.IndexAny(token, "\n\r "); end != -1 {
+	if end := strings.IndexAny(token, "\n\r \""); end != -1 {
 		token = token[:end]
 	}
 	result, err := svc.VerifyEmail(token)

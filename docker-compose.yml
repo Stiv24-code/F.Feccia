@@ -93,6 +93,11 @@ services:
       ORS_BASE_URL: ${ORS_BASE_URL:-https://api.openrouteservice.org}
       # ── Ingestion ordini (OrderMesh) — tutto opzionale: senza credenziali
       # restano attivi dashboard, template e import PDF dal layer testo.
+      # Origine del frontend usata solo per costruire il link di conferma
+      # email nella mail di registrazione cliente (auth.RegisterClient) —
+      # qui è nginx sulla porta 80, non il dev server Vite (porta 3000, il
+      # default del codice quando questa var non è impostata).
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

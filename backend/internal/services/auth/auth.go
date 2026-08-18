@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"html"
 	"time"
 
 	"fratelli-feccia/internal/dto"
@@ -21,12 +22,16 @@ import (
 // mail — implemented by mailer.MailerService, same posture as
 // inboundorders.AcceptanceMailer: a nil Mailer means "SMTP non configurato",
 // and RegisterClient falls back to the pre-verification behaviour (immediate
-// login) rather than issuing a token nobody could ever confirm.
+// login) rather than issuing a token nobody could ever confirm. SendHTML
+// (not Send) so the mailed link renders as a real clickable <a>, not a bare
+// URL some mail clients show as plain text.
 type Mailer interface {
-	Send(ctx context.Context, to, subject, body string) error
+	SendHTML(ctx context.Context, to, subject, htmlBody string) error
 }
 
-const verificationTTL = 100 * time.Hour
+// TODO: 2 minuti è un valore di test (per verificare comodamente la scadenza
+// del link) — riportare a qualcosa come 24h prima di produzione.
+const verificationTTL = 2 * time.Minute
 
 type AuthService struct {
 	db         *gorm.DB
@@ -318,11 +323,28 @@ func (s *AuthService) VerifyEmail(token string) (*dto.LoginResult, error) {
 func (s *AuthService) sendVerificationMail(to, name, token string) error {
 	link := fmt.Sprintf("%s/verifica-email?token=%s", s.appBaseURL, token)
 	subject := "Confermazione registrazione — Feccia F.lli"
-	body := fmt.Sprintf(
-		"Buongiorno %s,\n\nper confermare la registrazione al portale clienti, apri questo link (valido 24 ore):\n\n%s\n\nSe non hai richiesto questa registrazione, ignora questa email.\n\nCordiali saluti,\nFeccia F.lli S.r.l.",
-		name, link,
+	body := fmt.Sprintf(`<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1a1a1a;line-height:1.5;">
+<p>Buongiorno %s,</p>
+<p>per confermare la registrazione al portale clienti, clicca il link qui sotto (valido %s):</p>
+<p><a href="%s" style="display:inline-block;padding:10px 22px;background:#2a6fdb;color:#fff;text-decoration:none;border-radius:6px;">Confermo il mio account</a></p>
+<p style="font-size:13px;color:#666;">Se il bottone non funziona, copia questo indirizzo nel browser:<br><a href="%s">%s</a></p>
+<p>Se non hai richiesto questa registrazione, ignora questa email.</p>
+<p>Cordiali saluti,<br>Feccia F.lli S.r.l.</p>
+</body></html>`,
+		html.EscapeString(name), formatTTL(verificationTTL), link, link, link,
 	)
-	return s.mailer.Send(context.Background(), to, subject, body)
+	return s.mailer.SendHTML(context.Background(), to, subject, body)
+}
+
+// formatTTL renders a duration in Italian for the verification-mail copy —
+// verificationTTL is deliberately short during testing, so this must reflect
+// whatever it's currently set to rather than a hardcoded "24 ore".
+func formatTTL(d time.Duration) string {
+	if d < time.Hour {
+		return fmt.Sprintf("%d minuti", int(d.Round(time.Minute).Minutes()))
+	}
+	return fmt.Sprintf("%d ore", int(d.Round(time.Hour).Hours()))
 }
 
 func generateToken() (string, error) {

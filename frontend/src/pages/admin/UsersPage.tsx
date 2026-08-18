@@ -55,6 +55,15 @@ export default function UsersPage() {
   const [createForm, setCreateForm] = useState<CreateForm>(emptyCreateForm);
   const { data: customersPage } = useGetCustomersQuery({ limit: 500 });
   const customers = customersPage?.items ?? [];
+  const customerNameById = new Map(customers.map((c) => [c.id, c.ragione_sociale]));
+
+  // Due tabelle separate invece di una sola filtrabile per ruolo: un account
+  // "cliente" (portale self-service o creato dall'admin, sempre legato a un
+  // Customer) è concettualmente un'altra cosa da un account staff — vedi la
+  // discussione su user.go. Restano nella stessa tabella `users`/stesso
+  // sistema di login, solo la vista admin li separa.
+  const staffUsers = users.filter((u) => u.role !== 'cliente');
+  const clientUsers = users.filter((u) => u.role === 'cliente');
 
   const openEdit = (u: DtoAuthUserResponse) => {
     setEditForm({
@@ -118,46 +127,91 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Card className="rounded-xl border shadow-sm">
-        <div className="overflow-x-auto">
-          <Table className="text-xs md:text-sm">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Ruolo</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead className="w-16">Azioni</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={`s${i}`}>{Array.from({ length: 5 }).map((_, j) => <TableCell key={j} className="py-2"><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
-                ))
-              ) : users.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nessun utente</TableCell></TableRow>
-              ) : users.map((u) => (
-                <TableRow key={u.id} className="hover:bg-muted/60">
-                  <TableCell className="py-2 font-mono">{u.email}</TableCell>
-                  <TableCell className="py-2">{u.name}</TableCell>
-                  <TableCell className="py-2">
-                    <Badge variant="outline" className="text-[10px]">{ROLE_LABEL[u.role as Role] || u.role}</Badge>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    {u.active ? <Badge variant="default" className="text-[10px]">Attivo</Badge> : <Badge variant="secondary" className="text-[10px]">Disattivato</Badge>}
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifica">
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  </TableCell>
+      <div>
+        <h2 className="text-sm font-semibold mb-2">Staff</h2>
+        <Card className="rounded-xl border shadow-sm">
+          <div className="overflow-x-auto">
+            <Table className="text-xs md:text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Ruolo</TableHead>
+                  <TableHead>Stato</TableHead>
+                  <TableHead className="w-16">Azioni</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <TableRow key={`s${i}`}>{Array.from({ length: 5 }).map((_, j) => <TableCell key={j} className="py-2"><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+                  ))
+                ) : staffUsers.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nessun utente staff</TableCell></TableRow>
+                ) : staffUsers.map((u) => (
+                  <TableRow key={u.id} className="hover:bg-muted/60">
+                    <TableCell className="py-2 font-mono">{u.email}</TableCell>
+                    <TableCell className="py-2">{u.name}</TableCell>
+                    <TableCell className="py-2">
+                      <Badge variant="outline" className="text-[10px]">{ROLE_LABEL[u.role as Role] || u.role}</Badge>
+                    </TableCell>
+                    <TableCell className="py-2">
+                      {u.active ? <Badge variant="default" className="text-[10px]">Attivo</Badge> : <Badge variant="secondary" className="text-[10px]">Disattivato</Badge>}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifica">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold mb-2">Clienti (portale)</h2>
+        <Card className="rounded-xl border shadow-sm">
+          <div className="overflow-x-auto">
+            <Table className="text-xs md:text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Cliente collegato</TableHead>
+                  <TableHead>Stato</TableHead>
+                  <TableHead className="w-16">Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <TableRow key={`c${i}`}>{Array.from({ length: 5 }).map((_, j) => <TableCell key={j} className="py-2"><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+                  ))
+                ) : clientUsers.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nessun account cliente</TableCell></TableRow>
+                ) : clientUsers.map((u) => (
+                  <TableRow key={u.id} className="hover:bg-muted/60">
+                    <TableCell className="py-2 font-mono">{u.email}</TableCell>
+                    <TableCell className="py-2">{u.name}</TableCell>
+                    <TableCell className="py-2">{(u.customer_id && customerNameById.get(u.customer_id)) || '—'}</TableCell>
+                    <TableCell className="py-2">
+                      {u.active ? <Badge variant="default" className="text-[10px]">Attivo</Badge> : <Badge variant="secondary" className="text-[10px]">Disattivato</Badge>}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(u)} title="Modifica">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </div>
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
