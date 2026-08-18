@@ -3,6 +3,7 @@ import {
   useGetAdminUsersQuery,
   useCreateAdminUserMutation,
   useUpdateAdminUserMutation,
+  useGetCustomersQuery,
 } from '@/store/api/appApi';
 import type { DtoAuthUserResponse } from '@/api/data-contracts';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import SearchableSelect from '@/components/shared/SearchableSelect';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -19,22 +21,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Plus, Pencil } from 'lucide-react';
 
-type Role = 'admin' | 'amministrazione' | 'planner' | 'operatore';
+type Role = 'admin' | 'amministrazione' | 'planner' | 'operatore' | 'cliente';
 
 const ROLE_LABEL: Record<Role, string> = {
   admin: 'Amministratore',
   amministrazione: 'Amministrazione',
   planner: 'Planner',
   operatore: 'Operatore',
+  cliente: 'Cliente',
 };
 
 const ROLES = Object.keys(ROLE_LABEL) as Role[];
 
 type EditForm = { id: number; name: string; role: Role; active: boolean };
-type CreateForm = { email: string; name: string; password: string; role: Role };
+// customer_id: obbligatorio solo quando role === 'cliente' — un account
+// cliente creato dall'admin è sempre legato a un'anagrafica ESISTENTE
+// (a differenza dell'autoregistrazione pubblica, che ne crea una nuova).
+type CreateForm = { email: string; name: string; password: string; role: Role; customer_id: string };
 
 const emptyEditForm: EditForm = { id: 0, name: '', role: 'operatore', active: true };
-const emptyCreateForm: CreateForm = { email: '', name: '', password: '', role: 'operatore' };
+const emptyCreateForm: CreateForm = { email: '', name: '', password: '', role: 'operatore', customer_id: '' };
 
 export default function UsersPage() {
   const { data: users = [], isLoading: loading } = useGetAdminUsersQuery();
@@ -47,6 +53,8 @@ export default function UsersPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateForm>(emptyCreateForm);
+  const { data: customersPage } = useGetCustomersQuery({ limit: 500 });
+  const customers = customersPage?.items ?? [];
 
   const openEdit = (u: DtoAuthUserResponse) => {
     setEditForm({
@@ -81,8 +89,13 @@ export default function UsersPage() {
       toast.error('Compila email, nome e password (>=12 caratteri)');
       return;
     }
+    if (createForm.role === 'cliente' && !createForm.customer_id) {
+      toast.error('Seleziona il cliente a cui collegare l\'account');
+      return;
+    }
     try {
-      await createAdminUser(createForm).unwrap();
+      const { customer_id, ...rest } = createForm;
+      await createAdminUser(createForm.role === 'cliente' ? { ...rest, customer_id } : rest).unwrap();
       toast.success('Utente creato');
       setCreateOpen(false);
       setCreateForm(emptyCreateForm);
@@ -202,6 +215,20 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
+            {createForm.role === 'cliente' && (
+              <div>
+                <Label>Cliente *</Label>
+                <SearchableSelect
+                  value={createForm.customer_id}
+                  onValueChange={(v) => setCreateForm({ ...createForm, customer_id: v })}
+                  options={customers}
+                  getValue={(c) => c.id || ''}
+                  getLabel={(c) => c.ragione_sociale || ''}
+                  placeholder="Seleziona il cliente da collegare..."
+                  searchPlaceholder="Cerca cliente..."
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Annulla</Button>

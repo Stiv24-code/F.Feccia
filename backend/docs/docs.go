@@ -835,7 +835,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/register-cliente": {
             "post": {
-                "description": "Creates a Customer (anagrafica) + a \"cliente\" account atomically, then logs it in immediately (no approval step) — access token in body, refresh token as httpOnly cookie, same as Login.",
+                "description": "Creates a Customer (anagrafica) + a \"cliente\" account atomically. When SMTP is configured the account stays unusable until POST /auth/verify-email confirms the mailed link — the response is then dto.RegisterClientResult, not a login. Without SMTP it falls back to the old immediate-login behaviour and returns dto.LoginResult instead, same as Login (access token in body, refresh token as httpOnly cookie).",
                 "consumes": [
                     "application/json"
                 ],
@@ -854,6 +854,49 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/dto.ClientRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterClientResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/verify-email": {
+            "post": {
+                "description": "Completes RegisterClient's pending verification — success behaves exactly like Login (access token in body, refresh token as httpOnly cookie).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Confirm a registration link's token (public)",
+                "parameters": [
+                    {
+                        "description": "Verification token from the emailed link",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyEmailRequest"
                         }
                     }
                 ],
@@ -9547,6 +9590,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RegisterClientResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "verified": {
+                    "type": "boolean"
+                }
+            }
+        },
         "dto.RegisterRequest": {
             "type": "object",
             "required": [
@@ -9556,6 +9613,9 @@ const docTemplate = `{
                 "role"
             ],
             "properties": {
+                "customer_id": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -9573,7 +9633,8 @@ const docTemplate = `{
                         "admin",
                         "amministrazione",
                         "planner",
-                        "operatore"
+                        "operatore",
+                        "cliente"
                     ]
                 }
             }
@@ -10085,12 +10146,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
+                    "description": "\"cliente\" is accepted here only so re-saving a cliente account's\nname/active status (role unchanged) doesn't fail validation — the\nadmin UI never offers switching a role TO cliente via this edit path\n(that always goes through /auth/register instead, which also asks for\nthe Customer to link).",
                     "type": "string",
                     "enum": [
                         "admin",
                         "amministrazione",
                         "planner",
-                        "operatore"
+                        "operatore",
+                        "cliente"
                     ]
                 }
             }
@@ -10122,6 +10185,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -10240,6 +10314,10 @@ const docTemplate = `{
                 },
                 "customer_id": {
                     "description": "CustomerID links a RoleCliente account to its Customer/anagrafica —\nalways nil for staff roles. Set once, at registration (see\nAuthService.RegisterClient), never reassigned.",
+                    "type": "string"
+                },
+                "email_verified_at": {
+                    "description": "Email verification (self-service client registration only — see\nAuthService.RegisterClient). VerificationToken is non-nil exactly\nwhile a confirmation is outstanding; Login only refuses access when a\ntoken was actually issued and never confirmed, so accounts created\nbefore this feature existed (VerificationToken always nil) are never\nretroactively locked out.",
                     "type": "string"
                 },
                 "id": {

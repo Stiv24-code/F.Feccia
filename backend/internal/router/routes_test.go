@@ -33,7 +33,7 @@ func newRoutesTestApp(t *testing.T) (*fiber.App, utils.JWTConfig) {
 
 	jwtCfg := utils.NewJWTConfig("test-access-secret", "test-refresh-secret", "60", "24")
 	app := fiber.New()
-	SetupRoutes(app, db, jwtCfg, config.S3Config{}, config.RoutingConfig{}, config.InboundConfig{})
+	SetupRoutes(app, db, jwtCfg, config.S3Config{}, config.RoutingConfig{}, config.InboundConfig{}, "")
 	return app, jwtCfg
 }
 

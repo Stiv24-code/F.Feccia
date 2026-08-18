@@ -19,6 +19,7 @@ func registerAuthRoutes(api fiber.Router, handlers *app_handlers.Handler, jwtCfg
 	// different path from the admin-only /auth/register below, tighter rate
 	// limit (anonymous + writes a Customer row, more abuse-prone than login).
 	api.Post("/auth/register-cliente", middleware.NewLimiterIPPath(5, time.Minute), handlers.Auth.RegisterClient)
+	api.Post("/auth/verify-email", middleware.NewLimiterIPPath(10, time.Minute), handlers.Auth.VerifyEmail)
 }
 
 // registerAuthMeRoute mirrors GET /auth/me — valid access token required,

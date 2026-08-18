@@ -719,7 +719,8 @@ func mustUser(login, name, role, password string) models.User {
 	if err != nil {
 		panic(err)
 	}
-	return models.User{Login: login, Name: name, Role: role, Active: true, PasswordHash: string(hash)}
+	now := time.Now()
+	return models.User{Login: login, Name: name, Role: role, Active: true, PasswordHash: string(hash), EmailVerifiedAt: &now}
 }
 
 func getEnv(key, fallback string) string {

@@ -168,12 +168,12 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 // RegisterClient godoc
 // @Summary Self-service client registration (public)
-// @Description Creates a Customer (anagrafica) + a "cliente" account atomically, then logs it in immediately (no approval step) — access token in body, refresh token as httpOnly cookie, same as Login.
+// @Description Creates a Customer (anagrafica) + a "cliente" account atomically. When SMTP is configured the account stays unusable until POST /auth/verify-email confirms the mailed link — the response is then dto.RegisterClientResult, not a login. Without SMTP it falls back to the old immediate-login behaviour and returns dto.LoginResult instead, same as Login (access token in body, refresh token as httpOnly cookie).
 // @Tags Auth
 // @Accept json
 // @Produce json
 // @Param registration body dto.ClientRegisterRequest true "Client registration data"
-// @Success 200 {object} dto.LoginResult
+// @Success 200 {object} dto.RegisterClientResult
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/auth/register-cliente [post]
 func (h *AuthHandler) RegisterClient(c *fiber.Ctx) error {
@@ -188,7 +188,7 @@ func (h *AuthHandler) RegisterClient(c *fiber.Ctx) error {
 	ctx := utils.RequestContext(c)
 	ip, ua := c.IP(), c.Get("User-Agent")
 
-	result, err := h.Service.RegisterClient(req)
+	pending, login, err := h.Service.RegisterClient(req)
 	if err != nil {
 		h.AuditLogger.Log(ctx, audit.Entry{
 			Action: "auth.register_cliente", Resource: "user", StatusCode: 400, Success: false,
@@ -197,9 +197,59 @@ func (h *AuthHandler) RegisterClient(c *fiber.Ctx) error {
 		return utils.HandleDatabaseError(c, err)
 	}
 
+	if pending != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.register_cliente", Resource: "user", StatusCode: 200, Success: true,
+			IP: ip, UserAgent: ua, Metadata: map[string]interface{}{"email": req.Email, "verification": "sent"},
+		})
+		return utils.SuccessResponse(c, 200, pending)
+	}
+
+	userID := login.User.ID
+	h.AuditLogger.Log(ctx, audit.Entry{
+		Action: "auth.register_cliente", UserID: &userID, UserRole: login.User.Role,
+		Resource: "user", ResourceID: strconv.FormatInt(userID, 10), StatusCode: 200, Success: true,
+		IP: ip, UserAgent: ua,
+	})
+
+	utils.SetRefreshCookie(c, login.RefreshToken, login.RefreshTTL)
+	return utils.SuccessResponse(c, 200, login)
+}
+
+// VerifyEmail godoc
+// @Summary Confirm a registration link's token (public)
+// @Description Completes RegisterClient's pending verification — success behaves exactly like Login (access token in body, refresh token as httpOnly cookie).
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.VerifyEmailRequest true "Verification token from the emailed link"
+// @Success 200 {object} dto.LoginResult
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/verify-email [post]
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	var req dto.VerifyEmailRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if errs := utils.NewValidator().Validate(&req); len(errs) > 0 {
+		return utils.ValidationErrorResponse(c, errs)
+	}
+
+	ctx := utils.RequestContext(c)
+	ip, ua := c.IP(), c.Get("User-Agent")
+
+	result, err := h.Service.VerifyEmail(req.Token)
+	if err != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.verify_email", Resource: "user", StatusCode: 400, Success: false,
+			IP: ip, UserAgent: ua, Error: err.Error(),
+		})
+		return utils.HandleDatabaseError(c, err)
+	}
+
 	userID := result.User.ID
 	h.AuditLogger.Log(ctx, audit.Entry{
-		Action: "auth.register_cliente", UserID: &userID, UserRole: result.User.Role,
+		Action: "auth.verify_email", UserID: &userID, UserRole: result.User.Role,
 		Resource: "user", ResourceID: strconv.FormatInt(userID, 10), StatusCode: 200, Success: true,
 		IP: ip, UserAgent: ua,
 	})

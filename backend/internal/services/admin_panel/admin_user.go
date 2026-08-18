@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -65,6 +66,10 @@ func (s *AdminService) ListUsers(ctx context.Context, page, limit int) ([]dto.Us
 	return result, total, nil
 }
 
+// CreateUser is a pre-existing admin-panel path the frontend never actually
+// calls (UsersPage.tsx uses POST /auth/register — see AuthService.Register
+// — not this one); left as-is, not worth extending for the cliente-role
+// case only the live path needs.
 func (s *AdminService) CreateUser(ctx context.Context, req dto.CreateUserRequest) (*dto.UserResponse, error) {
 	if !utils.IsValidRole(req.Role) {
 		return nil, fmt.Errorf("invalid role")
@@ -78,11 +83,13 @@ func (s *AdminService) CreateUser(ctx context.Context, req dto.CreateUserRequest
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 
+	now := time.Now()
 	user := models.User{
-		Login:        req.Login,
-		Name:         req.Name,
-		PasswordHash: string(hash),
-		Role:         req.Role,
+		Login:           req.Login,
+		Name:            req.Name,
+		PasswordHash:    string(hash),
+		Role:            req.Role,
+		EmailVerifiedAt: &now,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {

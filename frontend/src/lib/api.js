@@ -102,12 +102,18 @@ export const login = (data) => api.post('/auth/login', data);
 export const getMe = () => api.get('/auth/me');
 export const refreshSession = () => api.post('/auth/refresh');
 export const logout = () => api.post('/auth/logout');
-// Autoregistrazione cliente (pubblica): stessa risposta di login (access
-// token in body, refresh token nel cookie httpOnly) — auto-login immediato,
-// nessun approval. Vedi backend/internal/services/auth.RegisterClient.
+// Autoregistrazione cliente (pubblica). Risposta a due forme (vedi
+// backend/internal/services/auth.RegisterClient): se SMTP è configurato,
+// { verified: false, message, email } — l'account resta bloccato finché
+// verifyEmail non conferma il link mandato per email; altrimenti, stessa
+// risposta di login (access token in body, refresh token nel cookie
+// httpOnly) — vecchio comportamento, auto-login immediato.
 // Le route scoped del portale cliente (/me/anagrafica, /me/orders) sono
 // invece su RTK Query in store/api/appApi.ts, come le altre pagine anagrafiche.
 export const registerClient = (data) => api.post('/auth/register-cliente', data);
+// Conferma il link di verifica mandato da registerClient — successo si
+// comporta esattamente come login (stessa risposta shape).
+export const verifyEmail = (token) => api.post('/auth/verify-email', { token });
 
 // Admin: gestione utenti migrata su RTK Query (src/store/api/appApi.ts,
 // client generato da swagger). I profili RBAC custom non sono mai stati

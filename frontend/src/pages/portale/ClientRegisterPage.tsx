@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { MapPicker } from '@/components/shared/MapPicker';
 import { AddressSearchInput } from '@/components/shared/AddressSearchInput';
 import { toast } from 'sonner';
-import { Truck, UserPlus, Loader2 } from 'lucide-react';
+import { Truck, UserPlus, Loader2, MailCheck } from 'lucide-react';
 
 type RegisterForm = Omit<DtoClientRegisterRequest, 'lat' | 'lng'> & { lat: number | null; lng: number | null };
 
@@ -25,13 +25,21 @@ export default function ClientRegisterPage() {
   const [form, setForm] = useState<RegisterForm>(emptyForm);
   const [flySignal, setFlySignal] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Non-null quando il backend ha mandato un'email di conferma invece di
+  // loggare subito (SMTP configurato) — sostituisce il form con un messaggio
+  // "controlla la posta" invece di navigare nel portale.
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const body: DtoClientRegisterRequest = { ...form, lat: form.lat ?? undefined, lng: form.lng ?? undefined };
-      await registerClient(body);
+      const result = await registerClient(body);
+      if (result.verified === false) {
+        setPendingMessage(result.message || 'Controlla la tua email per confermare l\'account.');
+        return;
+      }
       toast.success('Registrazione completata');
       navigate('/portale');
     } catch (err) {
@@ -72,6 +80,17 @@ export default function ClientRegisterPage() {
           </div>
 
           <Card className="border shadow-sm">
+            {pendingMessage ? (
+              <CardContent className="pt-6 pb-8 text-center space-y-3">
+                <MailCheck className="h-10 w-10 mx-auto text-primary" />
+                <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Controlla la tua email</p>
+                <p className="text-sm text-muted-foreground">{pendingMessage}</p>
+                <p className="text-sm text-center text-muted-foreground pt-2">
+                  Hai già confermato? <Link to="/login" className="underline hover:text-primary">Accedi</Link>
+                </p>
+              </CardContent>
+            ) : (
+            <>
             <CardHeader className="pb-4">
               <CardTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Registrati come cliente</CardTitle>
               <CardDescription>Crea il tuo account per inviare ordini di trasporto</CardDescription>
@@ -130,6 +149,8 @@ export default function ClientRegisterPage() {
                 </p>
               </form>
             </CardContent>
+            </>
+            )}
           </Card>
         </div>
       </div>

@@ -1,7 +1,11 @@
 package auth
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"fratelli-feccia/internal/dto"
@@ -13,15 +17,30 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthService struct {
-	db      *gorm.DB
-	jwtConf utils.JWTConfig
+// Mailer is the seam AuthService needs to send the registration-confirmation
+// mail — implemented by mailer.MailerService, same posture as
+// inboundorders.AcceptanceMailer: a nil Mailer means "SMTP non configurato",
+// and RegisterClient falls back to the pre-verification behaviour (immediate
+// login) rather than issuing a token nobody could ever confirm.
+type Mailer interface {
+	Send(ctx context.Context, to, subject, body string) error
 }
 
-func NewAuthService(db *gorm.DB, jwtConf utils.JWTConfig) *AuthService {
+const verificationTTL = 100 * time.Hour
+
+type AuthService struct {
+	db         *gorm.DB
+	jwtConf    utils.JWTConfig
+	mailer     Mailer
+	appBaseURL string
+}
+
+func NewAuthService(db *gorm.DB, jwtConf utils.JWTConfig, mailer Mailer, appBaseURL string) *AuthService {
 	return &AuthService{
-		db:      db,
-		jwtConf: jwtConf,
+		db:         db,
+		jwtConf:    jwtConf,
+		mailer:     mailer,
+		appBaseURL: appBaseURL,
 	}
 }
 
@@ -37,6 +56,14 @@ func (s *AuthService) Login(login, password string) (*dto.LoginResult, error) {
 
 	if !user.Active {
 		return nil, utils.NewAPIError(403, "Utente disattivato")
+	}
+
+	// VerificationToken is only ever non-nil for an account that actually had
+	// a confirmation mail issued (RegisterClient, SMTP configured) — accounts
+	// created before this feature existed, or created while SMTP was
+	// unconfigured, never got one and are never gated here.
+	if user.VerificationToken != nil && user.EmailVerifiedAt == nil {
+		return nil, utils.NewAPIError(403, "Email non confermata: controlla la posta e clicca il link di conferma")
 	}
 
 	result, err := s.buildLoginResult(user)
@@ -82,7 +109,30 @@ func (s *AuthService) Me(userID int64) (*dto.AuthUserResponse, error) {
 // Register mirrors POST /auth/register (admin-only): creates a new user.
 // Unlike CreateUser (the pre-existing, unused-by-frontend admin panel path),
 // this uses email/min-12-char-password to match the real frontend contract.
+// When req.Role is "cliente" the account is scoped to an EXISTING
+// Customer/anagrafica the admin picks (req.CustomerID, required in that
+// case) — unlike self-service RegisterClient, which has no existing
+// Customer to pick from and creates one instead.
 func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, error) {
+	var customerID *uuid.UUID
+	if req.Role == utils.RoleCliente {
+		if req.CustomerID == nil || *req.CustomerID == "" {
+			return nil, utils.NewAPIError(400, "customer_id obbligatorio per il ruolo cliente")
+		}
+		id, err := uuid.Parse(*req.CustomerID)
+		if err != nil {
+			return nil, utils.NewAPIError(400, "customer_id non valido")
+		}
+		var customer models.Customer
+		if err := s.db.First(&customer, "id = ?", id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, utils.NewAPIError(400, "Cliente non trovato")
+			}
+			return nil, err
+		}
+		customerID = &id
+	}
+
 	var count int64
 	s.db.Model(&models.User{}).Where("login = ?", req.Email).Count(&count)
 	if count > 0 {
@@ -94,8 +144,14 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, 
 		return nil, err
 	}
 
+	now := time.Now()
 	user := models.User{
 		Login: req.Email, Name: req.Name, PasswordHash: string(hash), Role: req.Role, Active: true,
+		CustomerID: customerID,
+		// Admin-provisioned — the admin is already an authenticated,
+		// trusted actor, so there's no "prove you own this mailbox" step to
+		// gate here (unlike self-service RegisterClient below).
+		EmailVerifiedAt: &now,
 	}
 	if err := s.db.Create(&user).Error; err != nil {
 		return nil, err
@@ -107,19 +163,49 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, 
 
 // RegisterClient mirrors POST /auth/register-cliente (public, unauthenticated):
 // atomically creates a Customer (anagrafica) and a RoleCliente User linked to
-// it, then logs the new account in immediately (no approval step) — same
-// LoginResult shape as Login/Refresh, so the frontend can go straight into
-// the client portal.
-func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error) {
-	var count int64
-	s.db.Model(&models.User{}).Where("login = ?", req.Email).Count(&count)
-	if count > 0 {
-		return nil, utils.NewAPIError(400, "Email già registrata")
+// it. When SMTP is configured a confirmation link is mailed and the account
+// stays unusable (VerificationToken set, EmailVerifiedAt nil) until
+// VerifyEmail confirms it — closing the "anyone can sign up under someone
+// else's email and get straight into the portal" gap the previous
+// immediate-login behaviour had. Without SMTP there is no way to verify
+// anything, so it falls back to that old immediate-login behaviour instead
+// of minting a token nobody could ever confirm.
+func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.RegisterClientResult, *dto.LoginResult, error) {
+	var existing models.User
+	err := s.db.Where("login = ?", req.Email).First(&existing).Error
+	switch {
+	case err == nil && existing.Role == utils.RoleCliente && existing.VerificationToken != nil && existing.EmailVerifiedAt == nil:
+		// Genuinely stuck on a previous attempt (mail lost/expired, or SMTP
+		// was down at the time) — resend rather than error, so it isn't a
+		// permanent dead end. Doesn't touch the Customer row already
+		// created on the first attempt. Any OTHER existing account at this
+		// email (staff, already-verified client, or one from before this
+		// feature existed) falls through to the plain duplicate-email
+		// rejection below instead — never mailed a "confirm your account"
+		// link to an account that never asked for one.
+		return s.resendVerification(existing)
+	case err == nil:
+		return nil, nil, utils.NewAPIError(400, "Email già registrata")
+	case !errors.Is(err, gorm.ErrRecordNotFound):
+		return nil, nil, err
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	var token string
+	var expiresAt *time.Time
+	verifying := s.mailer != nil
+	if verifying {
+		t, err := generateToken()
+		if err != nil {
+			return nil, nil, err
+		}
+		token = t
+		exp := time.Now().Add(verificationTTL)
+		expiresAt = &exp
 	}
 
 	var user models.User
@@ -147,13 +233,104 @@ func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginR
 			Login: req.Email, Name: req.Name, PasswordHash: string(hash),
 			Role: utils.RoleCliente, CustomerID: &customer.ID, Active: true,
 		}
+		if verifying {
+			user.VerificationToken = &token
+			user.VerificationExpiresAt = expiresAt
+		} else {
+			now := time.Now()
+			user.EmailVerifiedAt = &now
+		}
 		return tx.Create(&user).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
+	if !verifying {
+		login, err := s.buildLoginResult(user)
+		return nil, login, err
+	}
+
+	if err := s.sendVerificationMail(user.Login, user.Name, token); err != nil {
+		return nil, nil, utils.NewAPIError(502, "registrazione creata ma invio email fallito: "+err.Error())
+	}
+	return &dto.RegisterClientResult{
+		Verified: false,
+		Message:  "Registrazione ricevuta: controlla la tua email per confermare l'account.",
+		Email:    user.Login,
+	}, nil, nil
+}
+
+// resendVerification regenerates and re-mails the confirmation link for an
+// existing, not-yet-verified account — see RegisterClient.
+func (s *AuthService) resendVerification(user models.User) (*dto.RegisterClientResult, *dto.LoginResult, error) {
+	if s.mailer == nil {
+		// SMTP got disabled after the account was created unverified —
+		// nothing to resend, and Login's gate only applies when a token was
+		// actually issued, so clearing it unblocks the account outright.
+		now := time.Now()
+		s.db.Model(&user).Updates(map[string]interface{}{"email_verified_at": &now, "verification_token": nil, "verification_expires_at": nil})
+		return nil, nil, utils.NewAPIError(400, "Email già registrata: account confermato automaticamente (verifica email non disponibile), accedi con la password scelta in fase di registrazione")
+	}
+
+	token, err := generateToken()
+	if err != nil {
+		return nil, nil, err
+	}
+	exp := time.Now().Add(verificationTTL)
+	if err := s.db.Model(&user).Updates(map[string]interface{}{"verification_token": token, "verification_expires_at": &exp}).Error; err != nil {
+		return nil, nil, err
+	}
+
+	if err := s.sendVerificationMail(user.Login, user.Name, token); err != nil {
+		return nil, nil, utils.NewAPIError(502, "invio email fallito: "+err.Error())
+	}
+	return &dto.RegisterClientResult{
+		Verified: false,
+		Message:  "Un link di conferma era già stato inviato: te ne abbiamo mandato uno nuovo.",
+		Email:    user.Login,
+	}, nil, nil
+}
+
+// VerifyEmail confirms a registration link's token (POST /auth/verify-email)
+// — success behaves exactly like Login, minting a fresh token pair.
+func (s *AuthService) VerifyEmail(token string) (*dto.LoginResult, error) {
+	var user models.User
+	if err := s.db.Where("verification_token = ?", token).First(&user).Error; err != nil {
+		return nil, utils.NewAPIError(400, "Link di conferma non valido")
+	}
+	if user.VerificationExpiresAt == nil || user.VerificationExpiresAt.Before(time.Now()) {
+		return nil, utils.NewAPIError(400, "Link di conferma scaduto: registrati di nuovo per ricevere un nuovo link")
+	}
+
+	now := time.Now()
+	if err := s.db.Model(&user).Updates(map[string]interface{}{
+		"email_verified_at": &now, "verification_token": nil, "verification_expires_at": nil,
+	}).Error; err != nil {
+		return nil, err
+	}
+	user.EmailVerifiedAt = &now
+	user.VerificationToken = nil
+
 	return s.buildLoginResult(user)
+}
+
+func (s *AuthService) sendVerificationMail(to, name, token string) error {
+	link := fmt.Sprintf("%s/verifica-email?token=%s", s.appBaseURL, token)
+	subject := "Confermazione registrazione — Feccia F.lli"
+	body := fmt.Sprintf(
+		"Buongiorno %s,\n\nper confermare la registrazione al portale clienti, apri questo link (valido 24 ore):\n\n%s\n\nSe non hai richiesto questa registrazione, ignora questa email.\n\nCordiali saluti,\nFeccia F.lli S.r.l.",
+		name, link,
+	)
+	return s.mailer.Send(context.Background(), to, subject, body)
+}
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func (s *AuthService) buildLoginResult(user models.User) (*dto.LoginResult, error) {

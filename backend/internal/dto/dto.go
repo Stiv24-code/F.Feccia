@@ -36,11 +36,17 @@ type AuthUserResponse struct {
 // RegisterRequest mirrors Python's UserCreate — the password policy
 // (min 12 chars) matches backend/models.py's UserCreate.password field
 // exactly, since this is admin-facing user provisioning, not self-signup.
+// CustomerID is required exactly when Role == "cliente": an admin-provisioned
+// client-portal account is scoped to an EXISTING Customer/anagrafica the
+// admin picks (unlike self-registration, which has no existing Customer to
+// pick from and creates one instead) — checked in AuthService.Register, not
+// here (validator "required_if" can't express "one of several role values").
 type RegisterRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Name     string `json:"name" validate:"required,min=1"`
-	Password string `json:"password" validate:"required,min=12"`
-	Role     string `json:"role" validate:"required,oneof=admin amministrazione planner operatore"`
+	Email      string  `json:"email" validate:"required,email"`
+	Name       string  `json:"name" validate:"required,min=1"`
+	Password   string  `json:"password" validate:"required,min=12"`
+	Role       string  `json:"role" validate:"required,oneof=admin amministrazione planner operatore cliente"`
+	CustomerID *string `json:"customer_id,omitempty"`
 }
 
 // ClientRegisterRequest is the public, unauthenticated self-registration
@@ -89,6 +95,25 @@ type LoginResult struct {
 	User         AuthUserResponse `json:"user"`
 }
 
+// RegisterClientResult is returned by POST /auth/register-cliente instead of
+// LoginResult whenever a confirmation email was actually sent — Verified is
+// false and there is no token, the caller must complete VerifyEmailRequest
+// first. When SMTP isn't configured (no way to verify anything) the endpoint
+// falls back to the old immediate-login behaviour and still returns a plain
+// LoginResult, so this type's absence from a 200 response is meaningful too.
+type RegisterClientResult struct {
+	Verified bool   `json:"verified"`
+	Message  string `json:"message"`
+	Email    string `json:"email"`
+}
+
+// VerifyEmailRequest confirms a registration link's token (POST
+// /auth/verify-email) — on success the account behaves exactly like a fresh
+// Login, returning a normal LoginResult.
+type VerifyEmailRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
 type CreateUserRequest struct {
 	Login    string `json:"login" validate:"required,min=3,max=150"`
 	Name     string `json:"name"`
@@ -100,7 +125,12 @@ type UpdateUserRequest struct {
 	Login    string  `json:"login" validate:"required,min=3,max=150"`
 	Name     string  `json:"name"`
 	Password *string `json:"password"`
-	Role     string  `json:"role" validate:"required,oneof=admin amministrazione planner operatore"`
+	// "cliente" is accepted here only so re-saving a cliente account's
+	// name/active status (role unchanged) doesn't fail validation — the
+	// admin UI never offers switching a role TO cliente via this edit path
+	// (that always goes through /auth/register instead, which also asks for
+	// the Customer to link).
+	Role string `json:"role" validate:"required,oneof=admin amministrazione planner operatore cliente"`
 }
 
 type UserResponse struct {

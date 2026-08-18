@@ -88,6 +88,7 @@ import {
   DtoProductRequest,
   DtoProductResponse,
   DtoRecomputeSegmentsResult,
+  DtoRegisterClientResult,
   DtoRegisterRequest,
   DtoSemirimorchioAvailabilityResponse,
   DtoSemirimorchioListResponse,
@@ -102,6 +103,7 @@ import {
   DtoUpdateUserRequest,
   DtoVehicleTypeRequest,
   DtoVehicleTypeResponse,
+  DtoVerifyEmailRequest,
   DtoWashStationListResponse,
   DtoWashStationRequest,
   DtoWashStationResponse,
@@ -482,7 +484,7 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
-   * @description Creates a Customer (anagrafica) + a "cliente" account atomically, then logs it in immediately (no approval step) — access token in body, refresh token as httpOnly cookie, same as Login.
+   * @description Creates a Customer (anagrafica) + a "cliente" account atomically. When SMTP is configured the account stays unusable until POST /auth/verify-email confirms the mailed link — the response is then dto.RegisterClientResult, not a login. Without SMTP it falls back to the old immediate-login behaviour and returns dto.LoginResult instead, same as Login (access token in body, refresh token as httpOnly cookie).
    *
    * @tags Auth
    * @name V1AuthRegisterClienteCreate
@@ -493,10 +495,30 @@ export class Api<SecurityDataType = unknown> {
     registration: DtoClientRegisterRequest,
     params: RequestParams = {},
   ) =>
-    this.http.request<DtoLoginResult, Record<string, string>>({
+    this.http.request<DtoRegisterClientResult, Record<string, string>>({
       path: `/api/v1/auth/register-cliente`,
       method: "POST",
       body: registration,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Completes RegisterClient's pending verification — success behaves exactly like Login (access token in body, refresh token as httpOnly cookie).
+   *
+   * @tags Auth
+   * @name V1AuthVerifyEmailCreate
+   * @summary Confirm a registration link's token (public)
+   * @request POST:/api/v1/auth/verify-email
+   */
+  v1AuthVerifyEmailCreate = (
+    body: DtoVerifyEmailRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<DtoLoginResult, Record<string, string>>({
+      path: `/api/v1/auth/verify-email`,
+      method: "POST",
+      body: body,
       type: ContentType.Json,
       format: "json",
       ...params,

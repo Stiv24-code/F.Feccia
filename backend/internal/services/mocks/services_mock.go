@@ -243,18 +243,34 @@ func (mr *MockAuthMockRecorder) Register(req interface{}) *gomock.Call {
 }
 
 // RegisterClient mocks base method.
-func (m *MockAuth) RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error) {
+func (m *MockAuth) RegisterClient(req dto.ClientRegisterRequest) (*dto.RegisterClientResult, *dto.LoginResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterClient", req)
-	ret0, _ := ret[0].(*dto.LoginResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(*dto.RegisterClientResult)
+	ret1, _ := ret[1].(*dto.LoginResult)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // RegisterClient indicates an expected call of RegisterClient.
 func (mr *MockAuthMockRecorder) RegisterClient(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterClient", reflect.TypeOf((*MockAuth)(nil).RegisterClient), req)
+}
+
+// VerifyEmail mocks base method.
+func (m *MockAuth) VerifyEmail(token string) (*dto.LoginResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyEmail", token)
+	ret0, _ := ret[0].(*dto.LoginResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyEmail indicates an expected call of VerifyEmail.
+func (mr *MockAuthMockRecorder) VerifyEmail(token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuth)(nil).VerifyEmail), token)
 }
 
 // MockCustomer is a mock of Customer interface.

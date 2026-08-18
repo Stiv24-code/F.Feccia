@@ -57,7 +57,13 @@ type Auth interface {
 	Refresh(refreshToken string) (*dto.LoginResult, error)
 	Me(userID int64) (*dto.AuthUserResponse, error)
 	Register(req dto.RegisterRequest) (*dto.AuthUserResponse, error)
-	RegisterClient(req dto.ClientRegisterRequest) (*dto.LoginResult, error)
+	// RegisterClient returns exactly one of the two results: pending is
+	// non-nil when a confirmation email was actually sent (must VerifyEmail
+	// before logging in), login is non-nil when SMTP isn't configured and the
+	// account was activated immediately instead (old behaviour, no way to
+	// verify anything in that case).
+	RegisterClient(req dto.ClientRegisterRequest) (pending *dto.RegisterClientResult, login *dto.LoginResult, err error)
+	VerifyEmail(token string) (*dto.LoginResult, error)
 }
 
 type Customer interface {
@@ -401,12 +407,17 @@ type Service struct {
 	MailScraperGroup
 }
 
-func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string, inboundCfg config.InboundConfig) *Service {
+func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Client, orsApiKey, orsBaseURL string, inboundCfg config.InboundConfig, appBaseURL string) *Service {
 	// The acceptance mailer only exists when SMTP is configured; a nil seam
-	// means Accept works without sending mail ("SMTP non configurato").
+	// means Accept works without sending mail ("SMTP non configurato"). Same
+	// SMTP config/seam is reused for auth's registration-confirmation mail —
+	// one mailbox, two unrelated notification flows.
 	var acceptanceMailer inboundorders.AcceptanceMailer
+	var authMailer auth.Mailer
 	if inboundCfg.SMTPConfigured() {
-		acceptanceMailer = mailer.NewMailerService(inboundCfg)
+		sharedMailer := mailer.NewMailerService(inboundCfg)
+		acceptanceMailer = sharedMailer
+		authMailer = sharedMailer
 	}
 	// The scraper shares the inbound-orders instance as its order sink
 	// (AddIfNew), so both API and scraper apply the same dedup rule.
@@ -417,7 +428,7 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 			Admin: admin.NewAdminService(db, jwtConf),
 		},
 		Authentication: Authentication{
-			Auth: auth.NewAuthService(db, jwtConf),
+			Auth: auth.NewAuthService(db, jwtConf, authMailer, appBaseURL),
 		},
 		Customers: Customers{
 			Customer: customers.NewCustomerService(db),

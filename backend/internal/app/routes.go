@@ -19,5 +19,5 @@ func (a *App) registerRoutes() {
 		return c.JSON(fiber.Map{"message": "LoginBusiness TMS API", "version": "1.0.0"})
 	})
 
-	a.Services = router.SetupRoutes(a.Router, a.DB, a.jwtCfg, a.Config.S3, a.Config.Routing, a.Config.Inbound)
+	a.Services = router.SetupRoutes(a.Router, a.DB, a.jwtCfg, a.Config.S3, a.Config.Routing, a.Config.Inbound, a.Config.Server.AppBaseURL)
 }

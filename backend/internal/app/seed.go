@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"fratelli-feccia/internal/models"
 	"fratelli-feccia/internal/seeddemo"
@@ -58,12 +59,14 @@ func seedBareAdmin(db *gorm.DB) {
 		return
 	}
 
+	now := time.Now()
 	user := models.User{
-		Login:        login,
-		Name:         "Admin",
-		PasswordHash: string(hash),
-		Role:         utils.RoleAdmin,
-		Active:       true,
+		Login:           login,
+		Name:            "Admin",
+		PasswordHash:    string(hash),
+		Role:            utils.RoleAdmin,
+		Active:          true,
+		EmailVerifiedAt: &now,
 	}
 
 	if err := db.Create(&user).Error; err != nil {

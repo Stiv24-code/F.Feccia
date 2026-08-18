@@ -5,6 +5,7 @@ import {
   refreshSession,
   getMe,
   registerClient as registerClientApi,
+  verifyEmail as verifyEmailApi,
   setAccessToken,
   setOnAuthFailure,
 } from './api';
@@ -57,11 +58,25 @@ export const AuthProvider = ({ children }) => {
     return res.data.user;
   }, []);
 
-  // Autoregistrazione cliente: stessa risposta shape di login (access token
-  // in body, refresh token nel cookie httpOnly) — auto-login immediato,
-  // nessun approval, così il chiamante può navigare dritto nel portale.
+  // Autoregistrazione cliente: due esiti possibili (vedi lib/api.js).
+  // Con verifica email attiva la risposta non contiene un access token —
+  // non c'è nessuna sessione da aprire, solo un messaggio da mostrare.
+  // Senza verifica (SMTP non configurato) la risposta è identica a login:
+  // auto-login immediato, come prima di questa funzionalità.
   const registerClient = useCallback(async (payload) => {
     const res = await registerClientApi(payload);
+    if (res.data.verified === false) {
+      return { verified: false, message: res.data.message, email: res.data.email };
+    }
+    setAccessToken(res.data.access_token);
+    setUser(res.data.user);
+    return { verified: true, user: res.data.user };
+  }, []);
+
+  // Completa la verifica email (link ricevuto da registerClient) — successo
+  // apre la sessione esattamente come login.
+  const verifyEmail = useCallback(async (token) => {
+    const res = await verifyEmailApi(token);
     setAccessToken(res.data.access_token);
     setUser(res.data.user);
     return res.data.user;
@@ -78,8 +93,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const contextValue = useMemo(
-    () => ({ user, login, registerClient, logout, loading }),
-    [user, login, registerClient, logout, loading],
+    () => ({ user, login, registerClient, verifyEmail, logout, loading }),
+    [user, login, registerClient, verifyEmail, logout, loading],
   );
 
   return (

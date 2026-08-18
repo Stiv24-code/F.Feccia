@@ -1105,13 +1105,20 @@ export interface DtoRecomputeSegmentsResult {
   segmenti_count?: number;
 }
 
+export interface DtoRegisterClientResult {
+  email?: string;
+  message?: string;
+  verified?: boolean;
+}
+
 export interface DtoRegisterRequest {
+  customer_id?: string;
   email: string;
   /** @minLength 1 */
   name: string;
   /** @minLength 12 */
   password: string;
-  role: "admin" | "amministrazione" | "planner" | "operatore";
+  role: "admin" | "amministrazione" | "planner" | "operatore" | "cliente";
 }
 
 export interface DtoRouteAlternativeDTO {
@@ -1286,7 +1293,14 @@ export interface DtoUpdateUserRequest {
   login: string;
   name?: string;
   password?: string;
-  role: "admin" | "amministrazione" | "planner" | "operatore";
+  /**
+   * "cliente" is accepted here only so re-saving a cliente account's
+   * name/active status (role unchanged) doesn't fail validation — the
+   * admin UI never offers switching a role TO cliente via this edit path
+   * (that always goes through /auth/register instead, which also asks for
+   * the Customer to link).
+   */
+  role: "admin" | "amministrazione" | "planner" | "operatore" | "cliente";
 }
 
 export interface DtoVehicleTypeRequest {
@@ -1299,6 +1313,10 @@ export interface DtoVehicleTypeResponse {
   descrizione?: string;
   id?: string;
   nome?: string;
+}
+
+export interface DtoVerifyEmailRequest {
+  token: string;
 }
 
 export interface DtoWashStationListResponse {
@@ -1344,6 +1362,15 @@ export interface ModelsUser {
    * AuthService.RegisterClient), never reassigned.
    */
   customer_id?: string;
+  /**
+   * Email verification (self-service client registration only — see
+   * AuthService.RegisterClient). VerificationToken is non-nil exactly
+   * while a confirmation is outstanding; Login only refuses access when a
+   * token was actually issued and never confirmed, so accounts created
+   * before this feature existed (VerificationToken always nil) are never
+   * retroactively locked out.
+   */
+  email_verified_at?: string;
   id?: number;
   last_login_at?: string;
   /**

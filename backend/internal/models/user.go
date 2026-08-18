@@ -21,6 +21,16 @@ type User struct {
 	Active      bool       `gorm:"not null;default:true" json:"active"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 
+	// Email verification (self-service client registration only — see
+	// AuthService.RegisterClient). VerificationToken is non-nil exactly
+	// while a confirmation is outstanding; Login only refuses access when a
+	// token was actually issued and never confirmed, so accounts created
+	// before this feature existed (VerificationToken always nil) are never
+	// retroactively locked out.
+	EmailVerifiedAt       *time.Time `json:"email_verified_at,omitempty"`
+	VerificationToken     *string    `gorm:"type:varchar(64);uniqueIndex" json:"-"`
+	VerificationExpiresAt *time.Time `json:"-"`
+
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty" swaggerignore:"true"`

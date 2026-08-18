@@ -124,6 +124,10 @@ type ServerConfig struct {
 	Host            string `json:"host"`
 	RateLimitMax    int    `json:"rate_limit_max"`
 	RateLimitWindow int    `json:"rate_limit_window"`
+	// AppBaseURL is the frontend's own origin — used only to build the
+	// email-verification link sent to newly self-registered clients
+	// (auth.RegisterClient). Never used for anything server-rendered.
+	AppBaseURL string `json:"app_base_url"`
 }
 
 type SwaggerConfig struct {
@@ -146,6 +150,7 @@ func Load() *Config {
 			Host:            getEnv("SERVER_HOST", "0.0.0.0"),
 			RateLimitMax:    getEnvInt("RATE_LIMIT_MAX", 300),
 			RateLimitWindow: getEnvInt("RATE_LIMIT_WINDOW", 60),
+			AppBaseURL:      getEnv("APP_BASE_URL", "http://localhost:3000"),
 		},
 		Security: SecurityConfig{
 			JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", ""),
