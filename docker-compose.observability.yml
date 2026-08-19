@@ -55,6 +55,19 @@ services:
     networks:
       - tms
 
+  # Postgres metrics for Prometheus — connects to the main stack's
+  # `postgres` service (docker-compose.prod.yml), same `tms` network, same
+  # DB credentials already in .env (GO_DB_*). No host port exposed: only
+  # Prometheus (same network) scrapes it, on its default port 9187.
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${GO_DB_USER}:${GO_DB_PASSWORD}@postgres:5432/${GO_DB_NAME}?sslmode=disable"
+    restart: unless-stopped
+    networks:
+      - tms
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -70,6 +83,8 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./monitoring/grafana/provisioning/dashboards/provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards/files:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       # Change this in the server's .env before exposing Grafana publicly —

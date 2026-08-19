@@ -28,3 +28,9 @@ scrape_configs:
   - job_name: 'backend-go'
     static_configs:
       - targets: ['backend-go:8080']
+
+  # Postgres metrics via postgres-exporter — pairs with the community
+  # "PostgreSQL Database" dashboard (grafana.com dashboard ID 9628).
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
