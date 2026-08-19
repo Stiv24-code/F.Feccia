@@ -1,0 +1,133 @@
+# Observability stack for the F.Feccia TMS deployment (Prometheus + Grafana
+# + Loki + Promtail + node-exporter + Tempo).
+#
+# This is an override compose file, layered on top of the main
+# docker-compose.yml (or docker-compose.prod.yml):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+#
+# Contract:
+#   - All 5 services bind ONLY to 127.0.0.1. Docker writes its own iptables
+#     rules ahead of UFW, so binding without an explicit 127.0.0.1 means the
+#     port is reachable from the public IP regardless of any host firewall.
+#   - Only Grafana is meant to be exposed externally, through the host's
+#     own nginx + TLS (e.g. a subdomain like grafana.ffeccia.homes);
+#     everything else is reached via an SSH tunnel.
+#   - Services join the `tms` network explicitly (defined in the base
+#     docker-compose.yml) — that's how Prometheus resolves `backend-go:8080`
+#     and how Grafana/Promtail resolve `prometheus`/`loki` by service name.
+#     `tms` is not redeclared as `external: true` here on purpose: within a
+#     single `-f a -f b` invocation Compose merges both files into one
+#     project, so the network defined once in docker-compose.yml is already
+#     visible to services declared here.
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    restart: unless-stopped
+    networks:
+      - tms
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    networks:
+      - tms
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      # Change this in the server's .env before exposing Grafana publicly —
+      # "admin" is a placeholder default, not meant to survive past first boot.
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+    networks:
+      - tms
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - tms
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    privileged: true
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - tms
+
+  # Distributed tracing backend — receives OTLP traces pushed directly by
+  # backend-go (OTEL_EXPORTER_OTLP_ENDPOINT=tempo:4317, see
+  # docker-compose.yml/docker-compose.prod.yml) on the `tms` network. Only
+  # the query API (3200, used by Grafana's Tempo datasource) is exposed to
+  # the host; the OTLP ports (4317/4318) don't need a host port mapping —
+  # only backend-go, on the same docker network, talks to them.
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+    volumes:
+      - ./monitoring/tempo-config.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    command: -config.file=/etc/tempo.yaml
+    restart: unless-stopped
+    networks:
+      - tms
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  tempo_data:
+
+# `tms` is intentionally NOT redeclared here (e.g. as `external: true`) —
+# see the contract note at the top of this file. It's defined once in
+# docker-compose.yml; Compose merges both files into one project when
+# invoked together, so the network is already visible to the services above.

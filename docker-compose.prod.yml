@@ -77,6 +77,15 @@ services:
       SUBJECT_FILTER: ${SUBJECT_FILTER:-[ORDINE]}
       SCRAPE_INTERVAL_MIN: ${SCRAPE_INTERVAL_MIN:-5}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # ── Observability (docker-compose.observability.yml) ──
+      TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
+      # `tempo` is the tracing backend's service name in the observability
+      # stack — reachable once both compose files run together on the same
+      # `tms` network. If the observability stack isn't deployed, this just
+      # fails silently on every export attempt (same graceful-degradation
+      # posture as every other optional integration in this app).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-tempo:4317}
     ports:
       - "${GO_BACKEND_PORT:-8081}:8080"
     healthcheck:

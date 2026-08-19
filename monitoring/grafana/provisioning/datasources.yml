@@ -1,0 +1,38 @@
+# Grafana datasource provisioning for the F.Feccia TMS stack.
+#
+# Grafana reads this file on startup and wires up Prometheus, Loki and Tempo
+# automatically — no need to add them by hand through the UI.
+#
+# URLs use docker-network service names (`prometheus`, `loki`, `tempo`), not
+# localhost — Grafana reaches them from inside the same docker network.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      # Lets a trace in the Tempo view jump straight to its matching logs
+      # in Loki (filtered by the same trace_id — see the trace_id extraction
+      # middleware in backend/internal/app/middleware.go).
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true

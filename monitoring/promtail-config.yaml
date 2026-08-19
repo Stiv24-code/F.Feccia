@@ -1,0 +1,48 @@
+# Promtail config for the F.Feccia TMS stack — collects logs from every
+# docker container on the host.
+#
+# docker_sd_configs does service discovery via the Docker API: Promtail
+# finds every running container on its own, no need to list them by hand.
+# relabel_configs copies Docker metadata into Loki labels:
+#   - container    — container name (leading slash stripped)
+#   - container_id — container ID
+#   - image        — image name
+#   - service      — docker-compose service name (this is what you filter
+#                     on in Grafana, e.g. service="backend-go")
+#   - stream       — stdout/stderr
+# These labels are what LogQL queries filter on in Grafana.
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    pipeline_stages:
+      - docker: {}
+
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container'
+        regex: '/(.*)'
+
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'

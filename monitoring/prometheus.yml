@@ -1,0 +1,30 @@
+# Prometheus scrape config for the F.Feccia TMS stack.
+#
+# Prometheus works in pull mode: it periodically polls each target over
+# HTTP and scrapes metrics from /metrics in the Prometheus exposition
+# format. Targets are referenced by their docker-compose service name, not
+# localhost — inside the docker network, services resolve each other by
+# service name.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus scrapes its own /metrics too.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Host-level metrics: CPU, RAM, disk, network.
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # The Go backend (fratelli-feccia) — exposes /metrics only when
+  # TELEMETRY_ENABLED=true (see backend/pkg/telemetry/otel.go). Port 8080 is
+  # the container's internal port on the `tms` docker network, same one
+  # nginx proxies /api to.
+  - job_name: 'backend-go'
+    static_configs:
+      - targets: ['backend-go:8080']

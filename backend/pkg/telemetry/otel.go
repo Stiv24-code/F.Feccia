@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -20,8 +21,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
 type Shutdown func(context.Context) error
@@ -32,11 +36,11 @@ type TelemetryProviders struct {
 	Propagator    propagation.TextMapPropagator
 }
 
-// Init sets up OpenTelemetry tracing and metrics with OTLP gRPC exporters.
-// Env vars:
-// - OTEL_EXPORTER_OTLP_ENDPOINT (default: localhost:4317)
-// - OTEL_EXPORTER_OTLP_INSECURE (default: true)
-// - OTEL_SERVICE_NAME (default: fratelli-feccia)
+// Init настраивает трейсинг и метрики OpenTelemetry через OTLP gRPC-экспортёры.
+// Переменные окружения:
+// - OTEL_EXPORTER_OTLP_ENDPOINT (по умолчанию: localhost:4317)
+// - OTEL_EXPORTER_OTLP_INSECURE (по умолчанию: true)
+// - OTEL_SERVICE_NAME (по умолчанию: fratelli-feccia)
 func Init(ctx context.Context) (TelemetryProviders, func(context.Context) error, error) {
 	endpoint := normalizeOTLPEndpoint(firstNonEmpty(
 		os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
@@ -92,8 +96,21 @@ func Init(ctx context.Context) (TelemetryProviders, func(context.Context) error,
 		return TelemetryProviders{}, nil, err
 	}
 	reader := sdkmetric.NewPeriodicReader(metricExp, sdkmetric.WithInterval(5*time.Second))
+
+	// Prometheus reader alongside the OTLP push one — same metrics
+	// (NewFiberMetricsMiddleware, NewCounter, ...), two export paths: OTLP
+	// push to whatever collector OTEL_EXPORTER_OTLP_ENDPOINT points at, and
+	// a pull-based /metrics (see NewPrometheusHandler) for a Prometheus
+	// server to scrape directly, no collector required for that path.
+	promExporter, err := otelprometheus.New()
+	if err != nil {
+		_ = tp.Shutdown(ctx)
+		return TelemetryProviders{}, nil, err
+	}
+
 	mp := sdkmetric.NewMeterProvider(
 		sdkmetric.WithReader(reader),
+		sdkmetric.WithReader(promExporter),
 		sdkmetric.WithResource(res),
 	)
 
@@ -202,4 +219,12 @@ func NewFiberMetricsMiddleware() fiber.Handler {
 		latencyHistogram.Record(c.UserContext(), durationMs, attrs)
 		return err
 	}
+}
+
+// NewPrometheusHandler exposes the metrics collected via the Prometheus
+// reader registered in Init (otelprometheus.New defaults to the global
+// prometheus.DefaultRegisterer, which promhttp.Handler reads from) — mount
+// on GET /metrics only when telemetry is actually enabled (TelemetryProviders.MeterProvider != nil).
+func NewPrometheusHandler() fiber.Handler {
+	return adaptor.HTTPHandler(promhttp.Handler())
 }

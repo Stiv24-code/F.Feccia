@@ -119,6 +119,15 @@ services:
       # Token Microsoft Graph (solo flusso delegato) persistiti nel volume.
       DATA_DIR: /data
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # ── Observability (docker-compose.observability.yml, opzionale) ──
+      # Off di default: nessun costo se lo stack Prometheus/Tempo non è in
+      # esecuzione — vedi backend/internal/app/bootstrap.go.
+      TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-false}
+      # `tempo` è il nome del servizio nello stack di observability — deve
+      # essere sulla stessa rete `tms` (join automatico quando i due
+      # compose file vengono lanciati insieme, vedi il contratto in
+      # docker-compose.observability.yml).
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-tempo:4317}
     volumes:
       - backend_data:/data
     ports:
