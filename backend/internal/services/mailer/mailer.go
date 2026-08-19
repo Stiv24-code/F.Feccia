@@ -13,6 +13,11 @@ import (
 	"net/smtp"
 	"strings"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"fratelli-feccia/config"
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/services/inboundorders"
@@ -64,8 +69,22 @@ func (s *MailerService) SendHTML(ctx context.Context, to, subject, htmlBody stri
 
 // send delivers a UTF-8 mail through the configured SMTP server. Port 587
 // (and any other) uses smtp.SendMail, which upgrades with STARTTLS when the
-// server advertises it; port 465 needs an implicit-TLS dial.
-func (s *MailerService) send(_ context.Context, to, subject, contentType, body string) error {
+// server advertises it; port 465 needs an implicit-TLS dial. Traced as its
+// own span — SMTP is a genuinely slow, blocking network call (this session's
+// Brevo debugging alone: IP authorization, sender verification, DKIM/DMARC
+// — all show up as "did the send hang or fail fast" in a trace).
+func (s *MailerService) send(ctx context.Context, to, subject, contentType, body string) (err error) {
+	_, span := otel.Tracer("fratelli-feccia/mailer").Start(ctx, "mailer.send",
+		trace.WithAttributes(attribute.String("mail.content_type", contentType)),
+	)
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.End()
+	}()
+
 	cfg := s.cfg
 	if !cfg.SMTPConfigured() {
 		return fmt.Errorf("SMTP non configurato (SMTP_HOST vuoto)")

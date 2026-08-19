@@ -15,6 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -262,6 +266,11 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 		limit = 5
 	}
 
+	ctx, span := otel.Tracer("fratelli-feccia/geo").Start(ctx, "geo.GeocodeSearch",
+		trace.WithAttributes(attribute.Int("ors.limit", limit)),
+	)
+	defer span.End()
+
 	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	reqURL := fmt.Sprintf("%s/geocode/search?api_key=%s&text=%s&size=%d",
@@ -274,11 +283,15 @@ func (s *GeoService) GeocodeSearch(ctx context.Context, query string, limit int)
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		slog.Warn("ors_geocode_failed", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "ors geocode request failed")
 		return nil
 	}
 	defer resp.Body.Close()
+	span.SetAttributes(attribute.Int("ors.status_code", resp.StatusCode))
 	if resp.StatusCode != http.StatusOK {
 		slog.Warn("ors_geocode_failed", "status", resp.StatusCode)
+		span.SetStatus(codes.Error, fmt.Sprintf("ors geocode returned status %d", resp.StatusCode))
 		return nil
 	}
 
@@ -326,6 +339,19 @@ func (s *GeoService) callORS(ctx context.Context, coords [][2]float64, altCount 
 		return nil
 	}
 
+	// Span around the actual network call — this is consistently the
+	// slowest external dependency in the app (see the ORS timeout
+	// investigation this session: the driving-hgv alternative_routes call
+	// alone regularly takes 10+ seconds), worth seeing as its own segment
+	// in a trace rather than folded into the flat per-request HTTP span.
+	ctx, span := otel.Tracer("fratelli-feccia/geo").Start(ctx, "geo.callORS",
+		trace.WithAttributes(
+			attribute.Int("ors.coords_count", len(coords)),
+			attribute.Int("ors.alt_count", altCount),
+		),
+	)
+	defer span.End()
+
 	body := map[string]any{"coordinates": coords, "instructions": false, "geometry_simplify": true}
 	if altCount > 0 {
 		if altCount > 3 {
@@ -355,11 +381,15 @@ func (s *GeoService) callORS(ctx context.Context, coords [][2]float64, altCount 
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		slog.Warn("ors_routing_failed", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "ors request failed")
 		return nil
 	}
 	defer resp.Body.Close()
+	span.SetAttributes(attribute.Int("ors.status_code", resp.StatusCode))
 	if resp.StatusCode != http.StatusOK {
 		slog.Warn("ors_routing_failed", "status", resp.StatusCode)
+		span.SetStatus(codes.Error, fmt.Sprintf("ors returned status %d", resp.StatusCode))
 		return nil
 	}
 
