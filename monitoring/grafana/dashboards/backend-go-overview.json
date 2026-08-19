@@ -2,7 +2,7 @@
   "title": "F.Feccia — backend-go overview",
   "uid": "feccia-backend-go",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-1h", "to": "now" },
@@ -76,11 +76,12 @@
       "id": 5,
       "title": "Recent traces — fratelli-feccia",
       "type": "traces",
-      "datasource": "Tempo",
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
       "targets": [
         {
-          "datasource": "Tempo",
+          "refId": "A",
+          "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
           "query": "{ resource.service.name = \"fratelli-feccia\" }",
           "limit": 20
