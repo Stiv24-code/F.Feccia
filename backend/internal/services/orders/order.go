@@ -10,6 +10,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
@@ -81,6 +85,16 @@ func (s *OrderService) reload(ctx context.Context, id uuid.UUID) (*models.Order,
 }
 
 func (s *OrderService) List(ctx context.Context, f ListFilters) ([]dto.OrderResponse, error) {
+	ctx, span := otel.Tracer("fratelli-feccia/orders").Start(ctx, "orders.List",
+		trace.WithAttributes(
+			attribute.String("orders.stato", f.Stato),
+			attribute.String("orders.cliente_id", f.ClienteID),
+			attribute.String("orders.search", f.Search),
+			attribute.Int("orders.limit", f.Limit),
+		),
+	)
+	defer span.End()
+
 	limit := f.Limit
 	if limit <= 0 {
 		limit = defaultListLimit
@@ -114,15 +128,27 @@ func (s *OrderService) List(ctx context.Context, f ListFilters) ([]dto.OrderResp
 			)
 	}
 
+	queryCtx, querySpan := otel.Tracer("fratelli-feccia/orders").Start(ctx, "orders.List.query")
 	var orders []models.Order
-	if err := query.Order("orders.created_at DESC").Limit(limit).Find(&orders).Error; err != nil {
+	err := query.WithContext(queryCtx).Order("orders.created_at DESC").Limit(limit).Find(&orders).Error
+	if err != nil {
+		querySpan.RecordError(err)
+		querySpan.SetStatus(codes.Error, err.Error())
+	}
+	querySpan.SetAttributes(attribute.Int("orders.result_count", len(orders)))
+	querySpan.End()
+	if err != nil {
 		return nil, err
 	}
 
+	_, mapSpan := otel.Tracer("fratelli-feccia/orders").Start(ctx, "orders.List.map")
 	result := make([]dto.OrderResponse, len(orders))
 	for i, o := range orders {
 		result[i] = ToResponse(o)
 	}
+	mapSpan.End()
+
+	span.SetAttributes(attribute.Int("orders.result_count", len(result)))
 	return result, nil
 }
 

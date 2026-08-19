@@ -197,15 +197,25 @@ func NewFiberMetricsMiddleware() fiber.Handler {
 
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
+
+		// Method/route are read from fasthttp's own request buffer (unsafe,
+		// zero-copy strings) — captured and cloned into independent memory
+		// *before* c.Next(), not after. For slow handlers, the underlying
+		// buffer can be reused by fasthttp for a later request on the same
+		// keep-alive connection before c.Next() returns, which otherwise
+		// corrupts the string read afterwards (observed in practice as
+		// http.method turning from "POST" into "GETT").
+		method := strings.Clone(c.Method())
+		route := strings.Clone(c.Path())
+		if r := c.Route(); r != nil && r.Path != "" {
+			route = strings.Clone(r.Path)
+		}
+
 		err := c.Next()
 		durationMs := float64(time.Since(start).Milliseconds())
 
-		route := c.Path()
-		if r := c.Route(); r != nil && r.Path != "" {
-			route = r.Path
-		}
 		attrs := metric.WithAttributes(
-			attribute.String("http.method", c.Method()),
+			attribute.String("http.method", method),
 			attribute.String("http.route", route),
 			attribute.Int("http.status_code", c.Response().StatusCode()),
 		)
