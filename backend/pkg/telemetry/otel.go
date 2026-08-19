@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -55,11 +53,6 @@ func Init(ctx context.Context) (TelemetryProviders, func(context.Context) error,
 	), true)
 	serviceName := firstNonEmpty(os.Getenv("OTEL_SERVICE_NAME"), "fratelli-feccia")
 
-	dialOpts := []grpc.DialOption{}
-	if insecureConn {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	}
-
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
 		resource.WithProcess(),
@@ -72,10 +65,11 @@ func Init(ctx context.Context) (TelemetryProviders, func(context.Context) error,
 		return TelemetryProviders{}, nil, err
 	}
 
-	traceExp, err := otlptracegrpc.New(ctx,
-		otlptracegrpc.WithEndpoint(endpoint),
-		otlptracegrpc.WithDialOption(dialOpts...),
-	)
+	traceOpts := []otlptracegrpc.Option{otlptracegrpc.WithEndpoint(endpoint)}
+	if insecureConn {
+		traceOpts = append(traceOpts, otlptracegrpc.WithInsecure())
+	}
+	traceExp, err := otlptracegrpc.New(ctx, traceOpts...)
 	if err != nil {
 		return TelemetryProviders{}, nil, err
 	}
@@ -87,10 +81,11 @@ func Init(ctx context.Context) (TelemetryProviders, func(context.Context) error,
 		),
 	)
 
-	metricExp, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(endpoint),
-		otlpmetricgrpc.WithDialOption(dialOpts...),
-	)
+	metricOpts := []otlpmetricgrpc.Option{otlpmetricgrpc.WithEndpoint(endpoint)}
+	if insecureConn {
+		metricOpts = append(metricOpts, otlpmetricgrpc.WithInsecure())
+	}
+	metricExp, err := otlpmetricgrpc.New(ctx, metricOpts...)
 	if err != nil {
 		_ = tp.Shutdown(ctx)
 		return TelemetryProviders{}, nil, err
