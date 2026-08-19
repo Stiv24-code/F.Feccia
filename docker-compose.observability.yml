@@ -1,10 +1,16 @@
 # Observability stack for the F.Feccia TMS deployment (Prometheus + Grafana
 # + Loki + Promtail + node-exporter + Tempo).
 #
-# This is an override compose file, layered on top of the main
-# docker-compose.yml (or docker-compose.prod.yml):
+# Run standalone, AFTER the main stack (docker-compose.yml or
+# docker-compose.prod.yml) is already up:
 #
-#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+#   docker compose -f docker-compose.observability.yml up -d
+#
+# `tms` is declared as `external: true` below specifically so this works as
+# a standalone command — it looks up the network already created by the
+# main stack instead of requiring both compose files in the same
+# invocation. If the main stack isn't running yet, this fails with
+# "network tms not found" — start it first.
 #
 # Contract:
 #   - All 5 services bind ONLY to 127.0.0.1. Docker writes its own iptables
@@ -13,13 +19,9 @@
 #   - Only Grafana is meant to be exposed externally, through the host's
 #     own nginx + TLS (e.g. a subdomain like grafana.ffeccia.homes);
 #     everything else is reached via an SSH tunnel.
-#   - Services join the `tms` network explicitly (defined in the base
-#     docker-compose.yml) — that's how Prometheus resolves `backend-go:8080`
-#     and how Grafana/Promtail resolve `prometheus`/`loki` by service name.
-#     `tms` is not redeclared as `external: true` here on purpose: within a
-#     single `-f a -f b` invocation Compose merges both files into one
-#     project, so the network defined once in docker-compose.yml is already
-#     visible to services declared here.
+#   - Services join the `tms` network explicitly — that's how Prometheus
+#     resolves `backend-go:8080` and how Grafana/Promtail resolve
+#     `prometheus`/`loki` by service name.
 
 services:
   prometheus:
@@ -57,7 +59,14 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "127.0.0.1:3000:3000"
+      # Host port 3001, not 3000 — 3000 is already bound by an unrelated
+      # orphan container on this VPS (f-feccia-web, from an earlier setup).
+      # Internal container port stays 3000 (Grafana's own default), only
+      # the host-side mapping moved — nothing inside this stack references
+      # 3000 directly (Grafana is reached via this port mapping, or later
+      # through the host nginx reverse-proxy config, not by other services
+      # in this file).
+      - "127.0.0.1:3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
@@ -127,7 +136,10 @@ volumes:
   loki_data:
   tempo_data:
 
-# `tms` is intentionally NOT redeclared here (e.g. as `external: true`) —
-# see the contract note at the top of this file. It's defined once in
-# docker-compose.yml; Compose merges both files into one project when
-# invoked together, so the network is already visible to the services above.
+networks:
+  # Looks up the network already created by the main stack (now pinned to
+  # the literal name "tms" via `name: tms` in docker-compose.yml /
+  # docker-compose.prod.yml — see the comment there) instead of requiring
+  # both compose files in the same invocation.
+  tms:
+    external: true

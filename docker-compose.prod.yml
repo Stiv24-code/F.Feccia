@@ -118,3 +118,10 @@ volumes:
 networks:
   tms:
     driver: bridge
+    # Explicit name — without this, Compose prefixes the network with the
+    # project name (here "ffeccia_tms", derived from ~/f.feccia), which
+    # docker-compose.observability.yml (run standalone, after this stack)
+    # then has to know about via `external: true` + `name: ...`. Pinning
+    # it here keeps that reference simple and predictable regardless of
+    # what directory this repo happens to be checked out into.
+    name: tms

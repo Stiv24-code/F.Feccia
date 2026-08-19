@@ -4,6 +4,13 @@
 # 4317/4318 — the exact protocol and default port the Go backend already
 # pushes to when TELEMETRY_ENABLED=true (see backend/pkg/telemetry/otel.go)
 # — no separate OTel Collector needed just to receive them.
+#
+# Deliberately minimal — no explicit `ingester`/`compactor` tuning. Those
+# top-level config keys moved/changed shape across Tempo versions (hit a
+# real "field not found in type app.Config" parse error with them present
+# on the version currently pulled as `grafana/tempo:latest`), and Tempo's
+# built-in defaults are entirely fine for this scale. This matches Grafana's
+# own minimal single-binary quickstart config.
 
 server:
   http_listen_port: 3200
@@ -16,13 +23,6 @@ distributor:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-
-ingester:
-  max_block_duration: 5m
-
-compactor:
-  compaction:
-    block_retention: 336h # 14 days, same retention family as Prometheus (15d)
 
 storage:
   trace:
