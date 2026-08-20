@@ -204,6 +204,11 @@ definitions:
         type: string
       cliente_id:
         type: string
+      committente_id:
+        description: |-
+          CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
+          = coincide con Cliente).
+        type: string
       costi_accessori:
         items:
           additionalProperties: true
@@ -225,6 +230,10 @@ definitions:
         type: integer
       note:
         type: string
+      note_carico:
+        type: string
+      note_scarico:
+        type: string
       ora_consegna_a:
         type: string
       ora_consegna_da:
@@ -235,7 +244,13 @@ definitions:
         type: string
       product:
         type: string
+      provvisorio:
+        type: boolean
+      rif_carico:
+        type: string
       rif_ordine_cliente:
+        type: string
+      rif_scarico:
         type: string
       servizi_accessori:
         items:
@@ -1453,6 +1468,11 @@ definitions:
         type: string
       cliente_id:
         type: string
+      committente_id:
+        description: |-
+          CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
+          = coincide con Cliente).
+        type: string
       costi_accessori:
         items:
           additionalProperties: true
@@ -1472,6 +1492,10 @@ definitions:
         type: array
       note:
         type: string
+      note_carico:
+        type: string
+      note_scarico:
+        type: string
       ora_consegna_a:
         type: string
       ora_consegna_da:
@@ -1480,7 +1504,13 @@ definitions:
         type: string
       ora_ritiro_da:
         type: string
+      provvisorio:
+        type: boolean
+      rif_carico:
+        type: string
       rif_ordine_cliente:
+        type: string
+      rif_scarico:
         type: string
       servizi_accessori:
         items:
@@ -1508,6 +1538,10 @@ definitions:
       cliente:
         $ref: '#/definitions/dto.CustomerResponse'
       cliente_id:
+        type: string
+      committente:
+        $ref: '#/definitions/dto.CustomerResponse'
+      committente_id:
         type: string
       costi_accessori:
         items:
@@ -1546,6 +1580,10 @@ definitions:
         type: string
       note:
         type: string
+      note_carico:
+        type: string
+      note_scarico:
+        type: string
       ora_consegna_a:
         type: string
       ora_consegna_da:
@@ -1556,7 +1594,13 @@ definitions:
         type: string
       progressivo:
         type: string
+      provvisorio:
+        type: boolean
+      rif_carico:
+        type: string
       rif_ordine_cliente:
+        type: string
+      rif_scarico:
         type: string
       route:
         $ref: '#/definitions/dto.RouteResponseDTO'

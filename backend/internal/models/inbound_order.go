@@ -29,9 +29,10 @@ const (
 // InboundOrder is a transport-order draft ingested from the mailbox scraper
 // or imported from a client PDF (ported from OrderMesh). It is deliberately
 // NOT merged with Order: an inbound order is free text as received from the
-// customer (no FKs to Customer/Destination/...), waiting for an operator to
-// accept it — converting it into a real models.Order is a separate, explicit
-// step.
+// customer (client/places/product are strings, not anagrafica FKs), waiting
+// for an operator to accept it — converting it into a real models.Order is a
+// separate, explicit step. The only FKs are the provenance links below
+// (TemplateID, ClienteID), both ON DELETE SET NULL.
 //
 // Dedup rule: one order per (ref, client), case/space-insensitive, so
 // re-reading the mailbox never duplicates rows. Enforced by the functional
@@ -53,13 +54,21 @@ type InboundOrder struct {
 	Portal        bool               `gorm:"not null;default:false" json:"portal"`
 	Status        InboundOrderStatus `gorm:"type:varchar(20);not null;default:pending;index" json:"status"`
 	Source        string             `gorm:"type:varchar(20);not null;default:mail" json:"source"`
-	TemplateID    *uuid.UUID         `gorm:"type:uuid" json:"template_id,omitempty"`
-	ReceivedAt    time.Time          `json:"received_at"`
+	// TemplateID: il template PDF usato per l'import. L'associazione esiste
+	// solo per fare generare ad AutoMigrate la FK (ON DELETE SET NULL:
+	// eliminare un template non deve toccare gli ordini già importati) —
+	// nessun servizio la Preload-a.
+	TemplateID *uuid.UUID   `gorm:"type:uuid" json:"template_id,omitempty"`
+	Template   *PdfTemplate `gorm:"foreignKey:TemplateID;references:ID;constraint:OnDelete:SET NULL" json:"-"`
+	ReceivedAt time.Time    `json:"received_at"`
 	// ClienteID is set only for Source == InboundOrderSourcePortal — the
 	// authenticated customer that submitted the request via the self-service
 	// portal, used to scope "my pending requests" (GET /me/inbound-orders).
-	// Left nil for mail/pdf/seed drafts, which have no such account to tie to.
+	// Left nil for mail/pdf/seed drafts, which have no such account to tie
+	// to. Association declared only for the FK (ON DELETE SET NULL), never
+	// Preload-ed.
 	ClienteID *uuid.UUID `gorm:"type:uuid;index" json:"cliente_id,omitempty"`
+	Cliente   *Customer  `gorm:"foreignKey:ClienteID;references:ID;constraint:OnDelete:SET NULL" json:"-"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

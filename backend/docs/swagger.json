@@ -7018,6 +7018,10 @@
                 "cliente_id": {
                     "type": "string"
                 },
+                "committente_id": {
+                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
+                    "type": "string"
+                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -7049,6 +7053,12 @@
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -7064,7 +7074,16 @@
                 "product": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -8847,6 +8866,10 @@
                 "cliente_id": {
                     "type": "string"
                 },
+                "committente_id": {
+                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
+                    "type": "string"
+                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -8875,6 +8898,12 @@
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -8887,7 +8916,16 @@
                 "ora_ritiro_da": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -8926,6 +8964,12 @@
                     "$ref": "#/definitions/dto.CustomerResponse"
                 },
                 "cliente_id": {
+                    "type": "string"
+                },
+                "committente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
+                },
+                "committente_id": {
                     "type": "string"
                 },
                 "costi_accessori": {
@@ -8983,6 +9027,12 @@
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -8998,7 +9048,16 @@
                 "progressivo": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "route": {

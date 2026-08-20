@@ -124,6 +124,11 @@ export interface DtoClientInboundOrderRequest {
   andata_ritorno?: boolean;
   categoria_trasporto?: string;
   cliente_id: string;
+  /**
+   * CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
+   * = coincide con Cliente).
+   */
+  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   data_consegna?: string;
   data_ritiro?: string;
@@ -132,12 +137,17 @@ export interface DtoClientInboundOrderRequest {
   items?: DtoOrderItemRequestDTO[];
   kg?: number;
   note?: string;
+  note_carico?: string;
+  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
   product?: string;
+  provvisorio?: boolean;
+  rif_carico?: string;
   rif_ordine_cliente?: string;
+  rif_scarico?: string;
   servizi_accessori?: string[];
   tariffa?: number;
   tipo_tariffa?: string;
@@ -825,6 +835,11 @@ export interface DtoOrderRequest {
   andata_ritorno?: boolean;
   categoria_trasporto?: string;
   cliente_id: string;
+  /**
+   * CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
+   * = coincide con Cliente).
+   */
+  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   data_consegna?: string;
   data_ritiro?: string;
@@ -832,11 +847,16 @@ export interface DtoOrderRequest {
   destinazione_scarico_id?: string;
   items?: DtoOrderItemRequestDTO[];
   note?: string;
+  note_carico?: string;
+  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
+  provvisorio?: boolean;
+  rif_carico?: string;
   rif_ordine_cliente?: string;
+  rif_scarico?: string;
   servizi_accessori?: string[];
   tariffa?: number;
   tipo_tariffa?: string;
@@ -850,6 +870,8 @@ export interface DtoOrderResponse {
   categoria_trasporto?: string;
   cliente?: DtoCustomerResponse;
   cliente_id?: string;
+  committente?: DtoCustomerResponse;
+  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   created_at?: string;
   data_consegna?: string;
@@ -866,12 +888,17 @@ export interface DtoOrderResponse {
   motrice?: DtoMotriceResponse;
   motrice_id?: string;
   note?: string;
+  note_carico?: string;
+  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
   progressivo?: string;
+  provvisorio?: boolean;
+  rif_carico?: string;
   rif_ordine_cliente?: string;
+  rif_scarico?: string;
   route?: DtoRouteResponseDTO;
   route_id?: string;
   semirimorchio?: DtoSemirimorchioResponse;

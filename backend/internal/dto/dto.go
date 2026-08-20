@@ -472,7 +472,10 @@ type OrderItemResponseDTO struct {
 // longer stores a client-submitted denormalized name, it's always derived
 // from the live associated row via Preload.
 type OrderRequest struct {
-	ClienteID             string                   `json:"cliente_id" validate:"required"`
+	ClienteID string `json:"cliente_id" validate:"required"`
+	// CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
+	// = coincide con Cliente).
+	CommittenteID         string                   `json:"committente_id"`
 	DestinazioneCaricoID  string                   `json:"destinazione_carico_id"`
 	DestinazioneScaricoID string                   `json:"destinazione_scarico_id"`
 	DataRitiro            string                   `json:"data_ritiro"`
@@ -486,7 +489,12 @@ type OrderRequest struct {
 	Tipologia             string                   `json:"tipologia"`
 	CategoriaTrasporto    string                   `json:"categoria_trasporto"`
 	RifOrdineCliente      string                   `json:"rif_ordine_cliente"`
+	RifCarico             string                   `json:"rif_carico"`
+	NoteCarico            string                   `json:"note_carico"`
+	RifScarico            string                   `json:"rif_scarico"`
+	NoteScarico           string                   `json:"note_scarico"`
 	AndataRitorno         bool                     `json:"andata_ritorno"`
+	Provvisorio           bool                     `json:"provvisorio"`
 	Note                  string                   `json:"note"`
 	Items                 []OrderItemRequestDTO    `json:"items"`
 	ServiziAccessori      []string                 `json:"servizi_accessori"`
@@ -589,6 +597,8 @@ type OrderResponse struct {
 	Progressivo           string                   `json:"progressivo"`
 	ClienteID             string                   `json:"cliente_id"`
 	Cliente               *CustomerResponse        `json:"cliente"`
+	CommittenteID         string                   `json:"committente_id"`
+	Committente           *CustomerResponse        `json:"committente"`
 	DestinazioneCaricoID  string                   `json:"destinazione_carico_id"`
 	DestinazioneCarico    *DestinationResponse     `json:"destinazione_carico"`
 	DestinazioneScaricoID string                   `json:"destinazione_scarico_id"`
@@ -604,7 +614,12 @@ type OrderResponse struct {
 	Tipologia             string                   `json:"tipologia"`
 	CategoriaTrasporto    string                   `json:"categoria_trasporto"`
 	RifOrdineCliente      string                   `json:"rif_ordine_cliente"`
+	RifCarico             string                   `json:"rif_carico"`
+	NoteCarico            string                   `json:"note_carico"`
+	RifScarico            string                   `json:"rif_scarico"`
+	NoteScarico           string                   `json:"note_scarico"`
 	AndataRitorno         bool                     `json:"andata_ritorno"`
+	Provvisorio           bool                     `json:"provvisorio"`
 	Note                  string                   `json:"note"`
 	Items                 []OrderItemResponseDTO   `json:"items"`
 	ServiziAccessori      []string                 `json:"servizi_accessori"`
@@ -1342,5 +1357,5 @@ type BankListResponse struct {
 
 type AccountingEntryListResponse struct {
 	Data  []AccountingEntryResponse `json:"data"`
-	Total int64                    `json:"total"`
+	Total int64                     `json:"total"`
 }

@@ -7020,6 +7020,10 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
+                "committente_id": {
+                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
+                    "type": "string"
+                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -7051,6 +7055,12 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -7066,7 +7076,16 @@ const docTemplate = `{
                 "product": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -8849,6 +8868,10 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
+                "committente_id": {
+                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
+                    "type": "string"
+                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -8877,6 +8900,12 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -8889,7 +8918,16 @@ const docTemplate = `{
                 "ora_ritiro_da": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -8928,6 +8966,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/dto.CustomerResponse"
                 },
                 "cliente_id": {
+                    "type": "string"
+                },
+                "committente": {
+                    "$ref": "#/definitions/dto.CustomerResponse"
+                },
+                "committente_id": {
                     "type": "string"
                 },
                 "costi_accessori": {
@@ -8985,6 +9029,12 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
+                "note_carico": {
+                    "type": "string"
+                },
+                "note_scarico": {
+                    "type": "string"
+                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -9000,7 +9050,16 @@ const docTemplate = `{
                 "progressivo": {
                     "type": "string"
                 },
+                "provvisorio": {
+                    "type": "boolean"
+                },
+                "rif_carico": {
+                    "type": "string"
+                },
                 "rif_ordine_cliente": {
+                    "type": "string"
+                },
+                "rif_scarico": {
                     "type": "string"
                 },
                 "route": {
