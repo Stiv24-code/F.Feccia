@@ -1239,6 +1239,20 @@ type InboundOrderRequest struct {
 	// never trusted from external request bodies for the staff-facing
 	// /inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.
 	ClienteID *uuid.UUID `json:"cliente_id,omitempty"`
+	// Structured portal payload, like ClienteID set internally by
+	// CreateMyInboundOrder from an authenticated submission — the ids the
+	// client picked from its own destination list, kept so Convert can
+	// rebuild the Order exactly instead of guessing FKs from the place
+	// names. Nil for mail/pdf/seed drafts, which only ever have free text.
+	CommittenteID         *uuid.UUID `json:"committente_id,omitempty"`
+	DestinazioneCaricoID  *uuid.UUID `json:"destinazione_carico_id,omitempty"`
+	DestinazioneScaricoID *uuid.UUID `json:"destinazione_scarico_id,omitempty"`
+	OraRitiroDa           string     `json:"ora_ritiro_da"`
+	OraRitiroA            string     `json:"ora_ritiro_a"`
+	OraConsegnaDa         string     `json:"ora_consegna_da"`
+	OraConsegnaA          string     `json:"ora_consegna_a"`
+	// TariffaProposta: the client's "tariffa desiderata", a proposal only.
+	TariffaProposta float64 `json:"tariffa_proposta"`
 }
 
 type InboundOrderResponse struct {
@@ -1262,6 +1276,19 @@ type InboundOrderResponse struct {
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 	ClienteID     *uuid.UUID `json:"cliente_id,omitempty"`
+
+	CommittenteID         *uuid.UUID `json:"committente_id,omitempty"`
+	DestinazioneCaricoID  *uuid.UUID `json:"destinazione_carico_id,omitempty"`
+	DestinazioneScaricoID *uuid.UUID `json:"destinazione_scarico_id,omitempty"`
+	OraRitiroDa           string     `json:"ora_ritiro_da"`
+	OraRitiroA            string     `json:"ora_ritiro_a"`
+	OraConsegnaDa         string     `json:"ora_consegna_da"`
+	OraConsegnaA          string     `json:"ora_consegna_a"`
+	TariffaProposta       float64    `json:"tariffa_proposta"`
+	// OrderID: set once the draft has been converted into a real order, nil
+	// while it is still awaiting conversion. The client portal uses it to
+	// tell "richiesta in attesa" from "ordine confermato".
+	OrderID *uuid.UUID `json:"order_id,omitempty"`
 }
 
 // InboundOrderActionResponse is returned by the accept action: the updated
@@ -1270,6 +1297,40 @@ type InboundOrderResponse struct {
 type InboundOrderActionResponse struct {
 	Order InboundOrderResponse `json:"order"`
 	Mail  string               `json:"mail,omitempty"`
+}
+
+// InboundOrderConvertRequest is the operator's input to turn a draft into a
+// real order. Every field is optional and overrides what the draft carries;
+// ClienteID is the exception that is sometimes mandatory — see
+// inboundorders.Convert. Nothing here is ever read from the draft's free
+// text: a mail/pdf draft's Client is attacker-controlled, so the customer to
+// bill is always either a trusted id stored at submission time (portal) or a
+// deliberate choice made here by staff.
+type InboundOrderConvertRequest struct {
+	ClienteID             string `json:"cliente_id" validate:"omitempty,uuid4"`
+	CommittenteID         string `json:"committente_id" validate:"omitempty,uuid4"`
+	DestinazioneCaricoID  string `json:"destinazione_carico_id" validate:"omitempty,uuid4"`
+	DestinazioneScaricoID string `json:"destinazione_scarico_id" validate:"omitempty,uuid4"`
+	DataRitiro            string `json:"data_ritiro"`
+	DataConsegna          string `json:"data_consegna"`
+	// Tariffa: when omitted the draft's TariffaProposta is applied, so pass
+	// it explicitly to price the order at anything other than what the
+	// customer proposed. A pointer so an explicit 0 (free of charge) is
+	// distinguishable from "field absent".
+	Tariffa     *float64 `json:"tariffa"`
+	TipoTariffa string   `json:"tipo_tariffa" validate:"omitempty,oneof=forfait tonnellata km"`
+	Tipologia   string   `json:"tipologia" validate:"omitempty,oneof=nazionale internazionale"`
+	Note        string   `json:"note"`
+}
+
+// InboundOrderConvertResponse reports both sides of the conversion: the draft
+// now carrying OrderID, and the order that was created. TariffaFromCliente
+// flags that the applied price is the customer's own proposal, unreviewed —
+// the one number in the result that nobody on the FECCIA side chose.
+type InboundOrderConvertResponse struct {
+	InboundOrder      InboundOrderResponse `json:"inbound_order"`
+	Order             OrderResponse        `json:"order"`
+	TariffaFromClient bool                 `json:"tariffa_from_client"`
 }
 
 // InboundScrapeResponse reports one mailbox read: how many order mails were

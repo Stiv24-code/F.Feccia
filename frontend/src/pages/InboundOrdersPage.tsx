@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Check, X, Pencil, FileText, RefreshCw, RotateCcw, Search, Loader2,
+  Check, X, Pencil, FileText, RefreshCw, RotateCcw, Search, Loader2, ArrowRightLeft,
 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { DtoInboundConfigResponse, DtoInboundOrderResponse } from '@/api/data-contracts';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import ImportPdfDialog from '@/components/inbound/ImportPdfDialog';
 import InboundOrderDetail from '@/components/inbound/InboundOrderDetail';
+import ConvertOrderDialog, { ConvertedLink } from '@/components/inbound/ConvertOrderDialog';
 import { STATUS_BADGE, getInboundApiError } from '@/components/inbound/constants';
 
 // I "canale" del mockup (Trimble, Oracle OTM, Transporeon…) non esistono nel
@@ -97,6 +98,7 @@ export default function InboundOrdersPage() {
   const [busy, setBusy] = useState<string | null>(null); // order id con azione in corso
   const [scraping, setScraping] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [convertTarget, setConvertTarget] = useState<DtoInboundOrderResponse | null>(null);
 
   const loadAll = useCallback(async () => {
     const [o, c] = await Promise.all([
@@ -259,6 +261,11 @@ export default function InboundOrdersPage() {
               {visible.map((o) => {
                 const stato = statoInfo(o);
                 const actionable = o.status !== 'accepted' && !o.portal;
+                // La conversione e' ortogonale al flusso mail: dipende solo
+                // dal fatto che un ordine TMS non esista ancora. Anche una
+                // richiesta "da confermare su portale" (o.portal), che non
+                // passa dall'accettazione via email, l'ordine lo deve avere.
+                const convertible = !o.order_id;
                 return (
                   <TableRow
                     key={o.id}
@@ -289,6 +296,17 @@ export default function InboundOrdersPage() {
                     </TableCell>
                     <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
+                        {o.order_id && <ConvertedLink orderID={o.order_id} />}
+                        {convertible && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-7 w-7 text-primary hover:bg-primary/10"
+                            title="Converti in ordine" disabled={busy === o.id}
+                            onClick={() => setConvertTarget(o)}
+                          >
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {o.status === 'accepted' && (
                           <Button
                             variant="ghost" size="icon" className="h-7 w-7"
@@ -338,6 +356,8 @@ export default function InboundOrdersPage() {
         Clic su una riga per il dettaglio dell’ordine. «Accetta» invia l’email di conferma;
         «Modifica» apre il client di posta con il mittente precompilato. Gli ordini «da confermare
         su portale» richiedono conferma diretta sul portale del cliente.
+        «Converti in ordine» crea l’ordine TMS vero e proprio a partire dalla richiesta: e’ il
+        passo che la fa uscire dalla coda, ed e’ indipendente dall’invio dell’email.
       </p>
 
       <ImportPdfDialog
@@ -345,6 +365,11 @@ export default function InboundOrdersPage() {
         onOpenChange={setImportOpen}
         orders={orders}
         onImported={loadAll}
+      />
+      <ConvertOrderDialog
+        order={convertTarget}
+        onClose={() => setConvertTarget(null)}
+        onConverted={loadAll}
       />
       <InboundOrderDetail
         order={selected}
