@@ -49,8 +49,6 @@ import {
   DtoGeocodeResultDTO,
   DtoInboundConfigResponse,
   DtoInboundOrderActionResponse,
-  DtoInboundOrderConvertRequest,
-  DtoInboundOrderConvertResponse,
   DtoInboundOrderRequest,
   DtoInboundOrderResponse,
   DtoInboundScrapeResponse,
@@ -1532,29 +1530,6 @@ export class Api<SecurityDataType = unknown> {
       path: `/api/v1/inbound-orders/${id}/accept`,
       method: "POST",
       secure: true,
-      format: "json",
-      ...params,
-    });
-  /**
-   * @description Creates a models.Order from the draft and links the two (inbound_order.order_id), which makes the call idempotent: a second convert answers 409 with the existing order id. Separate from /accept, which only sends the confirmation mail — an order can be created before or after mailing the customer. cliente_id is required in the body unless the draft already carries a trusted one (portal submissions do); the free-text client field is never resolved to an anagrafica by name, so a spoofed sender cannot get an order billed to someone else. tariffa defaults to the customer's proposed rate for portal drafts and to 0 otherwise (a mail draft's rate is free text and is never parsed) — the response flags when the applied rate is the customer's own.
-   *
-   * @tags InboundOrders
-   * @name V1InboundOrdersConvertCreate
-   * @summary Convert an inbound order into a real TMS order
-   * @request POST:/api/v1/inbound-orders/{id}/convert
-   * @secure
-   */
-  v1InboundOrdersConvertCreate = (
-    id: string,
-    payload: DtoInboundOrderConvertRequest,
-    params: RequestParams = {},
-  ) =>
-    this.http.request<DtoInboundOrderConvertResponse, Record<string, string>>({
-      path: `/api/v1/inbound-orders/${id}/convert`,
-      method: "POST",
-      body: payload,
-      secure: true,
-      type: ContentType.Json,
       format: "json",
       ...params,
     });

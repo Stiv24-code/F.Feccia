@@ -124,11 +124,6 @@ export interface DtoClientInboundOrderRequest {
   andata_ritorno?: boolean;
   categoria_trasporto?: string;
   cliente_id: string;
-  /**
-   * CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
-   * = coincide con Cliente).
-   */
-  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   data_consegna?: string;
   data_ritiro?: string;
@@ -137,17 +132,12 @@ export interface DtoClientInboundOrderRequest {
   items?: DtoOrderItemRequestDTO[];
   kg?: number;
   note?: string;
-  note_carico?: string;
-  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
   product?: string;
-  provvisorio?: boolean;
-  rif_carico?: string;
   rif_ordine_cliente?: string;
-  rif_scarico?: string;
   servizi_accessori?: string[];
   tariffa?: number;
   tipo_tariffa?: string;
@@ -555,31 +545,6 @@ export interface DtoInboundOrderActionResponse {
   order?: DtoInboundOrderResponse;
 }
 
-export interface DtoInboundOrderConvertRequest {
-  cliente_id?: string;
-  committente_id?: string;
-  data_consegna?: string;
-  data_ritiro?: string;
-  destinazione_carico_id?: string;
-  destinazione_scarico_id?: string;
-  note?: string;
-  /**
-   * Tariffa: when omitted the draft's TariffaProposta is applied, so pass
-   * it explicitly to price the order at anything other than what the
-   * customer proposed. A pointer so an explicit 0 (free of charge) is
-   * distinguishable from "field absent".
-   */
-  tariffa?: number;
-  tipo_tariffa?: "forfait" | "tonnellata" | "km";
-  tipologia?: "nazionale" | "internazionale";
-}
-
-export interface DtoInboundOrderConvertResponse {
-  inbound_order?: DtoInboundOrderResponse;
-  order?: DtoOrderResponse;
-  tariffa_from_client?: boolean;
-}
-
 export interface DtoInboundOrderDraftDTO {
   client?: string;
   delivery_date?: string;
@@ -606,26 +571,12 @@ export interface DtoInboundOrderRequest {
    * /inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.
    */
   cliente_id?: string;
-  /**
-   * Structured portal payload, like ClienteID set internally by
-   * CreateMyInboundOrder from an authenticated submission — the ids the
-   * client picked from its own destination list, kept so Convert can
-   * rebuild the Order exactly instead of guessing FKs from the place
-   * names. Nil for mail/pdf/seed drafts, which only ever have free text.
-   */
-  committente_id?: string;
   delivery_date?: string;
   delivery_place?: string;
-  destinazione_carico_id?: string;
-  destinazione_scarico_id?: string;
   kg?: number;
   load_date?: string;
   load_place?: string;
   notes?: string;
-  ora_consegna_a?: string;
-  ora_consegna_da?: string;
-  ora_ritiro_a?: string;
-  ora_ritiro_da?: string;
   portal?: boolean;
   product?: string;
   rate?: string;
@@ -634,35 +585,20 @@ export interface DtoInboundOrderRequest {
   sender_email?: string;
   source?: "seed" | "mail" | "pdf" | "portal";
   status?: "pending" | "accepted" | "modify";
-  /** TariffaProposta: the client's "tariffa desiderata", a proposal only. */
-  tariffa_proposta?: number;
   template_id?: string;
 }
 
 export interface DtoInboundOrderResponse {
   client?: string;
   cliente_id?: string;
-  committente_id?: string;
   created_at?: string;
   delivery_date?: string;
   delivery_place?: string;
-  destinazione_carico_id?: string;
-  destinazione_scarico_id?: string;
   id?: string;
   kg?: number;
   load_date?: string;
   load_place?: string;
   notes?: string;
-  ora_consegna_a?: string;
-  ora_consegna_da?: string;
-  ora_ritiro_a?: string;
-  ora_ritiro_da?: string;
-  /**
-   * OrderID: set once the draft has been converted into a real order, nil
-   * while it is still awaiting conversion. The client portal uses it to
-   * tell "richiesta in attesa" from "ordine confermato".
-   */
-  order_id?: string;
   portal?: boolean;
   product?: string;
   rate?: string;
@@ -671,7 +607,6 @@ export interface DtoInboundOrderResponse {
   sender_email?: string;
   source?: string;
   status?: string;
-  tariffa_proposta?: number;
   template_id?: string;
   updated_at?: string;
 }
@@ -890,11 +825,6 @@ export interface DtoOrderRequest {
   andata_ritorno?: boolean;
   categoria_trasporto?: string;
   cliente_id: string;
-  /**
-   * CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto
-   * = coincide con Cliente).
-   */
-  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   data_consegna?: string;
   data_ritiro?: string;
@@ -902,16 +832,11 @@ export interface DtoOrderRequest {
   destinazione_scarico_id?: string;
   items?: DtoOrderItemRequestDTO[];
   note?: string;
-  note_carico?: string;
-  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
-  provvisorio?: boolean;
-  rif_carico?: string;
   rif_ordine_cliente?: string;
-  rif_scarico?: string;
   servizi_accessori?: string[];
   tariffa?: number;
   tipo_tariffa?: string;
@@ -925,8 +850,6 @@ export interface DtoOrderResponse {
   categoria_trasporto?: string;
   cliente?: DtoCustomerResponse;
   cliente_id?: string;
-  committente?: DtoCustomerResponse;
-  committente_id?: string;
   costi_accessori?: Record<string, any>[];
   created_at?: string;
   data_consegna?: string;
@@ -943,17 +866,12 @@ export interface DtoOrderResponse {
   motrice?: DtoMotriceResponse;
   motrice_id?: string;
   note?: string;
-  note_carico?: string;
-  note_scarico?: string;
   ora_consegna_a?: string;
   ora_consegna_da?: string;
   ora_ritiro_a?: string;
   ora_ritiro_da?: string;
   progressivo?: string;
-  provvisorio?: boolean;
-  rif_carico?: string;
   rif_ordine_cliente?: string;
-  rif_scarico?: string;
   route?: DtoRouteResponseDTO;
   route_id?: string;
   semirimorchio?: DtoSemirimorchioResponse;

@@ -65,7 +65,6 @@ func PreloadAssociations(q *gorm.DB) *gorm.DB {
 	return q.
 		Preload("Items.Prodotto").
 		Preload("Cliente").
-		Preload("Committente").
 		Preload("DestinazioneCarico").
 		Preload("DestinazioneScarico").
 		Preload("Garage").
@@ -164,10 +163,6 @@ func (s *OrderService) Create(ctx context.Context, req dto.OrderRequest) (*dto.O
 	if err != nil {
 		return nil, err
 	}
-	committenteID, err := utils.ParseOptionalUUID(req.CommittenteID)
-	if err != nil {
-		return nil, err
-	}
 	caricoID, err := utils.ParseOptionalUUID(req.DestinazioneCaricoID)
 	if err != nil {
 		return nil, err
@@ -185,7 +180,6 @@ func (s *OrderService) Create(ctx context.Context, req dto.OrderRequest) (*dto.O
 		ID:                    uuid.New(),
 		Progressivo:           progressivo,
 		ClienteID:             clienteID,
-		CommittenteID:         committenteID,
 		DestinazioneCaricoID:  caricoID,
 		DestinazioneScaricoID: scaricoID,
 		DataRitiro:            req.DataRitiro,
@@ -199,12 +193,7 @@ func (s *OrderService) Create(ctx context.Context, req dto.OrderRequest) (*dto.O
 		Tipologia:             defaultString(req.Tipologia, "nazionale"),
 		CategoriaTrasporto:    req.CategoriaTrasporto,
 		RifOrdineCliente:      req.RifOrdineCliente,
-		RifCarico:             req.RifCarico,
-		NoteCarico:            req.NoteCarico,
-		RifScarico:            req.RifScarico,
-		NoteScarico:           req.NoteScarico,
 		AndataRitorno:         req.AndataRitorno,
-		Provvisorio:           req.Provvisorio,
 		Note:                  req.Note,
 		Items:                 items,
 		ServiziAccessori:      marshalJSON(req.ServiziAccessori),
@@ -250,10 +239,6 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	if err != nil {
 		return nil, err
 	}
-	committenteID, err := utils.ParseOptionalUUID(req.CommittenteID)
-	if err != nil {
-		return nil, err
-	}
 	caricoID, err := utils.ParseOptionalUUID(req.DestinazioneCaricoID)
 	if err != nil {
 		return nil, err
@@ -268,7 +253,6 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	}
 
 	order.ClienteID = clienteID
-	order.CommittenteID = committenteID
 	order.DestinazioneCaricoID = caricoID
 	order.DestinazioneScaricoID = scaricoID
 	order.DataRitiro = req.DataRitiro
@@ -282,12 +266,7 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	order.Tipologia = defaultString(req.Tipologia, "nazionale")
 	order.CategoriaTrasporto = req.CategoriaTrasporto
 	order.RifOrdineCliente = req.RifOrdineCliente
-	order.RifCarico = req.RifCarico
-	order.NoteCarico = req.NoteCarico
-	order.RifScarico = req.RifScarico
-	order.NoteScarico = req.NoteScarico
 	order.AndataRitorno = req.AndataRitorno
-	order.Provvisorio = req.Provvisorio
 	order.Note = req.Note
 	order.ServiziAccessori = marshalJSON(req.ServiziAccessori)
 	order.CostiAccessori = marshalJSON(req.CostiAccessori)
@@ -769,15 +748,6 @@ func uuidPtrString(id *uuid.UUID) string {
 	return id.String()
 }
 
-// committenteResponse adapts the nullable Committente association to
-// customerResponse (which takes the always-present Cliente by value).
-func committenteResponse(c *models.Customer) *dto.CustomerResponse {
-	if c == nil {
-		return nil
-	}
-	return customerResponse(*c)
-}
-
 func customerResponse(c models.Customer) *dto.CustomerResponse {
 	if c.ID == uuid.Nil {
 		return nil
@@ -891,8 +861,6 @@ func ToResponse(o models.Order) dto.OrderResponse {
 		Progressivo:           o.Progressivo,
 		ClienteID:             o.ClienteID.String(),
 		Cliente:               customerResponse(o.Cliente),
-		CommittenteID:         uuidPtrString(o.CommittenteID),
-		Committente:           committenteResponse(o.Committente),
 		DestinazioneCaricoID:  uuidPtrString(o.DestinazioneCaricoID),
 		DestinazioneCarico:    destinationResponse(o.DestinazioneCarico),
 		DestinazioneScaricoID: uuidPtrString(o.DestinazioneScaricoID),
@@ -908,12 +876,7 @@ func ToResponse(o models.Order) dto.OrderResponse {
 		Tipologia:             o.Tipologia,
 		CategoriaTrasporto:    o.CategoriaTrasporto,
 		RifOrdineCliente:      o.RifOrdineCliente,
-		RifCarico:             o.RifCarico,
-		NoteCarico:            o.NoteCarico,
-		RifScarico:            o.RifScarico,
-		NoteScarico:           o.NoteScarico,
 		AndataRitorno:         o.AndataRitorno,
-		Provvisorio:           o.Provvisorio,
 		Note:                  o.Note,
 		Items:                 items,
 		ServiziAccessori:      unmarshalStrings(o.ServiziAccessori),

@@ -3042,79 +3042,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/inbound-orders/{id}/convert": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a models.Order from the draft and links the two (inbound_order.order_id), which makes the call idempotent: a second convert answers 409 with the existing order id. Separate from /accept, which only sends the confirmation mail — an order can be created before or after mailing the customer. cliente_id is required in the body unless the draft already carries a trusted one (portal submissions do); the free-text client field is never resolved to an anagrafica by name, so a spoofed sender cannot get an order billed to someone else. tariffa defaults to the customer's proposed rate for portal drafts and to 0 otherwise (a mail draft's rate is free text and is never parsed) — the response flags when the applied rate is the customer's own.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "InboundOrders"
-                ],
-                "summary": "Convert an inbound order into a real TMS order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Inbound order ID (UUID)",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Conversion overrides (all fields optional)",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.InboundOrderConvertRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/dto.InboundOrderConvertResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/inbound-orders/{id}/modify": {
             "post": {
                 "security": [
@@ -7093,10 +7020,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "committente_id": {
-                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
-                    "type": "string"
-                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -7128,12 +7051,6 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
-                "note_carico": {
-                    "type": "string"
-                },
-                "note_scarico": {
-                    "type": "string"
-                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -7149,16 +7066,7 @@ const docTemplate = `{
                 "product": {
                     "type": "string"
                 },
-                "provvisorio": {
-                    "type": "boolean"
-                },
-                "rif_carico": {
-                    "type": "string"
-                },
                 "rif_ordine_cliente": {
-                    "type": "string"
-                },
-                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -8177,65 +8085,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.InboundOrderConvertRequest": {
-            "type": "object",
-            "properties": {
-                "cliente_id": {
-                    "type": "string"
-                },
-                "committente_id": {
-                    "type": "string"
-                },
-                "data_consegna": {
-                    "type": "string"
-                },
-                "data_ritiro": {
-                    "type": "string"
-                },
-                "destinazione_carico_id": {
-                    "type": "string"
-                },
-                "destinazione_scarico_id": {
-                    "type": "string"
-                },
-                "note": {
-                    "type": "string"
-                },
-                "tariffa": {
-                    "description": "Tariffa: when omitted the draft's TariffaProposta is applied, so pass\nit explicitly to price the order at anything other than what the\ncustomer proposed. A pointer so an explicit 0 (free of charge) is\ndistinguishable from \"field absent\".",
-                    "type": "number"
-                },
-                "tipo_tariffa": {
-                    "type": "string",
-                    "enum": [
-                        "forfait",
-                        "tonnellata",
-                        "km"
-                    ]
-                },
-                "tipologia": {
-                    "type": "string",
-                    "enum": [
-                        "nazionale",
-                        "internazionale"
-                    ]
-                }
-            }
-        },
-        "dto.InboundOrderConvertResponse": {
-            "type": "object",
-            "properties": {
-                "inbound_order": {
-                    "$ref": "#/definitions/dto.InboundOrderResponse"
-                },
-                "order": {
-                    "$ref": "#/definitions/dto.OrderResponse"
-                },
-                "tariffa_from_client": {
-                    "type": "boolean"
-                }
-            }
-        },
         "dto.InboundOrderDraftDTO": {
             "type": "object",
             "properties": {
@@ -8299,20 +8148,10 @@ const docTemplate = `{
                     "description": "ClienteID is set internally by CreateMyInboundOrder (client portal) —\nnever trusted from external request bodies for the staff-facing\n/inbound-orders endpoint, same posture as OrderRequest.ClienteID on /me/orders.",
                     "type": "string"
                 },
-                "committente_id": {
-                    "description": "Structured portal payload, like ClienteID set internally by\nCreateMyInboundOrder from an authenticated submission — the ids the\nclient picked from its own destination list, kept so Convert can\nrebuild the Order exactly instead of guessing FKs from the place\nnames. Nil for mail/pdf/seed drafts, which only ever have free text.",
-                    "type": "string"
-                },
                 "delivery_date": {
                     "type": "string"
                 },
                 "delivery_place": {
-                    "type": "string"
-                },
-                "destinazione_carico_id": {
-                    "type": "string"
-                },
-                "destinazione_scarico_id": {
                     "type": "string"
                 },
                 "kg": {
@@ -8325,18 +8164,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "notes": {
-                    "type": "string"
-                },
-                "ora_consegna_a": {
-                    "type": "string"
-                },
-                "ora_consegna_da": {
-                    "type": "string"
-                },
-                "ora_ritiro_a": {
-                    "type": "string"
-                },
-                "ora_ritiro_da": {
                     "type": "string"
                 },
                 "portal": {
@@ -8374,10 +8201,6 @@ const docTemplate = `{
                         "modify"
                     ]
                 },
-                "tariffa_proposta": {
-                    "description": "TariffaProposta: the client's \"tariffa desiderata\", a proposal only.",
-                    "type": "number"
-                },
                 "template_id": {
                     "type": "string"
                 }
@@ -8392,9 +8215,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "committente_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -8402,12 +8222,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "delivery_place": {
-                    "type": "string"
-                },
-                "destinazione_carico_id": {
-                    "type": "string"
-                },
-                "destinazione_scarico_id": {
                     "type": "string"
                 },
                 "id": {
@@ -8423,22 +8237,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "notes": {
-                    "type": "string"
-                },
-                "ora_consegna_a": {
-                    "type": "string"
-                },
-                "ora_consegna_da": {
-                    "type": "string"
-                },
-                "ora_ritiro_a": {
-                    "type": "string"
-                },
-                "ora_ritiro_da": {
-                    "type": "string"
-                },
-                "order_id": {
-                    "description": "OrderID: set once the draft has been converted into a real order, nil\nwhile it is still awaiting conversion. The client portal uses it to\ntell \"richiesta in attesa\" from \"ordine confermato\".",
                     "type": "string"
                 },
                 "portal": {
@@ -8464,9 +8262,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
-                },
-                "tariffa_proposta": {
-                    "type": "number"
                 },
                 "template_id": {
                     "type": "string"
@@ -9054,10 +8849,6 @@ const docTemplate = `{
                 "cliente_id": {
                     "type": "string"
                 },
-                "committente_id": {
-                    "description": "CommittenteID: parte ordinante se diversa dal cliente fatturato (vuoto\n= coincide con Cliente).",
-                    "type": "string"
-                },
                 "costi_accessori": {
                     "type": "array",
                     "items": {
@@ -9086,12 +8877,6 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
-                "note_carico": {
-                    "type": "string"
-                },
-                "note_scarico": {
-                    "type": "string"
-                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -9104,16 +8889,7 @@ const docTemplate = `{
                 "ora_ritiro_da": {
                     "type": "string"
                 },
-                "provvisorio": {
-                    "type": "boolean"
-                },
-                "rif_carico": {
-                    "type": "string"
-                },
                 "rif_ordine_cliente": {
-                    "type": "string"
-                },
-                "rif_scarico": {
                     "type": "string"
                 },
                 "servizi_accessori": {
@@ -9152,12 +8928,6 @@ const docTemplate = `{
                     "$ref": "#/definitions/dto.CustomerResponse"
                 },
                 "cliente_id": {
-                    "type": "string"
-                },
-                "committente": {
-                    "$ref": "#/definitions/dto.CustomerResponse"
-                },
-                "committente_id": {
                     "type": "string"
                 },
                 "costi_accessori": {
@@ -9215,12 +8985,6 @@ const docTemplate = `{
                 "note": {
                     "type": "string"
                 },
-                "note_carico": {
-                    "type": "string"
-                },
-                "note_scarico": {
-                    "type": "string"
-                },
                 "ora_consegna_a": {
                     "type": "string"
                 },
@@ -9236,16 +9000,7 @@ const docTemplate = `{
                 "progressivo": {
                     "type": "string"
                 },
-                "provvisorio": {
-                    "type": "boolean"
-                },
-                "rif_carico": {
-                    "type": "string"
-                },
                 "rif_ordine_cliente": {
-                    "type": "string"
-                },
-                "rif_scarico": {
                     "type": "string"
                 },
                 "route": {
