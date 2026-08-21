@@ -1334,7 +1334,7 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
   <div style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div style="display:flex;align-items:center;gap:12px;padding:0 20px;min-height:57px;background:#fff;border-bottom:1px solid #e3e6ec;flex:none">
       <span style="font:700 15px Inter,sans-serif;color:#1c2534">Planner</span>
-      <span onClick="{{ mOpenBulk }}" style="margin-left:auto;font:600 12px Inter,sans-serif;color:#fff;background:#2a6fdb;border-radius:7px;padding:8px 16px;cursor:pointer" style-hover="background:#1d55ad">Pianificazione multipla</span>
+      <span onClick="{{ mOpenBulk }}" style="margin-left:auto;font:600 12px Inter,sans-serif;color:#fff;background:#2a6fdb;border-radius:7px;padding:8px 16px;cursor:pointer" style-hover="background:#1d55ad">Pianificazione assistita</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;padding:14px 20px 12px;flex:none">
       <input value="{{ mTripsQ }}" onChange="{{ mSetTripsQ }}" placeholder="Cerca viaggio, mezzo, autista..." style="font:400 12px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:7px;padding:8px 12px;width:200px;background:#fff;outline:none;box-sizing:border-box">
@@ -1380,14 +1380,16 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
   </sc-if>
 
 
-  <!-- ── PIANIFICA (BULK) ── -->
+  <!-- ── PIANIFICAZIONE ASSISTITA (#26) ── -->
   <sc-if value="{{ mIsBulk }}" hint-placeholder-val="{{ false }}">
   <div style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div style="display:flex;align-items:center;gap:12px;padding:0 20px;min-height:57px;background:#fff;border-bottom:1px solid #e3e6ec;flex:none">
       <span onClick="{{ mGoTrips }}" style="display:inline-flex;align-items:center;gap:8px;font:500 12px Inter,sans-serif;color:#38445a;cursor:pointer" style-hover="color:#2a6fdb"><span style="width:28px;height:28px;border-radius:99px;border:1px solid #d4dae4;background:#fff;display:grid;place-items:center;flex:none;box-sizing:border-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg></span>Planner /</span>
-      <span style="font:700 15px Inter,sans-serif;color:#1c2534">Pianificazione multipla</span>
-      <span onClick="{{ mGoTrips }}" style="margin-left:auto;font:500 12px Inter,sans-serif;color:#38445a;border:1px solid #d4dae4;border-radius:7px;padding:8px 14px;background:#fff;cursor:pointer">Annulla</span>
-      <span onClick="{{ mBulkConfirm }}" style="{{ mBulkCtaStyle }}">{{ mBulkCta }}</span>
+      <span style="font:700 15px Inter,sans-serif;color:#1c2534">Pianificazione assistita</span>
+      <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
+        <span onClick="{{ mGoTrips }}" style="font:500 12px Inter,sans-serif;color:#38445a;border:1px solid #d4dae4;border-radius:7px;padding:8px 14px;background:#fff;cursor:pointer">Annulla</span>
+        <span onClick="{{ mBulkMainAct }}" style="{{ mBulkCtaStyle }}">{{ mBulkCta }}</span>
+      </div>
     </div>
     <div style="display:flex;flex:1;min-height:0;gap:16px;padding:16px 20px">
       <div style="width:340px;flex:none;display:flex;flex-direction:column;min-height:0">
@@ -1449,72 +1451,65 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
           <sc-if value="{{ mBulkNoRows }}" hint-placeholder-val="{{ false }}"><div style="border:1.5px dashed #c4ccd8;border-radius:9px;padding:14px;text-align:center;font:400 11.5px Inter,sans-serif;color:#9aa4b4">Nessun ordine da pianificare.</div></sc-if>
         </div>
       </div>
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;overflow:auto">
-        <iframe src="{{ mBulkMapSrc }}" title="Mappa tappe" style="width:100%;height:340px;border:1px solid #e3e6ec;border-radius:12px;display:block;box-sizing:border-box;flex:none"></iframe>
-        <div style="background:#fff;border:1px solid #e3e6ec;border-radius:10px;padding:14px 16px;flex:none">
-          <div style="display:flex;align-items:center;min-height:26px;margin-bottom:9px">
-            <span style="font:700 10px Inter,sans-serif;letter-spacing:.1em;color:#7c879a">TAPPE DEL VIAGGIO</span>
-            <span onClick="{{ mBulkOptimize }}" style="{{ mBulkOptStyle }}" style-hover="filter:brightness(1.08)">✦ Ottimizza tappe</span>
-            <span style="{{ mBulkOptSwitchStyle }}">
-              <span onClick="{{ mBulkOptShowOpt }}" style="{{ mBulkOptSegA }}">✦ Ottimizzato</span>
-              <span onClick="{{ mBulkOptShowOrig }}" style="{{ mBulkOptSegB }}">Originale</span>
-            </span>
-            <span style="{{ mBulkOptBadgeStyle }}">{{ mBulkOptBadge }}</span>
-          </div>
-          <sc-if value="{{ mBulkHasStops }}" hint-placeholder-val="{{ false }}">
-            <div style="display:flex;align-items:flex-start;overflow-x:auto;padding:2px 0 4px">
-              <sc-for list="{{ mBulkStopsList }}" as="s" hint-placeholder-count="4">
-                <div style="display:flex;align-items:flex-start">
-                  <span style="{{ s.connStyle }}"></span>
-                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:74px">
-                    <span style="{{ s.dotStyle }}">{{ s.n }}</span>
-                    <span style="{{ s.kindStyle }}">{{ s.kind }}</span>
-                    <span style="font:600 11px Inter,sans-serif;color:#1c2534;text-align:center;max-width:96px">{{ s.city }}</span>
-                  </div>
+      <div style="flex:1;min-width:0;overflow:auto;min-height:0">
+        <sc-if value="{{ mBulkPropEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="border:1.5px dashed #c4ccd8;border-radius:12px;padding:22px 26px;font:400 12.5px/1.75 Inter,sans-serif;color:#7c879a;background:#fff;box-sizing:border-box">Seleziona gli ordini a sinistra: per ciascuno compare qui la proposta di viaggio — autista e motrice disponibili, garage di partenza più vicino al carico e lavaggio quando il capitolato del cliente lo richiede. Ogni proposta si rivede e si conferma singolarmente.</div>
+        </sc-if>
+        <sc-if value="{{ mBulkHasProp }}" hint-placeholder-val="{{ false }}">
+        <div style="font:700 10px Inter,sans-serif;letter-spacing:.1em;color:#7c879a;margin-bottom:10px">{{ mBulkPropHead }}</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ mBulkPropList }}" as="bp" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e3e6ec;border-radius:11px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font:700 12px Inter,sans-serif;color:#2a6fdb">{{ bp.id }}</span>
+              <span style="font:700 13px Inter,sans-serif;color:#1c2534">{{ bp.cliente }}</span>
+              <span style="font:400 12px Inter,sans-serif;color:#5b6b80">{{ bp.tratta }}</span>
+              <span style="font:500 11px Inter,sans-serif;color:#7c879a;margin-left:auto;white-space:nowrap">ritiro {{ bp.ritiro }} · {{ bp.peso }} kg · {{ bp.prod }}</span>
+            </div>
+            <div style="{{ bp.editWrapStyle }}">
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:11px 14px;margin-top:12px">
+                <div>
+                  <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Autista e motrice</div>
+                  <select value="{{ bp.autistaVal }}" onChange="{{ bp.setAutista }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
+                    <sc-for list="{{ bp.autistaOpts }}" as="ao" hint-placeholder-count="5"><option value="{{ ao.v }}">{{ ao.label }}</option></sc-for>
+                  </select>
                 </div>
-              </sc-for>
-            </div>
-          </sc-if>
-          <sc-if value="{{ mBulkNoStops }}" hint-placeholder-val="{{ true }}"><div style="font:400 11.5px Inter,sans-serif;color:#9aa4b4">Seleziona gli ordini a sinistra: le tappe di carico e scarico si comporranno qui e sulla mappa.</div></sc-if>
-          <div style="{{ mBulkSummaryStyle }}">
-            <span style="font:500 11.5px Inter,sans-serif;color:#7c879a">{{ mBulkSub }}</span>
-            <span style="width:1px;height:14px;background:#e3e6ec"></span>
-            <span style="font:600 11.5px Inter,sans-serif;color:#38445a">{{ mBulkKmTot }}</span>
-            <span style="width:1px;height:14px;background:#e3e6ec"></span>
-            <span style="font:600 11.5px Inter,sans-serif;color:#38445a">{{ mBulkTappe }}</span>
-            <span style="width:1px;height:14px;background:#e3e6ec"></span>
-            <span style="{{ mBulkOreStyle }}">{{ mBulkOre }}</span>
-          </div>
-        </div>
-        <div style="background:#fff;border:1px solid #e3e6ec;border-radius:10px;padding:14px 16px;flex:none">
-          <div style="font:700 10px Inter,sans-serif;letter-spacing:.1em;color:#7c879a;margin-bottom:10px">ASSEGNA AUTISTA</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div>
-              <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:6px">Autista</div>
-              <div style="display:flex;flex-direction:column;gap:5px">
-                <sc-for list="{{ mBulkDriversList }}" as="d" hint-placeholder-count="3">
-                  <div onClick="{{ d.pick }}" style="{{ d.style }}" style-hover="border-color:#9fbce8">
-                    <span style="width:24px;height:24px;border-radius:99px;background:#2a6fdb;display:grid;place-items:center;font:600 9.5px Inter,sans-serif;color:#fff;flex:none">{{ d.init }}</span>
-                    <div style="flex:1;min-width:0"><div style="font:600 12px Inter,sans-serif;color:#1c2534">{{ d.name }}</div><div style="font:400 10.5px Inter,sans-serif;color:#5b6b80;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.sub }}</div></div>
-                    <span style="{{ d.dotStyle }}"></span>
-                  </div>
-                </sc-for>
+                <div>
+                  <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Garage di partenza</div>
+                  <select value="{{ bp.garageVal }}" onChange="{{ bp.setGarage }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
+                    <sc-for list="{{ bp.garageOpts }}" as="go" hint-placeholder-count="3"><option value="{{ go.v }}">{{ go.label }}</option></sc-for>
+                  </select>
+                </div>
+                <div>
+                  <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Lavaggio prima del carico</div>
+                  <select value="{{ bp.washVal }}" onChange="{{ bp.setWash }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
+                    <sc-for list="{{ bp.washOpts }}" as="wo" hint-placeholder-count="4"><option value="{{ wo.v }}">{{ wo.label }}</option></sc-for>
+                  </select>
+                  <div style="{{ bp.washNoteStyle }}">{{ bp.washNote }}</div>
+                </div>
+                <div>
+                  <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Percorso</div>
+                  <select value="{{ bp.routeVal }}" onChange="{{ bp.setRoute }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
+                    <sc-for list="{{ bp.routeOpts }}" as="ro" hint-placeholder-count="3"><option value="{{ ro.v }}">{{ ro.label }}</option></sc-for>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:11px;border-top:1px solid #eef0f4;flex-wrap:wrap">
+                <span style="font:500 11.5px Inter,sans-serif;color:#38445a;min-width:0">{{ bp.itin }}</span>
+                <span style="font:600 11.5px Inter,sans-serif;color:#1c2534;white-space:nowrap">{{ bp.km }}</span>
+                <span onClick="{{ bp.skip }}" style="margin-left:auto;font:600 11.5px Inter,sans-serif;color:#c0392b;border:1px solid #f0c5c0;background:#fff;border-radius:7px;padding:7px 13px;cursor:pointer" style-hover="background:#fdecec">Scarta</span>
+                <span onClick="{{ bp.confirm }}" style="font:600 11.5px Inter,sans-serif;color:#fff;background:#2a6fdb;border-radius:7px;padding:7px 15px;cursor:pointer" style-hover="background:#1d55ad">Conferma viaggio</span>
               </div>
             </div>
-            <div>
-              <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:6px">Motrice <span style="font-weight:400;color:#7c879a">— proposta dall'autista</span></div>
-              <sc-if value="{{ mBulkHasTruck }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:center;gap:9px;border:1px solid #bfd3f2;background:#eef3fb;border-radius:8px;padding:9px 12px">
-                <div><div style="font:600 12px Inter,sans-serif;color:#1c2534">{{ mBulkTruckTarga }}</div><div style="font:400 10.5px Inter,sans-serif;color:#5b6b80">{{ mBulkTruckDesc }}</div></div>
-                <span style="{{ mBulkTruckDotStyle }}"></span>
-              </div>
-              </sc-if>
-              <sc-if value="{{ mBulkNoTruck }}" hint-placeholder-val="{{ true }}">
-              <div style="border:1.5px dashed #c4ccd8;border-radius:8px;padding:12px;text-align:center;font:400 11.5px Inter,sans-serif;color:#9aa4b4">Seleziona un autista</div>
-              </sc-if>
+            <div style="{{ bp.doneWrapStyle }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1f7a4d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span style="font:600 12px Inter,sans-serif;color:#1f7a4d">Pianificato · {{ bp.doneLine }}</span>
+              <span onClick="{{ bp.goPlanner }}" style="margin-left:auto;font:600 11.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer" style-hover="color:#1d55ad">Vedi nel planner →</span>
             </div>
           </div>
+        </sc-for>
         </div>
+        </sc-if>
       </div>
     </div>
   </div>
@@ -3076,10 +3071,7 @@ class Component extends DCLogic {
       return true;
     }).sort((a, b) => bulkAbs(a.ritiro) - bulkAbs(b.ritiro));
     const bulkAllPlan = rows.filter(o => o.statoKey === 'plan').sort((a, b) => bulkAbs(a.ritiro) - bulkAbs(b.ritiro));
-    let bulkChosen = bulkAllPlan.filter(o => bulkSel[o.id]);
-    const bulkOpt = st.bulkOpt || null;
-    const bulkOptView = st.bulkOptView || 'opt';
-    if (bulkOpt && bulkOptView === 'opt') bulkChosen = [...bulkChosen].sort((a, b) => { const ia = bulkOpt.indexOf(a.id), ib = bulkOpt.indexOf(b.id); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+    const bulkChosen = bulkAllPlan.filter(o => bulkSel[o.id]);
     // coordinate di lavaggi e garage + detour: quanto allunga il giro passare dal
     // punto W tra scarico e rientro (haversine × 1,25 fattore strada, arrotondato a 5)
     const spotGeo = { 'CleanTank Piacenza': [45.05, 9.69], 'LavaCisterne Modena': [44.65, 10.93], 'TankWash Verona': [45.43, 11.03], 'EcoWash Bologna': [44.49, 11.34], 'PuliCist Parma': [44.80, 10.33], 'IdroTank Brescia': [45.54, 10.21], 'CisternClean Torino': [45.07, 7.69], 'Garage Milano Rho': [45.53, 9.04], 'Garage Milano Opera': [45.38, 9.21], 'Garage Lainate': [45.57, 9.03] };
@@ -3105,11 +3097,6 @@ class Component extends DCLogic {
     const crKmChain = crKm + (selGarage ? selGarage.extra || 0 : 0) + (washDetour(selWash) || 0);
     const crKmSel = crKmChain + crDeltaOf(crSel);
     const crCostSel = Math.round(crKmSel * 1.1);
-    const seqKm = list => { let km = 0, prev = geo['Deposito Milano Rho']; list.forEach(o => { const r = routes[o.id]; if (!r) return; km += hav(prev, geo[r.carico]) + hav(geo[r.carico], geo[r.consegna]); prev = geo[r.consegna]; }); return km; };
-
-    const bulkStopsRaw = [];
-    bulkChosen.forEach(o => { const r = routes[o.id]; if (r) { bulkStopsRaw.push({ n: r.carico, t: 'carico' }); bulkStopsRaw.push({ n: r.consegna, t: 'scarico' }); } });
-    const bulkStops = bulkStopsRaw.filter((s, i) => i === 0 || s.n !== bulkStopsRaw[i - 1].n);
     const bulkListOf = arr => arr.map(o => {
       const on = !!bulkSel[o.id];
       const pos = bulkChosen.findIndex(c => c.id === o.id) + 1;
@@ -3117,18 +3104,14 @@ class Component extends DCLogic {
       const dm = /^(\d{2})\/(\d{2})/.exec(o.ritiro || '');
       const wdLbl = dm ? wdN[new Date(2026, +dm[2] - 1, +dm[1]).getDay()] + ' ' : '';
       return { id: o.id, cliente: o.cliente, tratta: o.tratta, when: wdLbl + (o.ritiro || '').split(' ')[0] + ' \u00b7 ' + withMin((o.ritiro || '').split(' ')[1] || ''),
-        toggle: () => set({ bulkSel: { ...bulkSel, [o.id]: !on }, bulkOpt: null, bulkOptView: 'opt' }),
+        toggle: () => set({ bulkSel: { ...bulkSel, [o.id]: !on } }),
         style: 'position:relative;display:flex;align-items:flex-start;gap:10px;border:1px solid ' + (on ? '#2a6fdb;box-shadow:0 0 0 1px #2a6fdb, 0 2px 8px rgba(42,111,219,.14);background:#fff' : '#e3e6ec;background:#fff') + ';border-radius:9px;padding:10px 12px;cursor:pointer;transition:border-color .12s, box-shadow .12s',
         badgeStyle: on ? 'position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:99px;background:#2a6fdb;color:#fff;display:grid;place-items:center;font:700 10.5px Inter,sans-serif;box-shadow:0 1px 4px rgba(42,111,219,.4)' : 'display:none',
         badge: on ? String(pos) : '' };
     });
     const bulkSelList = bulkListOf(bulkChosen);
     const bulkAvailList = bulkListOf(bulkOrders.filter(o => !bulkSel[o.id]));
-    const bulkDriver = st.bulkDriver || '';
-    const bulkTg = d2t[bulkDriver];
-    const bulkTk = trucks.find(t => t.targa === bulkTg);
     const bulkN = bulkChosen.length;
-
     // ── ANAGRAFICHE CLIENTI ──
     const anagExtra = {
       'Barry Callebaut': { sede: 'Zurigo (CH) · stabilimenti EMEA', piva: 'CHE-105.147.023', ref: 'Transport Desk EMEA', mail: 'transport.emea@barry-callebaut.com', pag: '60 gg d.f.', prod: 'Cioccolato, massa e burro di cacao', vietati: ['Previous load in black list cacao', 'Prodotti non food', 'Allergeni: arachidi'], lavaggi: ['TankWash Verona', 'TankClean München', 'CleanTank Rotterdam'], proc: ['Solo centri approvati lista EMEA', 'Doppio lavaggio dopo carichi non-cacao', 'ECD con ultimi 3 carichi'], sostaTar: 45, sostaFr: 2 },
@@ -3140,6 +3123,81 @@ class Component extends DCLogic {
       'Spiga Nord': { sede: 'Carasco (GE)', piva: 'IT00267960103', ref: 'Ufficio traffico', mail: 'traffico@spiganord.it', pag: '30 gg d.f.', prod: 'Poligliceroli e lecitine', vietati: ['Prodotti non kosher-compatibili'], lavaggi: ['CleanTank Piacenza', 'LavagePro Lyon'], proc: ['Kosher EFTCO P26', 'Temperatura minima allo scarico 60°C'], sostaTar: 40, sostaFr: 1 },
       'Eulip S.p.A.': { sede: 'Zola Predosa (BO)', piva: 'IT00312780378', ref: 'Commerciale estero', mail: 'export@eulip.it', pag: '60 gg d.f.', prod: 'Grassi vegetali, cocco raffinato', vietati: ['Oli minerali'], lavaggi: ['EcoWash Bologna', 'CleanTank Rotterdam'], proc: ['Lavaggio alimentare EFTCO', 'ECD con previous loads'], sostaTar: 30, sostaFr: 3 }
     };
+    // ── pianificazione assistita (#26): una proposta di viaggio per ogni ordine ──
+    const bulkGarages = Object.keys(depotMezzi);
+    const washNeed = {
+      'Ferrero S.p.A.': 'capitolato Ferrero: solo centri autorizzati lista GRPQ-PG030',
+      'Barry Callebaut': 'capitolato Barry Callebaut: solo centri approvati lista EMEA',
+      'Spiga Nord': 'capitolato Spiga Nord: lavaggio Kosher EFTCO P26',
+      'Inalpi S.p.A.': 'capitolato Inalpi: procedura P15 + E60 prima del carico',
+      'Cargill NV': 'capitolato Cargill: Approved Cleaning Stations (lista APL)'
+    };
+    const bulkPool = [];
+    bulkGarages.forEach(g => (depotMezzi[g] || []).forEach(m => { if (m[1] === 'Motrice' && m[2]) bulkPool.push({ targa: m[0], drv: m[2], garage: g }); }));
+    const bulkFree = p => /disponibile(?! da)/.test((drivers[p.targa] || [])[2] || '');
+    const bulkPoolSorted = [...bulkPool.filter(bulkFree), ...bulkPool.filter(p => !bulkFree(p))];
+    const bulkAvailPool = bulkPool.filter(bulkFree);
+    const bulkKm5 = x => Math.max(5, Math.round(x / 5) * 5);
+    // proposte live: una per ogni ordine selezionato (i confermati restano in lista)
+    const bulkPropIds = Object.keys(bulkSel).filter(k => bulkSel[k]).sort((a, b) => {
+      const oa = orders.find(x => x.id === a) || {}, ob = orders.find(x => x.id === b) || {};
+      return bulkAbs(oa.ritiro) - bulkAbs(ob.ritiro);
+    });
+    const bulkPropList = bulkPropIds.map(pid => {
+      const o = orders.find(x => x.id === pid);
+      if (!o) return null;
+      const r = routes[pid] || {};
+      const done = (st.bulkPlanned || {})[pid] || null;
+      const ov = (st.bulkEdit || {})[pid] || {};
+      const seed = parseInt(pid.replace(/\D/g, ''), 10) || 0;
+      const defP = bulkAvailPool.length ? bulkAvailPool[seed % bulkAvailPool.length] : bulkPoolSorted[seed % bulkPoolSorted.length];
+      let defG = bulkGarages[0], bd = Infinity;
+      bulkGarages.forEach(g => { const d = hav(spotGeo[g], geo[r.carico]); if (d && d < bd) { bd = d; defG = g; } });
+      const need = washNeed[o.cliente] || '';
+      const wl = ((anagExtra[o.cliente] || {}).lavaggi || []).filter(w => spotGeo[w]);
+      const autista = done ? done.autista : (ov.autista || defP.drv);
+      const garage = ov.garage || defG;
+      const wash = ov.wash != null ? ov.wash : (need ? (wl[0] || 'CleanTank Piacenza') : '');
+      const targa = done ? done.mezzo : (d2t[autista] || '');
+      const kmAvv = w => bulkKm5((w ? (hav(spotGeo[garage], spotGeo[w]) || 15) + (hav(spotGeo[w], geo[r.carico]) || 15) : (hav(spotGeo[garage], geo[r.carico]) || 25)));
+      // alternative di percorso sulla tratta carico -> scarico (deterministiche per ordine)
+      const kmLine = r.km2 || hav(geo[r.carico], geo[r.consegna]) || 0;
+      const durOf = km => { const h = km / 72; let H = Math.floor(h), M = Math.round((h - H) * 12) * 5; if (M === 60) { H++; M = 0; } return H + 'h' + String(M).padStart(2, '0'); };
+      const routeSaved = 10 + (seed % 4) * 5, routeSlow = 15 + (seed % 3) * 10;
+      const routeOpts = [
+        { v: '0', d: 0, label: 'Consigliato \u00b7 ' + fmt(bulkKm5(kmLine)) + ' km \u00b7 ' + durOf(kmLine) },
+        { v: '1', d: -routeSaved, label: 'Pi\u00f9 corto \u00b7 ' + fmt(bulkKm5(kmLine - routeSaved)) + ' km \u00b7 +' + routeSlow + ' min' }
+      ];
+      if (kmLine > 600) { const dA = 20 + (seed % 3) * 10; routeOpts.push({ v: '2', d: dA, label: 'Alternativo \u00b7 ' + fmt(bulkKm5(kmLine + dA)) + ' km \u00b7 +' + (10 + (seed % 2) * 5) + ' min' }); }
+      const routeSel = routeOpts.find(x => x.v === (ov.route || '0')) || routeOpts[0];
+      const kmTot = bulkKm5(kmAvv(wash) + kmLine + routeSel.d);
+      const setEd = p => set({ bulkEdit: { ...(st.bulkEdit || {}), [pid]: { ...ov, ...p } } });
+      const dsub = t => (((drivers[t] || [])[2] || '').split('\u00b7').pop() || '').trim();
+      return {
+        id: pid, cliente: o.cliente, tratta: o.tratta, ritiro: o.ritiro || '', peso: o.peso, prod: o.prod || prodOf[o.cliente] || '\u2014',
+        autistaVal: autista, setAutista: e => setEd({ autista: e.target.value }),
+        autistaOpts: bulkPoolSorted.map(p => ({ v: p.drv, label: p.drv + ' \u00b7 ' + p.targa + ' \u00b7 ' + dsub(p.targa) })),
+        garageVal: garage, setGarage: e => setEd({ garage: e.target.value }),
+        garageOpts: bulkGarages.map(g => ({ v: g, label: g + ' \u00b7 ' + bulkKm5(hav(spotGeo[g], geo[r.carico]) || 25) + ' km dal carico' })),
+        washVal: wash, setWash: e => setEd({ wash: e.target.value }),
+        washOpts: [{ v: '', label: 'Nessun lavaggio' }].concat((wl.length ? wl : Object.keys(spotGeo).filter(k => k.indexOf('Garage') < 0)).map(w => ({ v: w, label: w }))),
+        routeVal: routeSel.v, setRoute: e => setEd({ route: e.target.value }), routeOpts,
+        washNote: need ? 'Lavaggio proposto dal ' + need : 'Lavaggio non richiesto dal capitolato',
+        washNoteStyle: 'font:500 10.5px Inter,sans-serif;margin-top:6px;color:' + (need ? '#8a6508' : '#9aa4b4'),
+        itin: [garage, wash, r.carico, r.consegna].filter(Boolean).join(' \u2192 '),
+        km: '\u2248 ' + fmt(kmTot) + ' km' + (r.back ? ' + rientro ' + fmt(r.back) + ' km' : ''),
+        confirmed: !!done, vid: done ? done.viaggio : '',
+        editWrapStyle: done ? 'display:none' : '',
+        doneWrapStyle: done ? 'display:flex;align-items:center;gap:10px;background:#e9f5ee;border:1px solid #bfe0cd;border-radius:9px;padding:10px 14px;margin-top:11px' : 'display:none',
+        doneLine: done ? done.viaggio + ' \u00b7 ' + done.autista + ' \u00b7 ' + done.mezzo + ' \u00b7 partenza da ' + garage : '',
+        goPlanner: () => set({ screen: 'trips', tripsFilter: null }),
+        confirm: () => { const vid = 'VG-' + (117 + new Set(Object.values(st.bulkPlanned || {}).map(x => x.viaggio)).size); set({ bulkPlanned: { ...(st.bulkPlanned || {}), [pid]: { viaggio: vid, mezzo: d2t[autista] || '', autista } } }); },
+        skip: () => set({ bulkSel: { ...bulkSel, [pid]: false } })
+      };
+    }).filter(Boolean);
+    const bulkDoneN = bulkPropList.filter(c => c.confirmed).length;
+    const bulkLeftN = bulkPropList.length - bulkDoneN;
+
     const anagList = Object.keys(clientsCat).map(name => {
       const c = clientsCat[name], x = anagExtra[name] || {};
       return { name, sede: x.sede || '—', ref: x.ref || '—', nTar: Object.keys(c.listino || {}).length, ordAnno: c.stats[0], fatt: c.stats[1],
@@ -4025,44 +4083,13 @@ class Component extends DCLogic {
       calOutGoPrev: e => { if (e && e.stopPropagation) e.stopPropagation(); calGoBehind(); },
       calOutGoNext: e => { if (e && e.stopPropagation) e.stopPropagation(); calGoAhead(); },
       isBulk: st.screen === 'bulk',
-      openBulk: () => set({ screen: 'bulk', bulkSel: {}, bulkDriver: null, bulkOpt: null, bulkZona: null, bulkWhen: null }),
+      openBulk: () => set({ screen: 'bulk', bulkSel: {}, bulkZona: null, bulkWhen: null, bulkEdit: null }),
       bulkSelList, bulkHasSel: bulkSelList.length > 0,
       bulkAllLabel: (bulkOrders.length > 0 && bulkOrders.every(o => bulkSel[o.id])) ? 'Svuota selezione' : 'Seleziona tutti \u00b7 ' + bulkOrders.length,
       bulkAllStyle: 'margin-left:auto;display:' + (bulkOrders.length ? 'inline' : 'none') + ';font:600 10.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer;white-space:nowrap',
-      bulkToggleAll: () => { const all = bulkOrders.length > 0 && bulkOrders.every(o => bulkSel[o.id]); const next = { ...bulkSel }; bulkOrders.forEach(o => { next[o.id] = !all; }); set({ bulkSel: next, bulkOpt: null, bulkOptView: 'opt' }); },
-      bulkSelHead: 'NEL VIAGGIO (' + bulkSelList.length + ')',
+      bulkToggleAll: () => { const all = bulkOrders.length > 0 && bulkOrders.every(o => bulkSel[o.id]); const next = { ...bulkSel }; bulkOrders.forEach(o => { next[o.id] = !all; }); set({ bulkSel: next }); },
+      bulkSelHead: 'SELEZIONATI (' + bulkSelList.length + ')',
       bulkAvailList, bulkNoRows: bulkAvailList.length === 0,
-      bulkSub: bulkN + (bulkN === 1 ? ' ordine selezionato' : ' ordini selezionati'),
-      bulkMapSrc: mapUrl('stops=' + encodeURIComponent(bulkStops.map(s => s.n).join('|'))),
-      bulkStopsList: bulkStops.map((s, i) => ({
-        n: String(i + 1), city: s.n, kind: s.t === 'carico' ? 'Carico' : 'Scarico',
-        dotStyle: 'width:22px;height:22px;border-radius:99px;flex:none;display:grid;place-items:center;font:700 10.5px Inter,sans-serif;box-sizing:border-box;' + (s.t === 'carico' ? 'background:#2a6fdb;color:#fff' : 'background:#fff;color:#2a6fdb;border:2px solid #2a6fdb'),
-        kindStyle: 'font:600 9px Inter,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:' + (s.t === 'carico' ? '#2a6fdb' : '#7c879a'),
-        connStyle: i === 0 ? 'display:none' : 'width:34px;height:2px;background:#c9d7ef;flex:none;margin:10px 4px 0' })),
-      bulkHasStops: bulkStops.length > 0, bulkNoStops: bulkStops.length === 0,
-      bulkOptStyle: 'margin-left:auto;display:' + (bulkChosen.length > 1 && !bulkOpt ? 'inline-flex' : 'none') + ';align-items:center;gap:6px;font:600 11px Inter,sans-serif;color:#fff;background:linear-gradient(95deg,#2a6fdb,#6d55d8);border-radius:7px;padding:7px 13px;cursor:pointer;animation:optPop .35s cubic-bezier(.34,1.4,.5,1) both',
-      bulkOptSwitchStyle: 'margin-left:auto;display:' + (bulkOpt ? 'inline-flex' : 'none') + ';align-items:center;background:#f1f3f6;border:1px solid #e3e6ec;border-radius:7px;padding:2px;gap:2px',
-      bulkOptSegA: 'font:600 10.5px Inter,sans-serif;border-radius:5px;padding:4px 10px;cursor:pointer;' + (bulkOptView === 'opt' ? 'background:#fff;color:#1d55ad;box-shadow:0 1px 2px rgba(28,37,52,.12)' : 'color:#7c879a'),
-      bulkOptSegB: 'font:600 10.5px Inter,sans-serif;border-radius:5px;padding:4px 10px;cursor:pointer;' + (bulkOptView === 'orig' ? 'background:#fff;color:#1c2534;box-shadow:0 1px 2px rgba(28,37,52,.12)' : 'color:#7c879a'),
-      bulkOptShowOpt: () => set({ bulkOptView: 'opt' }),
-      bulkOptShowOrig: () => set({ bulkOptView: 'orig' }),
-      bulkOptBadgeStyle: 'margin-left:10px;display:' + (bulkOpt ? 'inline-flex' : 'none') + ';align-items:center;gap:6px;font:600 10.5px Inter,sans-serif;color:#1d6f4c;background:#e7f5ee;border:1px solid #bfe3d1;border-radius:99px;padding:5px 11px',
-      bulkOptBadge: (() => { if (!bulkOpt) return ''; const s = st.bulkOptSaved || 0; return s >= 1 ? 'Percorso ottimizzato \u00b7 \u2212' + Math.round(s) + ' km' : 'Sequenza gi\u00e0 ottimale'; })(),
-      bulkOptimize: () => {
-        if (bulkChosen.length < 2) return;
-        const before = seqKm(bulkChosen);
-        let best = bulkChosen, bestKm = before;
-        if (bulkChosen.length <= 8) {
-          const perm = (arr, cur) => { if (!arr.length) { const km = seqKm(cur); if (km < bestKm - 0.01) { bestKm = km; best = [...cur]; } return; } arr.forEach((o, i) => perm(arr.filter((_, j) => j !== i), [...cur, o])); };
-          perm(bulkChosen, []);
-        } else {
-          const rest = [...bulkChosen]; const seq = []; let prev = geo['Deposito Milano Rho'];
-          while (rest.length) { let bi = 0, bd = Infinity; rest.forEach((o, i) => { const r = routes[o.id]; const d = r ? hav(prev, geo[r.carico]) : 0; if (d < bd) { bd = d; bi = i; } }); const pick = rest.splice(bi, 1)[0]; seq.push(pick); const r = routes[pick.id]; if (r) prev = geo[r.consegna]; }
-          if (seqKm(seq) < bestKm) { best = seq; bestKm = seqKm(seq); }
-        }
-        set({ bulkOpt: best.map(o => o.id), bulkOptSaved: before - bestKm, bulkOptView: 'opt' });
-      },
-      bulkDriverVal: bulkDriver, setBulkDriver: e => set({ bulkDriver: e.target.value }),
       bulkZonaVal: bulkZona, setBulkZona: e => set({ bulkZona: e.target.value }),
       ...((() => {
         const ms = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
@@ -4104,18 +4131,21 @@ class Component extends DCLogic {
         };
       })()),
       bulkWhenVal: bulkWhen, setBulkWhen: e => set({ bulkWhen: e.target.value }),
-      bulkSummaryStyle: (bulkN ? 'display:flex' : 'display:none') + ';align-items:center;gap:12px;margin-top:12px;padding-top:11px;border-top:1px solid #eef0f4',
-      bulkKmTot: (() => { const km = Math.round(seqKm(bulkChosen)); return fmt(km) + ' km'; })(),
-      bulkTappe: bulkStops.length + (bulkStops.length === 1 ? ' tappa' : ' tappe'),
-      bulkOre: (() => { const h = seqKm(bulkChosen) / 65; return h >= 9.5 ? '\u2248 ' + h.toFixed(1).replace('.', ',') + ' h guida \u26a0' : '\u2248 ' + h.toFixed(1).replace('.', ',') + ' h guida'; })(),
-      bulkOreStyle: 'font:600 11.5px Inter,sans-serif;color:' + (seqKm(bulkChosen) / 65 >= 9.5 ? '#b3541e' : '#38445a'),
-      bulkDriversList: trucks.map(t => { const d = drivers[t.targa] || ['\u2014', '?', '']; const on = bulkDriver === d[0]; return { name: d[0], init: d[1], sub: d[2], dotStyle: t.dotStyle, pick: () => set({ bulkDriver: d[0] }), style: 'display:flex;align-items:center;gap:9px;border:1px solid ' + (on ? '#2a6fdb;background:#eef3fb' : '#d4dae4') + ';border-radius:8px;padding:8px 10px;cursor:pointer' + (t.free ? '' : ';opacity:.55') }; }),
-      bulkHasTruck: !!bulkTk, bulkNoTruck: !bulkTk,
-      bulkTruckTarga: bulkTk ? bulkTk.targa : '', bulkTruckDesc: bulkTk ? bulkTk.desc : '',
-      bulkTruckDotStyle: bulkTk ? 'margin-left:auto;width:8px;height:8px;border-radius:99px;flex:none;background:' + (bulkTk.free ? '#2e8b57' : '#c05050') : 'display:none',
-      bulkCta: 'Pianifica viaggio' + (bulkN ? ' (' + bulkN + (bulkN === 1 ? ' ordine)' : ' ordini)') : ''),
-      bulkCtaStyle: 'font:600 12px Inter,sans-serif;border-radius:7px;padding:8px 16px;' + ((bulkN && bulkDriver) ? 'color:#fff;background:#2a6fdb;cursor:pointer' : 'color:#9aa4b4;background:#e6eaf0;cursor:default'),
-      bulkConfirm: () => { if (!bulkN || !bulkDriver) return; const vid = 'VG-' + (117 + new Set(Object.values(st.bulkPlanned || {}).map(x => x.viaggio)).size); const add = {}; bulkChosen.forEach(o => { add[o.id] = { viaggio: vid, mezzo: bulkTg, autista: bulkDriver }; }); set({ bulkPlanned: { ...(st.bulkPlanned || {}), ...add }, bulkSel: {}, bulkDriver: null, tripsFilter: null, screen: 'trips' }); },
+      // pianificazione assistita (#26) — proposte live accanto alla selezione
+      bulkPropList, bulkPropEmpty: bulkPropList.length === 0, bulkHasProp: bulkPropList.length > 0,
+      bulkPropHead: bulkPropList.length + (bulkPropList.length === 1 ? ' VIAGGIO PROPOSTO' : ' VIAGGI PROPOSTI') + ' \u00b7 ' + bulkDoneN + ' CONFERMATI',
+      bulkCta: bulkLeftN > 0 ? 'Conferma tutti (' + bulkLeftN + ')' : (bulkDoneN > 0 ? 'Vai al planner' : 'Conferma tutti'),
+      bulkCtaStyle: 'font:600 12px Inter,sans-serif;border-radius:7px;padding:8px 16px;' + ((bulkLeftN > 0 || bulkDoneN > 0) ? 'color:#fff;background:#2a6fdb;cursor:pointer' : 'color:#9aa4b4;background:#e6eaf0;cursor:default'),
+      bulkMainAct: () => {
+        if (bulkLeftN > 0) {
+          const bp = { ...(st.bulkPlanned || {}) };
+          let n = new Set(Object.values(bp).map(x => x.viaggio)).size;
+          bulkPropList.filter(c => !c.confirmed).forEach(c => { bp[c.id] = { viaggio: 'VG-' + (117 + n), mezzo: d2t[c.autistaVal] || '', autista: c.autistaVal }; n++; });
+          set({ bulkPlanned: bp });
+          return;
+        }
+        if (bulkDoneN > 0) set({ screen: 'trips', tripsFilter: null });
+      },
       driverFilterVal: st.driverFilter || '', setDriverFilter: e => set({ driverFilter: e.target.value || null }),
       tripsTipoVal: st.tripsTipoFilter || '', setTripsTipo: e => set({ tripsTipoFilter: e.target.value || null }),
       driverOptions: [...new Set(tripsList.map(t => t.autista).filter(a => a && a !== '\u2014' && a !== 'da definire'))].sort().map(v => ({ v })),
