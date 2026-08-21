@@ -3,7 +3,6 @@ package inboundorders
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -54,7 +53,7 @@ func assertAPIError(t *testing.T, err error, code int) {
 
 func TestInboundOrderService_CreateDefaultsAndValidation(t *testing.T) {
 	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
+	svc := NewInboundOrderService(newTestDB(t), nil)
 
 	created, err := svc.Create(ctx, baseRequest())
 	if err != nil {
@@ -81,7 +80,7 @@ func TestInboundOrderService_CreateDefaultsAndValidation(t *testing.T) {
 
 func TestInboundOrderService_CreateDedupCaseInsensitive(t *testing.T) {
 	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
+	svc := NewInboundOrderService(newTestDB(t), nil)
 
 	if _, err := svc.Create(ctx, baseRequest()); err != nil {
 		t.Fatalf("Create returned error: %v", err)
@@ -112,7 +111,7 @@ func TestInboundOrderService_CreateDedupCaseInsensitive(t *testing.T) {
 
 func TestInboundOrderService_AddIfNew(t *testing.T) {
 	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
+	svc := NewInboundOrderService(newTestDB(t), nil)
 
 	inserted, err := svc.AddIfNew(ctx, baseRequest())
 	if err != nil || !inserted {
@@ -136,7 +135,7 @@ func TestInboundOrderService_AddIfNew(t *testing.T) {
 
 func TestInboundOrderService_AcceptWithoutMailer(t *testing.T) {
 	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
+	svc := NewInboundOrderService(newTestDB(t), nil)
 
 	created, err := svc.Create(ctx, baseRequest())
 	if err != nil {
@@ -173,7 +172,7 @@ func (m *fakeMailer) SendAcceptance(_ context.Context, o dto.InboundOrderRespons
 func TestInboundOrderService_AcceptWithMailer(t *testing.T) {
 	ctx := context.Background()
 	mailer := &fakeMailer{recipient: "test@feccia.it"}
-	svc := NewInboundOrderService(newTestDB(t), mailer, nil)
+	svc := NewInboundOrderService(newTestDB(t), mailer)
 
 	created, err := svc.Create(ctx, baseRequest())
 	if err != nil {
@@ -195,7 +194,7 @@ func TestInboundOrderService_AcceptWithMailer(t *testing.T) {
 func TestInboundOrderService_AcceptMailFailureLeavesPending(t *testing.T) {
 	ctx := context.Background()
 	mailer := &fakeMailer{err: errors.New("smtp down")}
-	svc := NewInboundOrderService(newTestDB(t), mailer, nil)
+	svc := NewInboundOrderService(newTestDB(t), mailer)
 
 	created, err := svc.Create(ctx, baseRequest())
 	if err != nil {
@@ -218,7 +217,7 @@ func TestInboundOrderService_AcceptMailFailureLeavesPending(t *testing.T) {
 
 func TestInboundOrderService_ModifyResetAndNotFound(t *testing.T) {
 	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
+	svc := NewInboundOrderService(newTestDB(t), nil)
 
 	created, err := svc.Create(ctx, baseRequest())
 	if err != nil {
@@ -247,226 +246,4 @@ func TestInboundOrderService_ModifyResetAndNotFound(t *testing.T) {
 	if _, err := svc.Accept(ctx, uuid.New()); !errors.Is(err, gorm.ErrRecordNotFound) {
 		t.Fatalf("expected ErrRecordNotFound on missing order, got %v", err)
 	}
-}
-
-// fakeOrderCreator stands in for the orders service: Convert's contract with
-// it is just "hand me an OrderRequest, get back an id", and what the tests
-// care about is the request that was built — which fields came from the
-// draft, which from the operator, and which were refused.
-type fakeOrderCreator struct {
-	calls int
-	got   dto.OrderRequest
-	id    uuid.UUID
-	err   error
-}
-
-func (f *fakeOrderCreator) Create(_ context.Context, req dto.OrderRequest) (*dto.OrderResponse, error) {
-	f.calls++
-	f.got = req
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.id == uuid.Nil {
-		f.id = uuid.New()
-	}
-	return &dto.OrderResponse{ID: f.id, Progressivo: "26/0001"}, nil
-}
-
-// portalRequest is a draft as CreateMyInboundOrder builds one: free text for
-// the dashboard plus the structured payload taken from the authenticated
-// submission.
-func portalRequest(clienteID, caricoID, scaricoID uuid.UUID) dto.InboundOrderRequest {
-	req := baseRequest()
-	req.Ref = "PORTAL-1"
-	req.Source = models.InboundOrderSourcePortal
-	req.ClienteID = &clienteID
-	req.DestinazioneCaricoID = &caricoID
-	req.DestinazioneScaricoID = &scaricoID
-	req.OraRitiroDa = "08:00"
-	req.OraRitiroA = "12:00"
-	req.TariffaProposta = 850
-	return req
-}
-
-// A mail draft's Client is whatever the sender typed, so there is nothing
-// trustworthy to bill: conversion must refuse rather than name-match an
-// anagrafica, which is what would let a spoofed sender have an order created
-// against a real customer.
-func TestInboundOrderService_ConvertRefusesUntrustedClient(t *testing.T) {
-	ctx := context.Background()
-	creator := &fakeOrderCreator{}
-	svc := NewInboundOrderService(newTestDB(t), nil, creator)
-
-	req := baseRequest()
-	req.Source = models.InboundOrderSourceMail
-	created, err := svc.Create(ctx, req)
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-
-	_, err = svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{})
-	assertAPIError(t, err, 400)
-	if creator.calls != 0 {
-		t.Fatalf("no order must be created without a trusted cliente_id, got %d calls", creator.calls)
-	}
-
-	// The same draft converts once staff names the customer explicitly.
-	clienteID := uuid.New()
-	res, err := svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{ClienteID: clienteID.String()})
-	if err != nil {
-		t.Fatalf("Convert with explicit cliente_id returned error: %v", err)
-	}
-	if creator.got.ClienteID != clienteID.String() {
-		t.Fatalf("expected cliente_id %s, got %q", clienteID, creator.got.ClienteID)
-	}
-	// A mail draft's Rate is attacker-controlled free text and is never
-	// parsed into a price.
-	if creator.got.Tariffa != 0 {
-		t.Fatalf("expected tariffa 0 for a mail draft, got %v", creator.got.Tariffa)
-	}
-	if res.TariffaFromClient {
-		t.Fatal("a mail draft has no client-proposed rate to flag")
-	}
-}
-
-func TestInboundOrderService_ConvertPortalDraftKeepsUUIDs(t *testing.T) {
-	ctx := context.Background()
-	creator := &fakeOrderCreator{}
-	svc := NewInboundOrderService(newTestDB(t), nil, creator)
-
-	clienteID, caricoID, scaricoID := uuid.New(), uuid.New(), uuid.New()
-	created, err := svc.Create(ctx, portalRequest(clienteID, caricoID, scaricoID))
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-
-	res, err := svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{})
-	if err != nil {
-		t.Fatalf("Convert returned error: %v", err)
-	}
-
-	if creator.got.ClienteID != clienteID.String() {
-		t.Fatalf("cliente_id: expected %s, got %q", clienteID, creator.got.ClienteID)
-	}
-	if creator.got.DestinazioneCaricoID != caricoID.String() {
-		t.Fatalf("destinazione_carico_id: expected %s, got %q", caricoID, creator.got.DestinazioneCaricoID)
-	}
-	if creator.got.DestinazioneScaricoID != scaricoID.String() {
-		t.Fatalf("destinazione_scarico_id: expected %s, got %q", scaricoID, creator.got.DestinazioneScaricoID)
-	}
-	if creator.got.OraRitiroDa != "08:00" || creator.got.OraRitiroA != "12:00" {
-		t.Fatalf("pickup window lost: %q-%q", creator.got.OraRitiroDa, creator.got.OraRitiroA)
-	}
-	if creator.got.RifOrdineCliente != "PORTAL-1" {
-		t.Fatalf("expected ref carried as rif_ordine_cliente, got %q", creator.got.RifOrdineCliente)
-	}
-	// Product and Kg have no typed home on an Order, so they must survive in
-	// the note rather than be dropped.
-	if !strings.Contains(creator.got.Note, "Melassa") || !strings.Contains(creator.got.Note, "28000") {
-		t.Fatalf("product/kg missing from note: %q", creator.got.Note)
-	}
-	// The customer's proposed rate applies but is flagged as theirs.
-	if creator.got.Tariffa != 850 {
-		t.Fatalf("expected proposed tariffa 850, got %v", creator.got.Tariffa)
-	}
-	if !res.TariffaFromClient {
-		t.Fatal("expected tariffa_from_client=true when the proposal is applied unchanged")
-	}
-	if res.InboundOrder.OrderID == nil || *res.InboundOrder.OrderID != creator.id {
-		t.Fatalf("draft not linked to the created order: %v", res.InboundOrder.OrderID)
-	}
-}
-
-func TestInboundOrderService_ConvertOperatorTariffaWins(t *testing.T) {
-	ctx := context.Background()
-	creator := &fakeOrderCreator{}
-	svc := NewInboundOrderService(newTestDB(t), nil, creator)
-
-	created, err := svc.Create(ctx, portalRequest(uuid.New(), uuid.New(), uuid.New()))
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-
-	// An explicit zero must win over the customer's proposal, which is why
-	// the field is a pointer.
-	zero := 0.0
-	res, err := svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{Tariffa: &zero})
-	if err != nil {
-		t.Fatalf("Convert returned error: %v", err)
-	}
-	if creator.got.Tariffa != 0 {
-		t.Fatalf("expected operator tariffa 0 to win, got %v", creator.got.Tariffa)
-	}
-	if res.TariffaFromClient {
-		t.Fatal("expected tariffa_from_client=false when the operator set the rate")
-	}
-}
-
-func TestInboundOrderService_ConvertIsIdempotent(t *testing.T) {
-	ctx := context.Background()
-	creator := &fakeOrderCreator{}
-	svc := NewInboundOrderService(newTestDB(t), nil, creator)
-
-	created, err := svc.Create(ctx, portalRequest(uuid.New(), uuid.New(), uuid.New()))
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-	if _, err := svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{}); err != nil {
-		t.Fatalf("first Convert returned error: %v", err)
-	}
-
-	_, err = svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{})
-	assertAPIError(t, err, 409)
-	if creator.calls != 1 {
-		t.Fatalf("expected exactly one order created, got %d", creator.calls)
-	}
-}
-
-// The portal list is keyed on the conversion link, not on the status: a
-// request accepted by staff but not yet converted used to disappear from the
-// customer's portal while no order existed to replace it.
-func TestInboundOrderService_ListForClientKeepsAcceptedUntilConverted(t *testing.T) {
-	ctx := context.Background()
-	creator := &fakeOrderCreator{}
-	svc := NewInboundOrderService(newTestDB(t), nil, creator)
-
-	clienteID := uuid.New()
-	created, err := svc.Create(ctx, portalRequest(clienteID, uuid.New(), uuid.New()))
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-
-	if _, err := svc.Accept(ctx, created.ID); err != nil {
-		t.Fatalf("Accept returned error: %v", err)
-	}
-	items, err := svc.ListForClient(ctx, clienteID)
-	if err != nil {
-		t.Fatalf("ListForClient returned error: %v", err)
-	}
-	if len(items) != 1 {
-		t.Fatalf("an accepted but unconverted request must stay visible, got %d items", len(items))
-	}
-
-	if _, err := svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{}); err != nil {
-		t.Fatalf("Convert returned error: %v", err)
-	}
-	items, err = svc.ListForClient(ctx, clienteID)
-	if err != nil {
-		t.Fatalf("ListForClient returned error: %v", err)
-	}
-	if len(items) != 0 {
-		t.Fatalf("a converted request must drop out in favour of the order, got %d items", len(items))
-	}
-}
-
-func TestInboundOrderService_ConvertWithoutOrderCreator(t *testing.T) {
-	ctx := context.Background()
-	svc := NewInboundOrderService(newTestDB(t), nil, nil)
-
-	created, err := svc.Create(ctx, portalRequest(uuid.New(), uuid.New(), uuid.New()))
-	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
-	}
-	_, err = svc.Convert(ctx, created.ID, dto.InboundOrderConvertRequest{})
-	assertAPIError(t, err, 500)
 }
