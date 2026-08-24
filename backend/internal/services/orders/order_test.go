@@ -99,6 +99,60 @@ func TestOrderService_Create_AssignsProgressivoAndDefaults(t *testing.T) {
 	}
 }
 
+// Round-trip dei campi introdotti dalla maschera legacy "ordine 2017":
+// committente (parte ordinante distinta dal cliente fatturato), riferimento
+// e note per fermata, flag Provvisorio.
+func TestOrderService_CommittentePerStopRefsAndProvvisorio(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	svc := NewOrderService(db, "", "")
+
+	committenteID := seedCustomer(t, db, "Bunge Loders Wormerveer")
+	req := baseRequest(t, db)
+	req.CommittenteID = committenteID.String()
+	req.RifCarico = "6014187224-6"
+	req.NoteCarico = "prenotare rampa 3"
+	req.RifScarico = "IN-2026-771"
+	req.NoteScarico = "consegna tassativa entro le 8"
+	req.Provvisorio = true
+
+	created, err := svc.Create(ctx, req)
+	if err != nil {
+		t.Fatalf("Create returned error: %v", err)
+	}
+	if created.CommittenteID != committenteID.String() ||
+		created.Committente == nil || created.Committente.RagioneSociale != "Bunge Loders Wormerveer" {
+		t.Fatalf("expected committente to be persisted and resolved, got id=%q committente=%+v",
+			created.CommittenteID, created.Committente)
+	}
+	if created.RifCarico != "6014187224-6" || created.NoteCarico != "prenotare rampa 3" ||
+		created.RifScarico != "IN-2026-771" || created.NoteScarico != "consegna tassativa entro le 8" {
+		t.Fatalf("expected per-stop refs/notes to round-trip, got %+v", created)
+	}
+	if !created.Provvisorio {
+		t.Fatalf("expected provvisorio=true")
+	}
+	// Provvisorio è un flag, non uno stato: l'ordine resta pianificabile.
+	if created.Stato != "PIANIFICABILE" {
+		t.Fatalf("expected stato PIANIFICABILE for a provisional order, got %q", created.Stato)
+	}
+
+	// L'update può togliere committente e flag (full replace dei campi create-able).
+	req.CommittenteID = ""
+	req.Provvisorio = false
+	req.RifCarico = ""
+	updated, err := svc.Update(ctx, created.ID, req)
+	if err != nil {
+		t.Fatalf("Update returned error: %v", err)
+	}
+	if updated.CommittenteID != "" || updated.Committente != nil {
+		t.Fatalf("expected committente cleared, got id=%q committente=%+v", updated.CommittenteID, updated.Committente)
+	}
+	if updated.Provvisorio || updated.RifCarico != "" {
+		t.Fatalf("expected provvisorio/rif_carico cleared, got provvisorio=%v rif=%q", updated.Provvisorio, updated.RifCarico)
+	}
+}
+
 func TestOrderService_Create_ProgressivoIncrements(t *testing.T) {
 	ctx := context.Background()
 	db := newTestDB(t)

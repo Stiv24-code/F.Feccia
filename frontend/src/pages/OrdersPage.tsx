@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import SearchableSelect from '@/components/shared/SearchableSelect';
@@ -22,13 +23,15 @@ import { Plus, Search, Download, Loader2, Eye, Trash2, FileText, ArrowLeftRight 
 
 const emptyForm: DtoOrderRequest = {
   cliente_id: '',
+  committente_id: '',
   destinazione_carico_id: '',
   destinazione_scarico_id: '',
   data_ritiro: '', ora_ritiro_da: '06:00', ora_ritiro_a: '08:00',
   data_consegna: '', ora_consegna_da: '14:00', ora_consegna_a: '18:00',
   tariffa: 0, tipo_tariffa: 'forfait',
   tipologia: 'nazionale', categoria_trasporto: '', rif_ordine_cliente: '',
-  andata_ritorno: false, note: '', items: [],
+  rif_carico: '', note_carico: '', rif_scarico: '', note_scarico: '',
+  andata_ritorno: false, provvisorio: false, note: '', items: [],
 };
 
 export default function OrdersPage() {
@@ -219,7 +222,12 @@ export default function OrdersPage() {
                   <TableCell className="py-2 whitespace-nowrap">{o.data_ritiro}</TableCell>
                   <TableCell className="py-2 text-right tabular-nums">€ {formatEuro(o.tariffa || 0)}</TableCell>
                   <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{o.tipologia}</Badge></TableCell>
-                  <TableCell className="py-2"><StatusBadge stato={o.stato} /></TableCell>
+                  <TableCell className="py-2">
+                    <div className="flex flex-col items-start gap-1">
+                      <StatusBadge stato={o.stato} />
+                      {o.provvisorio && <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">provvisorio</Badge>}
+                    </div>
+                  </TableCell>
                   <TableCell className="py-2">
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedOrder(o); setDetailOpen(true); }}><Eye className="h-3 w-3" /></Button>
@@ -272,7 +280,7 @@ export default function OrdersPage() {
           <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Nuovo Ordine</DialogTitle></DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5">
                 <Label>Cliente *</Label>
                 <SearchableSelect
                   value={form.cliente_id}
@@ -282,6 +290,20 @@ export default function OrdersPage() {
                   getLabel={(c) => c.ragione_sociale || ''}
                   placeholder="Seleziona cliente"
                   searchPlaceholder="Cerca cliente..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Committente</Label>
+                {/* Opzionale (vuoto = coincide col cliente): ri-cliccare il
+                    committente selezionato lo deseleziona. */}
+                <SearchableSelect
+                  value={form.committente_id}
+                  onValueChange={v => setForm({ ...form, committente_id: v === form.committente_id ? '' : v })}
+                  options={customers}
+                  getValue={(c) => c.id || ''}
+                  getLabel={(c) => c.ragione_sociale || ''}
+                  placeholder="— uguale al cliente —"
+                  searchPlaceholder="Cerca committente..."
                 />
               </div>
               <div className="space-y-1.5">
@@ -308,6 +330,10 @@ export default function OrdersPage() {
                   searchPlaceholder="Cerca destinazione..."
                 />
               </div>
+              <div className="space-y-1.5"><Label>Rif. Carico</Label><Input value={form.rif_carico} onChange={e => setForm({ ...form, rif_carico: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Rif. Scarico</Label><Input value={form.rif_scarico} onChange={e => setForm({ ...form, rif_scarico: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Note Carico</Label><Input value={form.note_carico} onChange={e => setForm({ ...form, note_carico: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Note Scarico</Label><Input value={form.note_scarico} onChange={e => setForm({ ...form, note_scarico: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Data Ritiro</Label><Input type="date" value={form.data_ritiro} onChange={e => setForm({ ...form, data_ritiro: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Data Consegna</Label><Input type="date" value={form.data_consegna} onChange={e => setForm({ ...form, data_consegna: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Orario Ritiro (da-a)</Label><div className="flex gap-2"><Input type="time" value={form.ora_ritiro_da} onChange={e => setForm({ ...form, ora_ritiro_da: e.target.value })} /><Input type="time" value={form.ora_ritiro_a} onChange={e => setForm({ ...form, ora_ritiro_a: e.target.value })} /></div></div>
@@ -335,6 +361,10 @@ export default function OrdersPage() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Rif. Ordine Cliente</Label><Input value={form.rif_ordine_cliente} onChange={e => setForm({ ...form, rif_ordine_cliente: e.target.value })} /></div>
+              <div className="flex items-end gap-2 pb-2">
+                <Checkbox id="order-provvisorio" checked={!!form.provvisorio} onCheckedChange={v => setForm({ ...form, provvisorio: !!v })} />
+                <Label htmlFor="order-provvisorio" className="cursor-pointer">Ordine provvisorio</Label>
+              </div>
               <div className="md:col-span-2 space-y-1.5"><Label>Note</Label><Textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={2} /></div>
             </div>
             <DialogFooter className="gap-2">
@@ -355,13 +385,19 @@ export default function OrdersPage() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Progressivo:</span><span className="font-mono font-medium">{selectedOrder.progressivo}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedOrder.cliente?.ragione_sociale}</span></div>
+              {selectedOrder.committente && <div className="flex justify-between"><span className="text-muted-foreground">Committente:</span><span>{selectedOrder.committente.ragione_sociale}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Carico:</span><span>{selectedOrder.destinazione_carico?.nome}</span></div>
+              {selectedOrder.rif_carico && <div className="flex justify-between"><span className="text-muted-foreground">Rif. carico:</span><span className="font-mono text-xs">{selectedOrder.rif_carico}</span></div>}
+              {selectedOrder.note_carico && <div className="flex justify-between gap-4"><span className="text-muted-foreground shrink-0">Note carico:</span><span className="text-right">{selectedOrder.note_carico}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Scarico:</span><span>{selectedOrder.destinazione_scarico?.nome}</span></div>
+              {selectedOrder.rif_scarico && <div className="flex justify-between"><span className="text-muted-foreground">Rif. scarico:</span><span className="font-mono text-xs">{selectedOrder.rif_scarico}</span></div>}
+              {selectedOrder.note_scarico && <div className="flex justify-between gap-4"><span className="text-muted-foreground shrink-0">Note scarico:</span><span className="text-right">{selectedOrder.note_scarico}</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Data Ritiro:</span><span>{selectedOrder.data_ritiro} {selectedOrder.ora_ritiro_da}-{selectedOrder.ora_ritiro_a}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Data Consegna:</span><span>{selectedOrder.data_consegna} {selectedOrder.ora_consegna_da}-{selectedOrder.ora_consegna_a}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tariffa:</span><span className="font-medium">€ {formatEuro(selectedOrder.tariffa || 0)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Tipologia:</span><Badge variant="outline" className="text-[10px]">{selectedOrder.tipologia}</Badge></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedOrder.stato} /></div>
+              {selectedOrder.provvisorio && <div className="flex justify-between"><span className="text-muted-foreground">Provvisorio:</span><Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">sì</Badge></div>}
               {selectedOrder.motrice?.targa && <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedOrder.motrice.targa}</span></div>}
               {selectedOrder.autista && <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedOrder.autista.nome} {selectedOrder.autista.cognome}</span></div>}
               {selectedOrder.note && <div><span className="text-muted-foreground">Note:</span><p className="mt-1">{selectedOrder.note}</p></div>}
