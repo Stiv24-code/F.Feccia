@@ -2,7 +2,7 @@
   "title": "F.Feccia — backend-go overview",
   "uid": "feccia-backend-go",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-1h", "to": "now" },
@@ -33,6 +33,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
+          "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(rate(http_server_requests_total{http_route=~\"$route\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
@@ -48,6 +49,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
+          "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(rate(http_server_requests_total{http_status_code=~\"5..\", http_route=~\"$route\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
@@ -67,6 +69,7 @@
       "description": "Se il nome della metrica differisce (bridge OTel->Prometheus), verifica in Explore con l'autocomplete e correggi qui.",
       "targets": [
         {
+          "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_ms_bucket{http_route=~\"$route\"}[5m])) by (le, http_route))",
           "legendFormat": "{{http_route}}"
@@ -82,6 +85,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
+          "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(increase(http_server_requests_total[1h])) by (http_status_code)",
           "legendFormat": "{{http_status_code}}"
