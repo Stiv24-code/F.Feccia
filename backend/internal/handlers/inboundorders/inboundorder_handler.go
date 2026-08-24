@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -94,6 +95,44 @@ func (h *InboundOrderHandler) AcceptInboundOrder(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, res)
 }
 
+// ConvertInboundOrder godoc
+// @Summary Convert an inbound order into a real TMS order
+// @Description Creates a models.Order from the draft and links the two (inbound_order.order_id), which makes the call idempotent: a second convert answers 409 with the existing order id. Separate from /accept, which only sends the confirmation mail — an order can be created before or after mailing the customer. cliente_id is required in the body unless the draft already carries a trusted one (portal submissions do); the free-text client field is never resolved to an anagrafica by name, so a spoofed sender cannot get an order billed to someone else. tariffa defaults to the customer's proposed rate for portal drafts and to 0 otherwise (a mail draft's rate is free text and is never parsed) — the response flags when the applied rate is the customer's own.
+// @Tags InboundOrders
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Inbound order ID (UUID)"
+// @Param payload body dto.InboundOrderConvertRequest true "Conversion overrides (all fields optional)"
+// @Success 201 {object} dto.InboundOrderConvertResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /api/v1/inbound-orders/{id}/convert [post]
+func (h *InboundOrderHandler) ConvertInboundOrder(c *fiber.Ctx) error {
+	ctx := utils.RequestContext(c)
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid ID")
+	}
+	// Body opzionale: convertire un draft da portale senza override e' il
+	// caso normale, e un POST senza corpo non deve valere 400.
+	var req dto.InboundOrderConvertRequest
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return utils.ErrorResponse(c, 400, "Invalid request body")
+		}
+	}
+	if validationErrors := utils.NewValidator().Validate(&req); len(validationErrors) > 0 {
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+	res, err := h.Service.Convert(ctx, id, req)
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 201, res)
+}
+
 // ModifyInboundOrder godoc
 // @Summary Mark an inbound order as under revision (the UI opens a mailto: to the sender)
 // @Tags InboundOrders
@@ -178,17 +217,8 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 		return utils.HandleDatabaseError(c, err)
 	}
 
-	var caricoName, scaricoName string
-	if id, perr := uuid.Parse(req.DestinazioneCaricoID); perr == nil {
-		if d, derr := h.Destinations.GetByID(ctx, id); derr == nil && d != nil {
-			caricoName = d.Nome
-		}
-	}
-	if id, perr := uuid.Parse(req.DestinazioneScaricoID); perr == nil {
-		if d, derr := h.Destinations.GetByID(ctx, id); derr == nil && d != nil {
-			scaricoName = d.Nome
-		}
-	}
+	caricoID, caricoName := h.resolveDestination(ctx, req.DestinazioneCaricoID)
+	scaricoID, scaricoName := h.resolveDestination(ctx, req.DestinazioneScaricoID)
 
 	// InboundOrderRequest requires ref-or-product non-empty (Create's own
 	// business rule) — rif_ordine_cliente is optional on the client form, so
@@ -227,6 +257,23 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 		Notes:         strings.Join(notesParts, " | "),
 		Source:        models.InboundOrderSourcePortal,
 		ClienteID:     &customerID,
+
+		// Payload strutturato: gli stessi dati salvati anche come testo
+		// libero sopra, ma nella forma in cui sono arrivati, cosi'
+		// InboundOrderService.Convert ricostruisce l'ordine senza dover
+		// risalire da un nome a una FK. CommittenteID e' deliberatamente
+		// escluso: il form del portale non lo espone, e accettarlo dal body
+		// lascerebbe un cliente puntare l'anagrafica di chiunque altro come
+		// parte ordinante — se serve, lo imposta l'operatore convertendo.
+		DestinazioneCaricoID:  caricoID,
+		DestinazioneScaricoID: scaricoID,
+		OraRitiroDa:           req.OraRitiroDa,
+		OraRitiroA:            req.OraRitiroA,
+		OraConsegnaDa:         req.OraConsegnaDa,
+		OraConsegnaA:          req.OraConsegnaA,
+		// "Tariffa desiderata" del form: una proposta, non un prezzo. Resta
+		// separata da Order.Tariffa fino a che un operatore non la conferma.
+		TariffaProposta: req.Tariffa,
 	}
 
 	item, err := h.Service.Create(ctx, inboundReq)
@@ -234,6 +281,22 @@ func (h *InboundOrderHandler) CreateMyInboundOrder(c *fiber.Ctx) error {
 		return utils.HandleDatabaseError(c, err)
 	}
 	return utils.SuccessResponse(c, 201, item)
+}
+
+// resolveDestination validates a destination id sent by the client portal,
+// returning the id only when the row really exists (so a draft never stores
+// a dangling reference for Convert to trip over) plus its name, which feeds
+// the free-text LoadPlace/DeliveryPlace the acceptance dashboard renders.
+func (h *InboundOrderHandler) resolveDestination(ctx context.Context, raw string) (*uuid.UUID, string) {
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return nil, ""
+	}
+	d, err := h.Destinations.GetByID(ctx, id)
+	if err != nil || d == nil {
+		return nil, ""
+	}
+	return &id, d.Nome
 }
 
 func firstNonEmpty(v, fallback string) string {
