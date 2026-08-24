@@ -2,7 +2,7 @@
   "title": "F.Feccia — backend-go overview",
   "uid": "feccia-backend-go",
   "schemaVersion": 39,
-  "version": 9,
+  "version": 11,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-1h", "to": "now" },
@@ -35,7 +35,7 @@
         {
           "refId": "A",
           "datasource": "Prometheus",
-          "expr": "sum(rate(http_server_requests_total{http_route=~\"$route\"}[5m])) by (http_route)",
+          "expr": "sum(rate(http_server_requests_total{http_route=~\"$route\", http_route!=\"/api/v1/health\", http_route!=\"/metrics\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
         }
       ],
@@ -51,7 +51,7 @@
         {
           "refId": "A",
           "datasource": "Prometheus",
-          "expr": "sum(rate(http_server_requests_total{http_status_code=~\"5..\", http_route=~\"$route\"}[5m])) by (http_route)",
+          "expr": "sum(rate(http_server_requests_total{http_status_code=~\"5..\", http_route=~\"$route\", http_route!=\"/api/v1/health\", http_route!=\"/metrics\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
         }
       ],
@@ -71,7 +71,7 @@
         {
           "refId": "A",
           "datasource": "Prometheus",
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_ms_bucket{http_route=~\"$route\"}[5m])) by (le, http_route))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_ms_bucket{http_route=~\"$route\", http_route!=\"/api/v1/health\", http_route!=\"/metrics\"}[5m])) by (le, http_route))",
           "legendFormat": "{{http_route}}"
         }
       ],
@@ -87,7 +87,7 @@
         {
           "refId": "A",
           "datasource": "Prometheus",
-          "expr": "sum(increase(http_server_requests_total[1h])) by (http_status_code)",
+          "expr": "sum(increase(http_server_requests_total{http_route!=\"/api/v1/health\", http_route!=\"/metrics\"}[1h])) by (http_status_code)",
           "legendFormat": "{{http_status_code}}"
         }
       ]
@@ -118,7 +118,7 @@
         {
           "refId": "A",
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{service=\"backend-go\"} | json | msg=\"http_request\" | line_format \"{{.method}} {{.path}} status={{.status}} latency={{.latency}} ip={{.ip}}\""
+          "expr": "{service=\"backend-go\"} | json | msg=\"http_request\" | path!=\"/api/v1/health\" | path!=\"/metrics\" | line_format \"{{.method}} {{.path}} status={{.status}} latency={{.latency}} ip={{.ip}}\""
         }
       ],
       "options": {
