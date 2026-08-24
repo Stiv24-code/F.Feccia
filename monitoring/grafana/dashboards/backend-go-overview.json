@@ -2,7 +2,7 @@
   "title": "F.Feccia — backend-go overview",
   "uid": "feccia-backend-go",
   "schemaVersion": 39,
-  "version": 8,
+  "version": 9,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-1h", "to": "now" },
@@ -107,6 +107,26 @@
           "limit": 20
         }
       ]
+    },
+    {
+      "id": 6,
+      "title": "Recent HTTP requests (raw log — survives metric resets)",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 26 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{service=\"backend-go\"} | json | msg=\"http_request\" | line_format \"{{.method}} {{.path}} status={{.status}} latency={{.latency}} ip={{.ip}}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
     }
   ]
 }
