@@ -2,7 +2,7 @@
   "title": "F.Feccia — backend-go overview",
   "uid": "feccia-backend-go",
   "schemaVersion": 39,
-  "version": 6,
+  "version": 7,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-1h", "to": "now" },
@@ -14,7 +14,7 @@
         "name": "route",
         "label": "Route",
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "datasource": "Prometheus",
         "query": "label_values(http_server_requests_total, http_route)",
         "multi": true,
         "includeAll": true,
@@ -29,12 +29,12 @@
       "id": 1,
       "title": "Request rate by route (req/s)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": "Prometheus",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "expr": "sum(rate(http_server_requests_total{http_route=~\"$route\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
         }
@@ -45,12 +45,12 @@
       "id": 2,
       "title": "5xx error rate by route (req/s)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": "Prometheus",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "expr": "sum(rate(http_server_requests_total{http_status_code=~\"5..\", http_route=~\"$route\"}[5m])) by (http_route)",
           "legendFormat": "{{http_route}}"
         }
@@ -64,13 +64,13 @@
       "id": 3,
       "title": "P95 latency by route (ms)",
       "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": "Prometheus",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "description": "Se il nome della metrica differisce (bridge OTel->Prometheus), verifica in Explore con l'autocomplete e correggi qui.",
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_ms_bucket{http_route=~\"$route\"}[5m])) by (le, http_route))",
           "legendFormat": "{{http_route}}"
         }
@@ -81,12 +81,12 @@
       "id": 4,
       "title": "Requests by status code (last 1h)",
       "type": "piechart",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": "Prometheus",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": "Prometheus",
           "expr": "sum(increase(http_server_requests_total[1h])) by (http_status_code)",
           "legendFormat": "{{http_status_code}}"
         }
