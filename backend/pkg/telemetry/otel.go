@@ -198,7 +198,7 @@ func NewFiberMetricsMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 
-		// Method/route are read from fasthttp's own request buffer (unsafe,
+		// Method/path are read from fasthttp's own request buffer (unsafe,
 		// zero-copy strings) — captured and cloned into independent memory
 		// *before* c.Next(), not after. For slow handlers, the underlying
 		// buffer can be reused by fasthttp for a later request on the same
@@ -206,13 +206,24 @@ func NewFiberMetricsMiddleware() fiber.Handler {
 		// corrupts the string read afterwards (observed in practice as
 		// http.method turning from "POST" into "GETT").
 		method := strings.Clone(c.Method())
-		route := strings.Clone(c.Path())
-		if r := c.Route(); r != nil && r.Path != "" {
-			route = strings.Clone(r.Path)
-		}
+		path := strings.Clone(c.Path())
 
 		err := c.Next()
 		durationMs := float64(time.Since(start).Milliseconds())
+
+		// Route is resolved *after* c.Next(), not before: this middleware is
+		// itself registered as a router-wide Use() (path "/"), so calling
+		// c.Route() earlier just returns this middleware's own registration
+		// entry — not the final matched endpoint, which Fiber only resolves
+		// as c.Next() walks deeper into the chain. That's what made every
+		// request show up as http_route="/" regardless of the real path.
+		// Route.Path itself is a plain Go string literal fixed at route
+		// registration (not fasthttp-buffer-backed), so reading it this late
+		// carries none of the corruption risk that applies to method/path.
+		route := path
+		if r := c.Route(); r != nil && r.Path != "" {
+			route = r.Path
+		}
 
 		attrs := metric.WithAttributes(
 			attribute.String("http.method", method),
