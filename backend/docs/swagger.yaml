@@ -843,6 +843,13 @@ definitions:
       note:
         type: string
     type: object
+  dto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.GarageListResponse:
     properties:
       data:
@@ -2022,6 +2029,17 @@ definitions:
     required:
     - email
     type: object
+  dto.ResetPasswordRequest:
+    properties:
+      password:
+        minLength: 12
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
+    type: object
   dto.RouteAlternativeDTO:
     properties:
       distance_km:
@@ -2922,6 +2940,37 @@ paths:
       summary: Update user
       tags:
       - Admin Users
+  /api/v1/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Always answers with the same generic message — never reveals whether
+        the email is registered.
+      parameters:
+      - description: Account email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request a password reset link (public)
+      tags:
+      - Auth
   /api/v1/auth/login:
     post:
       consumes:
@@ -3108,6 +3157,36 @@ paths:
               type: string
             type: object
       summary: Resend the registration confirmation link (public)
+      tags:
+      - Auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Uses the token mailed by ForgotPassword to set a new password.
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete a password reset (public)
       tags:
       - Auth
   /api/v1/auth/verify-email:

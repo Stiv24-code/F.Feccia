@@ -121,6 +121,21 @@ type ResendVerificationRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
+// ForgotPasswordRequest starts a password reset (POST /auth/forgot-password,
+// public). Always answers with the same generic message regardless of
+// whether the email exists — an existing-account leak on top of a
+// self-service, unauthenticated endpoint.
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ResetPasswordRequest completes a password reset (POST
+// /auth/reset-password, public) using the token mailed by ForgotPassword.
+type ResetPasswordRequest struct {
+	Token    string `json:"token" validate:"required"`
+	Password string `json:"password" validate:"required,min=12"`
+}
+
 type CreateUserRequest struct {
 	Login    string `json:"login" validate:"required,min=3,max=150"`
 	Name     string `json:"name"`

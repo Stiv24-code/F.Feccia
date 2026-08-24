@@ -297,6 +297,82 @@ func (h *AuthHandler) ResendVerification(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, result)
 }
 
+// ForgotPassword godoc
+// @Summary Request a password reset link (public)
+// @Description Always answers with the same generic message — never reveals whether the email is registered.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.ForgotPasswordRequest true "Account email"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/forgot-password [post]
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	var req dto.ForgotPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if errs := utils.NewValidator().Validate(&req); len(errs) > 0 {
+		return utils.ValidationErrorResponse(c, errs)
+	}
+
+	ctx := utils.RequestContext(c)
+	ip, ua := c.IP(), c.Get("User-Agent")
+
+	if err := h.Service.ForgotPassword(req.Email); err != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.forgot_password", Resource: "user", StatusCode: 500, Success: false,
+			IP: ip, UserAgent: ua, Error: err.Error(), Metadata: map[string]interface{}{"email": req.Email},
+		})
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	h.AuditLogger.Log(ctx, audit.Entry{
+		Action: "auth.forgot_password", Resource: "user", StatusCode: 200, Success: true,
+		IP: ip, UserAgent: ua, Metadata: map[string]interface{}{"email": req.Email},
+	})
+	return utils.SuccessResponse(c, 200, fiber.Map{
+		"message": "Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.",
+	})
+}
+
+// ResetPassword godoc
+// @Summary Complete a password reset (public)
+// @Description Uses the token mailed by ForgotPassword to set a new password.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.ResetPasswordRequest true "Reset token and new password"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/reset-password [post]
+func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	var req dto.ResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid request body")
+	}
+	if errs := utils.NewValidator().Validate(&req); len(errs) > 0 {
+		return utils.ValidationErrorResponse(c, errs)
+	}
+
+	ctx := utils.RequestContext(c)
+	ip, ua := c.IP(), c.Get("User-Agent")
+
+	if err := h.Service.ResetPassword(req.Token, req.Password); err != nil {
+		h.AuditLogger.Log(ctx, audit.Entry{
+			Action: "auth.reset_password", Resource: "user", StatusCode: 400, Success: false,
+			IP: ip, UserAgent: ua, Error: err.Error(),
+		})
+		return utils.HandleDatabaseError(c, err)
+	}
+
+	h.AuditLogger.Log(ctx, audit.Entry{
+		Action: "auth.reset_password", Resource: "user", StatusCode: 200, Success: true,
+		IP: ip, UserAgent: ua,
+	})
+	return utils.SuccessResponse(c, 200, fiber.Map{"message": "Password aggiornata con successo."})
+}
+
 // Logout godoc
 // @Summary Logout
 // @Description Clears the refresh cookie; best-effort, works without a valid token

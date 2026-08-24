@@ -22,6 +22,9 @@ func registerAuthRoutes(api fiber.Router, handlers *app_handlers.Handler, jwtCfg
 	api.Post("/auth/verify-email", middleware.NewLimiterIPPath(10, time.Minute), handlers.Auth.VerifyEmail)
 	// Same tighter limit as register-cliente — anonymous + triggers an email send.
 	api.Post("/auth/resend-verification", middleware.NewLimiterIPPath(5, time.Minute), handlers.Auth.ResendVerification)
+	// Same tighter limit as resend-verification — anonymous + triggers an email send.
+	api.Post("/auth/forgot-password", middleware.NewLimiterIPPath(5, time.Minute), handlers.Auth.ForgotPassword)
+	api.Post("/auth/reset-password", middleware.NewLimiterIPPath(10, time.Minute), handlers.Auth.ResetPassword)
 }
 
 // registerAuthMeRoute mirrors GET /auth/me — valid access token required,

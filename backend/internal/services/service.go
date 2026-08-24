@@ -65,6 +65,10 @@ type Auth interface {
 	RegisterClient(req dto.ClientRegisterRequest) (pending *dto.RegisterClientResult, login *dto.LoginResult, err error)
 	VerifyEmail(token string) (*dto.LoginResult, error)
 	ResendVerificationEmail(email string) (*dto.RegisterClientResult, error)
+	// ForgotPassword always returns nil (never reveals whether the email
+	// exists) unless the DB lookup itself fails.
+	ForgotPassword(email string) error
+	ResetPassword(token, newPassword string) error
 }
 
 type Customer interface {

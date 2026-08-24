@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"strings"
 	"time"
 
 	"fratelli-feccia/internal/dto"
@@ -33,6 +34,11 @@ type Mailer interface {
 // scadenza del link) — riportare a qualcosa come 24h prima di produzione.
 const verificationTTL = 10 * time.Minute
 
+// passwordResetTTL is deliberately shorter than verificationTTL — a reset
+// link grants immediate access to an existing account (not just confirms an
+// email), so a narrower window limits exposure if the mail is intercepted.
+const passwordResetTTL = 30 * time.Minute
+
 type AuthService struct {
 	db         *gorm.DB
 	jwtConf    utils.JWTConfig
@@ -51,7 +57,7 @@ func NewAuthService(db *gorm.DB, jwtConf utils.JWTConfig, mailer Mailer, appBase
 
 func (s *AuthService) Login(login, password string) (*dto.LoginResult, error) {
 	var user models.User
-	if err := s.db.Where("login = ?", login).First(&user).Error; err != nil {
+	if err := s.db.Where("LOWER(login) = ?", normalizeEmail(login)).First(&user).Error; err != nil {
 		return nil, errors.New("invalid credentials")
 	}
 
@@ -119,6 +125,7 @@ func (s *AuthService) Me(userID int64) (*dto.AuthUserResponse, error) {
 // case) — unlike self-service RegisterClient, which has no existing
 // Customer to pick from and creates one instead.
 func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, error) {
+	req.Email = normalizeEmail(req.Email)
 	var customerID *uuid.UUID
 	if req.Role == utils.RoleCliente {
 		if req.CustomerID == nil || *req.CustomerID == "" {
@@ -139,7 +146,7 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, 
 	}
 
 	var count int64
-	s.db.Model(&models.User{}).Where("login = ?", req.Email).Count(&count)
+	s.db.Model(&models.User{}).Where("LOWER(login) = ?", req.Email).Count(&count)
 	if count > 0 {
 		return nil, utils.NewAPIError(400, "Email già registrata")
 	}
@@ -176,8 +183,9 @@ func (s *AuthService) Register(req dto.RegisterRequest) (*dto.AuthUserResponse, 
 // anything, so it falls back to that old immediate-login behaviour instead
 // of minting a token nobody could ever confirm.
 func (s *AuthService) RegisterClient(req dto.ClientRegisterRequest) (*dto.RegisterClientResult, *dto.LoginResult, error) {
+	req.Email = normalizeEmail(req.Email)
 	var existing models.User
-	err := s.db.Where("login = ?", req.Email).First(&existing).Error
+	err := s.db.Where("LOWER(login) = ?", req.Email).First(&existing).Error
 	switch {
 	case err == nil && existing.Role == utils.RoleCliente && existing.VerificationToken != nil && existing.EmailVerifiedAt == nil:
 		// Genuinely stuck on a previous attempt (mail lost/expired, or SMTP
@@ -306,7 +314,7 @@ func (s *AuthService) resendVerification(user models.User) (*dto.RegisterClientR
 // RegisterClient's own "stuck" branch.
 func (s *AuthService) ResendVerificationEmail(email string) (*dto.RegisterClientResult, error) {
 	var user models.User
-	if err := s.db.Where("login = ?", email).First(&user).Error; err != nil {
+	if err := s.db.Where("LOWER(login) = ?", normalizeEmail(email)).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, utils.NewAPIError(404, "Nessun account trovato con questa email")
 		}
@@ -346,6 +354,77 @@ func (s *AuthService) VerifyEmail(token string) (*dto.LoginResult, error) {
 	return s.buildLoginResult(user)
 }
 
+// ForgotPassword starts a reset (POST /auth/forgot-password, public).
+// Always returns nil (a generic "check your mail" response, regardless of
+// whether the account exists) unless the lookup itself errors — an
+// unauthenticated endpoint must never reveal which emails are registered.
+// A no-op (still nil) when SMTP isn't configured: there's no way to deliver
+// a reset link, but saying so would itself leak account existence.
+func (s *AuthService) ForgotPassword(email string) error {
+	var user models.User
+	err := s.db.Where("LOWER(login) = ?", normalizeEmail(email)).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	if s.mailer == nil {
+		return nil
+	}
+
+	token, err := generateToken()
+	if err != nil {
+		return err
+	}
+	exp := time.Now().Add(passwordResetTTL)
+	if err := s.db.Model(&user).Updates(map[string]interface{}{
+		"password_reset_token": token, "password_reset_expires_at": &exp,
+	}).Error; err != nil {
+		return err
+	}
+
+	return s.sendPasswordResetMail(user.Login, user.Name, token)
+}
+
+// ResetPassword completes a reset (POST /auth/reset-password, public) using
+// the token mailed by ForgotPassword — single-use, cleared whether it
+// succeeds or has already expired by the time it's presented.
+func (s *AuthService) ResetPassword(token, newPassword string) error {
+	var user models.User
+	if err := s.db.Where("password_reset_token = ?", token).First(&user).Error; err != nil {
+		return utils.NewAPIError(400, "Link di reset non valido")
+	}
+	if user.PasswordResetExpiresAt == nil || user.PasswordResetExpiresAt.Before(time.Now()) {
+		return utils.NewAPIError(400, "Link di reset scaduto: richiedine uno nuovo")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return s.db.Model(&user).Updates(map[string]interface{}{
+		"password_hash": string(hash), "password_reset_token": nil, "password_reset_expires_at": nil,
+	}).Error
+}
+
+func (s *AuthService) sendPasswordResetMail(to, name, token string) error {
+	link := fmt.Sprintf("%s/reimposta-password?token=%s", s.appBaseURL, token)
+	subject := "Reimposta la tua password — Feccia F.lli"
+	body := fmt.Sprintf(`<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1a1a1a;line-height:1.5;">
+<p>Buongiorno %s,</p>
+<p>hai richiesto di reimpostare la password del tuo account. Clicca il link qui sotto (valido %s):</p>
+<p><a href="%s" style="display:inline-block;padding:10px 22px;background:#2a6fdb;color:#fff;text-decoration:none;border-radius:6px;">Reimposta la password</a></p>
+<p style="font-size:13px;color:#666;">Se il bottone non funziona, copia questo indirizzo nel browser:<br><a href="%s">%s</a></p>
+<p>Se non hai richiesto tu questa operazione, ignora questa email: la tua password resterà invariata.</p>
+<p>Cordiali saluti,<br>Feccia F.lli S.r.l.</p>
+</body></html>`,
+		html.EscapeString(name), formatTTL(passwordResetTTL), link, link, link,
+	)
+	return s.mailer.SendHTML(context.Background(), to, subject, body)
+}
+
 func (s *AuthService) sendVerificationMail(to, name, token string) error {
 	link := fmt.Sprintf("%s/verifica-email?token=%s", s.appBaseURL, token)
 	subject := "Confermazione registrazione — Feccia F.lli"
@@ -371,6 +450,13 @@ func formatTTL(d time.Duration) string {
 		return fmt.Sprintf("%d minuti", int(d.Round(time.Minute).Minutes()))
 	}
 	return fmt.Sprintf("%d ore", int(d.Round(time.Hour).Hours()))
+}
+
+// normalizeEmail lower-cases and trims an email so login is case-insensitive
+// regardless of how the user typed it at registration ("Foo@x.com" and
+// "foo@x.com" must resolve to the same account).
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 func generateToken() (string, error) {

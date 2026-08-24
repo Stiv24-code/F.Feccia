@@ -117,6 +117,11 @@ export const verifyEmail = (token) => api.post('/auth/verify-email', { token });
 // Richiede un nuovo link di conferma (link scaduto/perso/mai arrivato) senza
 // dover ripresentare tutto il form di registrazione — solo l'email.
 export const resendVerification = (email) => api.post('/auth/resend-verification', { email });
+// Reset password: richiesta link (risposta sempre generica, non rivela se
+// l'email esiste) + conferma con nuova password. Nessuna sessione da aprire
+// in nessuno dei due casi — a differenza di verifyEmail, non è un login.
+export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
+export const resetPassword = (token, password) => api.post('/auth/reset-password', { token, password });
 
 // Admin: gestione utenti migrata su RTK Query (src/store/api/appApi.ts,
 // client generato da swagger). I profili RBAC custom non sono mai stati

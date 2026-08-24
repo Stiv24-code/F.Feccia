@@ -43,6 +43,7 @@ import {
   DtoDriverResponse,
   DtoDriverUnavailabilityRequest,
   DtoDriverUnavailabilityResponse,
+  DtoForgotPasswordRequest,
   DtoGarageListResponse,
   DtoGarageRequest,
   DtoGarageResponse,
@@ -91,6 +92,7 @@ import {
   DtoRegisterClientResult,
   DtoRegisterRequest,
   DtoResendVerificationRequest,
+  DtoResetPasswordRequest,
   DtoSemirimorchioAvailabilityResponse,
   DtoSemirimorchioListResponse,
   DtoSemirimorchioRequest,
@@ -396,6 +398,26 @@ export class Api<SecurityDataType = unknown> {
       ...params,
     });
   /**
+   * @description Always answers with the same generic message — never reveals whether the email is registered.
+   *
+   * @tags Auth
+   * @name V1AuthForgotPasswordCreate
+   * @summary Request a password reset link (public)
+   * @request POST:/api/v1/auth/forgot-password
+   */
+  v1AuthForgotPasswordCreate = (
+    body: DtoForgotPasswordRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<Record<string, string>, Record<string, string>>({
+      path: `/api/v1/auth/forgot-password`,
+      method: "POST",
+      body: body,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
    * @description Authenticate user; access token in body, refresh token as httpOnly cookie
    *
    * @tags Auth
@@ -518,6 +540,26 @@ export class Api<SecurityDataType = unknown> {
   ) =>
     this.http.request<DtoRegisterClientResult, Record<string, string>>({
       path: `/api/v1/auth/resend-verification`,
+      method: "POST",
+      body: body,
+      type: ContentType.Json,
+      format: "json",
+      ...params,
+    });
+  /**
+   * @description Uses the token mailed by ForgotPassword to set a new password.
+   *
+   * @tags Auth
+   * @name V1AuthResetPasswordCreate
+   * @summary Complete a password reset (public)
+   * @request POST:/api/v1/auth/reset-password
+   */
+  v1AuthResetPasswordCreate = (
+    body: DtoResetPasswordRequest,
+    params: RequestParams = {},
+  ) =>
+    this.http.request<Record<string, string>, Record<string, string>>({
+      path: `/api/v1/auth/reset-password`,
       method: "POST",
       body: body,
       type: ContentType.Json,

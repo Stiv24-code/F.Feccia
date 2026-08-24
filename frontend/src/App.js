@@ -7,6 +7,8 @@ import { Toaster } from '@/components/ui/sonner';
 import LoginPage from '@/pages/LoginPage';
 import ClientRegisterPage from '@/pages/portale/ClientRegisterPage';
 import VerifyEmailPage from '@/pages/portale/VerifyEmailPage';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import AppShell from '@/components/layout/AppShell';
 import OrdiniTabsLayout from '@/components/layout/OrdiniTabsLayout';
 import ClientPortalShell from '@/components/layout/ClientPortalShell';
@@ -116,6 +118,8 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/registrati" element={user ? <Navigate to="/" replace /> : <ClientRegisterPage />} />
       <Route path="/verifica-email" element={user ? <Navigate to="/" replace /> : <VerifyEmailPage />} />
+      <Route path="/password-dimenticata" element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
+      <Route path="/reimposta-password" element={user ? <Navigate to="/" replace /> : <ResetPasswordPage />} />
       <Route path="/*" element={
         <ProtectedRoute>
           {user?.role === 'cliente' ? <ClientPortalRoutes /> : <StaffRoutes />}

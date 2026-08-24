@@ -489,6 +489,10 @@ export interface DtoDriverUnavailabilityResponse {
   note?: string;
 }
 
+export interface DtoForgotPasswordRequest {
+  email: string;
+}
+
 export interface DtoGarageListResponse {
   data?: DtoGarageResponse[];
   total?: number;
@@ -1123,6 +1127,12 @@ export interface DtoRegisterRequest {
 
 export interface DtoResendVerificationRequest {
   email: string;
+}
+
+export interface DtoResetPasswordRequest {
+  /** @minLength 12 */
+  password: string;
+  token: string;
 }
 
 export interface DtoRouteAlternativeDTO {

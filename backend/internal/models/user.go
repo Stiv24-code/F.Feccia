@@ -31,6 +31,13 @@ type User struct {
 	VerificationToken     *string    `gorm:"type:varchar(64);uniqueIndex" json:"-"`
 	VerificationExpiresAt *time.Time `json:"-"`
 
+	// Password reset (AuthService.ForgotPassword/ResetPassword). Same
+	// one-shot-token shape as email verification above: non-nil exactly
+	// while a reset is outstanding, cleared on successful use or once a
+	// fresh one is requested.
+	PasswordResetToken     *string    `gorm:"type:varchar(64);uniqueIndex" json:"-"`
+	PasswordResetExpiresAt *time.Time `json:"-"`
+
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty" swaggerignore:"true"`
