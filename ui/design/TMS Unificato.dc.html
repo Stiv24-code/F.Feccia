@@ -1467,7 +1467,7 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
               <span style="font:500 11px Inter,sans-serif;color:#7c879a;margin-left:auto;white-space:nowrap">ritiro {{ bp.ritiro }} · {{ bp.peso }} kg · {{ bp.prod }}</span>
             </div>
             <div style="{{ bp.editWrapStyle }}">
-              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:11px 14px;margin-top:12px">
+              <div style="display:grid;grid-template-columns:1.2fr 1.2fr .8fr;gap:11px 14px;margin-top:12px">
                 <div>
                   <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Autista e motrice</div>
                   <select value="{{ bp.autistaVal }}" onChange="{{ bp.setAutista }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
@@ -1487,12 +1487,13 @@ body{margin:0;background:#f0eee9;font-family:Inter,sans-serif}a{color:#2a6fdb}a:
                   </select>
                   <div style="{{ bp.washNoteStyle }}">{{ bp.washNote }}</div>
                 </div>
-                <div>
-                  <div style="font:600 11px Inter,sans-serif;color:#38445a;margin-bottom:5px">Percorso</div>
-                  <select value="{{ bp.routeVal }}" onChange="{{ bp.setRoute }}" style="font:500 11.5px Inter,sans-serif;color:#1c2534;border:1px solid #d4dae4;border-radius:8px;padding:8px 22px 8px 9px;background-color:#fff;-webkit-appearance:none;-moz-appearance:none;appearance:none;width:100%;box-sizing:border-box;outline:none;cursor:pointer;text-overflow:ellipsis">
-                    <sc-for list="{{ bp.routeOpts }}" as="ro" hint-placeholder-count="3"><option value="{{ ro.v }}">{{ ro.label }}</option></sc-for>
-                  </select>
-                </div>
+              </div>
+              <iframe src="{{ bp.mapSrc }}" title="Percorso proposto" loading="lazy" style="width:100%;height:190px;border:1px solid #e3e6ec;border-radius:10px;display:block;box-sizing:border-box;margin-top:12px"></iframe>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap">
+                <span style="font:600 11px Inter,sans-serif;color:#38445a">Percorso</span>
+                <span style="{{ bp.altsLoadStyle }}">Calcolo dei percorsi alternativi…</span>
+                <span style="{{ bp.altsOneStyle }}">percorso unico disponibile</span>
+                <sc-for list="{{ bp.routeChips }}" as="rc" hint-placeholder-count="3"><span onClick="{{ rc.pick }}" style="{{ rc.style }}">{{ rc.label }}</span></sc-for>
               </div>
               <div style="display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:11px;border-top:1px solid #eef0f4;flex-wrap:wrap">
                 <span style="font:500 11.5px Inter,sans-serif;color:#38445a;min-width:0">{{ bp.itin }}</span>
@@ -2387,8 +2388,10 @@ class Component extends DCLogic {
     document.addEventListener('click', this._closeMenus);
     this._onMsg = e => {
       if (e.data && e.data.tmsTrip) this.setState(s => ({ m: { ...s.m, mapSel: e.data.tmsTrip } }));
-      if (e.data && e.data.tmsAlts) this.setState(s => ({ m: { ...s.m, routeAlts: e.data.tmsAlts } }));
-      if (e.data && typeof e.data.tmsRoute === 'number') this.setState(s => ({ m: { ...s.m, routeChoice: e.data.tmsRoute } }));
+      if (e.data && e.data.tmsAlts && e.data.tag) this.setState(s => ({ m: { ...s.m, bulkAlts: { ...(s.m.bulkAlts || {}), [e.data.tag]: e.data.tmsAlts } } }));
+      else if (e.data && e.data.tmsAlts) this.setState(s => ({ m: { ...s.m, routeAlts: e.data.tmsAlts } }));
+      if (e.data && typeof e.data.tmsRoute === 'number' && e.data.tag) this.setState(s => ({ m: { ...s.m, bulkEdit: { ...(s.m.bulkEdit || {}), [e.data.tag]: { ...((s.m.bulkEdit || {})[e.data.tag] || {}), route: String(e.data.tmsRoute) } } } }));
+      else if (e.data && typeof e.data.tmsRoute === 'number') this.setState(s => ({ m: { ...s.m, routeChoice: e.data.tmsRoute } }));
       if (e.data && e.data.tmsDep) this.setState(s => ({ m: { ...s.m, mapDep: e.data.tmsDep, mapSel: null } }));
     };
     window.addEventListener('message', this._onMsg);
@@ -3160,17 +3163,13 @@ class Component extends DCLogic {
       const wash = ov.wash != null ? ov.wash : (need ? (wl[0] || 'CleanTank Piacenza') : '');
       const targa = done ? done.mezzo : (d2t[autista] || '');
       const kmAvv = w => bulkKm5((w ? (hav(spotGeo[garage], spotGeo[w]) || 15) + (hav(spotGeo[w], geo[r.carico]) || 15) : (hav(spotGeo[garage], geo[r.carico]) || 25)));
-      // alternative di percorso sulla tratta carico -> scarico (deterministiche per ordine)
-      const kmLine = r.km2 || hav(geo[r.carico], geo[r.consegna]) || 0;
-      const durOf = km => { const h = km / 72; let H = Math.floor(h), M = Math.round((h - H) * 12) * 5; if (M === 60) { H++; M = 0; } return H + 'h' + String(M).padStart(2, '0'); };
-      const routeSaved = 10 + (seed % 4) * 5, routeSlow = 15 + (seed % 3) * 10;
-      const routeOpts = [
-        { v: '0', d: 0, label: 'Consigliato \u00b7 ' + fmt(bulkKm5(kmLine)) + ' km \u00b7 ' + durOf(kmLine) },
-        { v: '1', d: -routeSaved, label: 'Pi\u00f9 corto \u00b7 ' + fmt(bulkKm5(kmLine - routeSaved)) + ' km \u00b7 +' + routeSlow + ' min' }
-      ];
-      if (kmLine > 600) { const dA = 20 + (seed % 3) * 10; routeOpts.push({ v: '2', d: dA, label: 'Alternativo \u00b7 ' + fmt(bulkKm5(kmLine + dA)) + ' km \u00b7 +' + (10 + (seed % 2) * 5) + ' min' }); }
-      const routeSel = routeOpts.find(x => x.v === (ov.route || '0')) || routeOpts[0];
-      const kmTot = bulkKm5(kmAvv(wash) + kmLine + routeSel.d);
+      // percorsi alternativi reali dalla mini-mappa (OSRM, postMessage taggato per ordine)
+      const alts = (st.bulkAlts || {})[pid] || null;
+      const routeIdx = alts && alts.length ? Math.min(parseInt(ov.route || '0', 10) || 0, alts.length - 1) : 0;
+      const durFmt = min => Math.floor(min / 60) + 'h' + String(min % 60).padStart(2, '0');
+      const RLETT = ['A', 'B', 'C'];
+      const kmLine = alts && alts.length ? alts[routeIdx].km : (r.km2 || hav(geo[r.carico], geo[r.consegna]) || 0);
+      const kmTot = bulkKm5(kmAvv(wash) + kmLine);
       const setEd = p => set({ bulkEdit: { ...(st.bulkEdit || {}), [pid]: { ...ov, ...p } } });
       const dsub = t => (((drivers[t] || [])[2] || '').split('\u00b7').pop() || '').trim();
       return {
@@ -3181,7 +3180,11 @@ class Component extends DCLogic {
         garageOpts: bulkGarages.map(g => ({ v: g, label: g + ' \u00b7 ' + bulkKm5(hav(spotGeo[g], geo[r.carico]) || 25) + ' km dal carico' })),
         washVal: wash, setWash: e => setEd({ wash: e.target.value }),
         washOpts: [{ v: '', label: 'Nessun lavaggio' }].concat((wl.length ? wl : Object.keys(spotGeo).filter(k => k.indexOf('Garage') < 0)).map(w => ({ v: w, label: w }))),
-        routeVal: routeSel.v, setRoute: e => setEd({ route: e.target.value }), routeOpts,
+        mapSrc: mapUrl('c=' + encodeURIComponent(r.carico || '') + '&s=' + encodeURIComponent(r.consegna || '') + '&g=' + encodeURIComponent(garage) + (wash ? '&w=' + encodeURIComponent(wash) : '') + '&alt=' + routeIdx + '&tag=' + encodeURIComponent(pid)),
+        routeChips: (alts || []).map((a, i) => ({ label: RLETT[i] + ' \u00b7 ' + fmt(a.km) + ' km \u00b7 ' + durFmt(a.min), pick: () => setEd({ route: String(i) }),
+          style: 'font:600 10.5px Inter,sans-serif;border-radius:99px;padding:5px 11px;cursor:pointer;white-space:nowrap;' + (i === routeIdx ? 'color:#fff;background:#2a6fdb' : 'color:#38445a;background:#fff;border:1px solid #d4dae4') })),
+        altsLoadStyle: alts === null ? 'font:400 11px Inter,sans-serif;color:#9aa4b4' : 'display:none',
+        altsOneStyle: alts && alts.length === 0 ? 'font:400 11px Inter,sans-serif;color:#9aa4b4' : 'display:none',
         washNote: need ? 'Lavaggio proposto dal ' + need : 'Lavaggio non richiesto dal capitolato',
         washNoteStyle: 'font:500 10.5px Inter,sans-serif;margin-top:6px;color:' + (need ? '#8a6508' : '#9aa4b4'),
         itin: [garage, wash, r.carico, r.consegna].filter(Boolean).join(' \u2192 '),
@@ -4083,7 +4086,7 @@ class Component extends DCLogic {
       calOutGoPrev: e => { if (e && e.stopPropagation) e.stopPropagation(); calGoBehind(); },
       calOutGoNext: e => { if (e && e.stopPropagation) e.stopPropagation(); calGoAhead(); },
       isBulk: st.screen === 'bulk',
-      openBulk: () => set({ screen: 'bulk', bulkSel: {}, bulkZona: null, bulkWhen: null, bulkEdit: null }),
+      openBulk: () => set({ screen: 'bulk', bulkSel: {}, bulkZona: null, bulkWhen: null, bulkEdit: null, bulkAlts: null }),
       bulkSelList, bulkHasSel: bulkSelList.length > 0,
       bulkAllLabel: (bulkOrders.length > 0 && bulkOrders.every(o => bulkSel[o.id])) ? 'Svuota selezione' : 'Seleziona tutti \u00b7 ' + bulkOrders.length,
       bulkAllStyle: 'margin-left:auto;display:' + (bulkOrders.length ? 'inline' : 'none') + ';font:600 10.5px Inter,sans-serif;color:#2a6fdb;cursor:pointer;white-space:nowrap',
