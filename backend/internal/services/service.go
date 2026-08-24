@@ -255,6 +255,7 @@ type InboundOrder interface {
 	ListForClient(ctx context.Context, clienteID uuid.UUID) ([]dto.InboundOrderResponse, error)
 	Create(ctx context.Context, req dto.InboundOrderRequest) (*dto.InboundOrderResponse, error)
 	Accept(ctx context.Context, id uuid.UUID) (*dto.InboundOrderActionResponse, error)
+	Convert(ctx context.Context, id uuid.UUID, req dto.InboundOrderConvertRequest) (*dto.InboundOrderConvertResponse, error)
 	Modify(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error)
 	Reset(ctx context.Context, id uuid.UUID) (*dto.InboundOrderResponse, error)
 }
@@ -424,9 +425,13 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 		acceptanceMailer = sharedMailer
 		authMailer = sharedMailer
 	}
+	// The orders service is built first because inbound orders take it as
+	// their OrderCreator seam (draft -> real order conversion) and then hand
+	// the same instance to the routes below — one service, not two.
+	orderSvc := orders.NewOrderService(db, orsApiKey, orsBaseURL)
 	// The scraper shares the inbound-orders instance as its order sink
 	// (AddIfNew), so both API and scraper apply the same dedup rule.
-	inboundOrderSvc := inboundorders.NewInboundOrderService(db, acceptanceMailer)
+	inboundOrderSvc := inboundorders.NewInboundOrderService(db, acceptanceMailer, orderSvc)
 
 	return &Service{
 		Admin: Admin{
@@ -466,7 +471,7 @@ func NewService(db *gorm.DB, jwtConf utils.JWTConfig, s3Client *s3invoices.Clien
 			DriverUnavailability: driverunavailability.NewDriverUnavailabilityService(db),
 		},
 		Orders: Orders{
-			Order: orders.NewOrderService(db, orsApiKey, orsBaseURL),
+			Order: orderSvc,
 		},
 		Motrici: Motrici{
 			Motrice: motrici.NewMotriceService(db),

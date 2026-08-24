@@ -2553,6 +2553,21 @@ func (mr *MockInboundOrderMockRecorder) Accept(ctx, id interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Accept", reflect.TypeOf((*MockInboundOrder)(nil).Accept), ctx, id)
 }
 
+// Convert mocks base method.
+func (m *MockInboundOrder) Convert(ctx context.Context, id uuid.UUID, req dto.InboundOrderConvertRequest) (*dto.InboundOrderConvertResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Convert", ctx, id, req)
+	ret0, _ := ret[0].(*dto.InboundOrderConvertResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Convert indicates an expected call of Convert.
+func (mr *MockInboundOrderMockRecorder) Convert(ctx, id, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Convert", reflect.TypeOf((*MockInboundOrder)(nil).Convert), ctx, id, req)
+}
+
 // Create mocks base method.
 func (m *MockInboundOrder) Create(ctx context.Context, req dto.InboundOrderRequest) (*dto.InboundOrderResponse, error) {
 	m.ctrl.T.Helper()

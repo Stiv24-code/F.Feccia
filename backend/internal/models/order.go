@@ -55,47 +55,63 @@ const (
 // schema-less and always empty in current usage) — stored as JSON columns
 // rather than forcing a fake rigid shape.
 type Order struct {
-	ID                    uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	Progressivo           string         `gorm:"type:varchar(20);index" json:"progressivo"`
-	ClienteID             uuid.UUID      `gorm:"type:uuid;not null;index" json:"cliente_id" validate:"required"`
-	Cliente               Customer       `gorm:"foreignKey:ClienteID;references:ID" json:"-"`
-	DestinazioneCaricoID  *uuid.UUID     `gorm:"type:uuid;index" json:"destinazione_carico_id"`
-	DestinazioneCarico    *Destination   `gorm:"foreignKey:DestinazioneCaricoID;references:ID" json:"-"`
-	DestinazioneScaricoID *uuid.UUID     `gorm:"type:uuid" json:"destinazione_scarico_id"`
-	DestinazioneScarico   *Destination   `gorm:"foreignKey:DestinazioneScaricoID;references:ID" json:"-"`
-	DataRitiro            string         `gorm:"type:varchar(20);index" json:"data_ritiro"`
-	OraRitiroDa           string         `gorm:"type:varchar(10)" json:"ora_ritiro_da"`
-	OraRitiroA            string         `gorm:"type:varchar(10)" json:"ora_ritiro_a"`
-	DataConsegna          string         `gorm:"type:varchar(20)" json:"data_consegna"`
-	OraConsegnaDa         string         `gorm:"type:varchar(10)" json:"ora_consegna_da"`
-	OraConsegnaA          string         `gorm:"type:varchar(10)" json:"ora_consegna_a"`
-	Tariffa               float64        `gorm:"not null;default:0" json:"tariffa"`
-	TipoTariffa           string         `gorm:"type:varchar(20);default:forfait" json:"tipo_tariffa"`
-	Tipologia             string         `gorm:"type:varchar(20);default:nazionale;index" json:"tipologia"`
-	CategoriaTrasporto    string         `gorm:"type:varchar(100)" json:"categoria_trasporto"`
-	RifOrdineCliente      string         `gorm:"type:varchar(100)" json:"rif_ordine_cliente"`
-	AndataRitorno         bool           `gorm:"not null;default:false" json:"andata_ritorno"`
-	Note                  string         `gorm:"type:text" json:"note"`
-	Items                 []OrderItem    `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
-	ServiziAccessori      datatypes.JSON `json:"servizi_accessori"`
-	CostiAccessori        datatypes.JSON `json:"costi_accessori"`
-	Stato                 OrderStato     `gorm:"type:varchar(20);not null;default:PIANIFICABILE;index" json:"stato"`
-	GarageID              *uuid.UUID     `gorm:"type:uuid" json:"garage_id"`
-	Garage                *Garage        `gorm:"foreignKey:GarageID;references:ID" json:"-"`
-	MotriceID             *uuid.UUID     `gorm:"type:uuid" json:"motrice_id"`
-	Motrice               *Motrice       `gorm:"foreignKey:MotriceID;references:ID" json:"-"`
-	SemirimorchioID       *uuid.UUID     `gorm:"type:uuid" json:"semirimorchio_id"`
-	Semirimorchio         *Semirimorchio `gorm:"foreignKey:SemirimorchioID;references:ID" json:"-"`
-	AutistaID             *uuid.UUID     `gorm:"type:uuid" json:"autista_id"`
-	Autista               *Driver        `gorm:"foreignKey:AutistaID;references:ID" json:"-"`
-	VettoreID             *uuid.UUID     `gorm:"type:uuid" json:"vettore_id"`
-	Vettore               *Carrier       `gorm:"foreignKey:VettoreID;references:ID" json:"-"`
-	WashStationID         *uuid.UUID     `gorm:"type:uuid" json:"wash_station_id"`
-	WashStation           *WashStation   `gorm:"foreignKey:WashStationID;references:ID" json:"-"`
-	RouteID               *uuid.UUID     `gorm:"type:uuid" json:"route_id"`
-	Route                 *OrderRoute    `gorm:"foreignKey:RouteID;references:ID" json:"-"`
-	ViaggioID             *uuid.UUID     `gorm:"type:uuid" json:"viaggio_id"`
-	FatturaID             *uuid.UUID     `gorm:"type:uuid" json:"fattura_id"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Progressivo string    `gorm:"type:varchar(20);index" json:"progressivo"`
+	ClienteID   uuid.UUID `gorm:"type:uuid;not null;index" json:"cliente_id" validate:"required"`
+	Cliente     Customer  `gorm:"foreignKey:ClienteID;references:ID" json:"-"`
+	// CommittenteID: la parte ordinante quando diversa dal cliente fatturato
+	// (maschera legacy "ordine 2017": Cliente BUNGE LODERS, Committente
+	// BUNGE LODERS WORMERVEER). Nil = coincide con Cliente.
+	CommittenteID         *uuid.UUID   `gorm:"type:uuid" json:"committente_id"`
+	Committente           *Customer    `gorm:"foreignKey:CommittenteID;references:ID" json:"-"`
+	DestinazioneCaricoID  *uuid.UUID   `gorm:"type:uuid;index" json:"destinazione_carico_id"`
+	DestinazioneCarico    *Destination `gorm:"foreignKey:DestinazioneCaricoID;references:ID" json:"-"`
+	DestinazioneScaricoID *uuid.UUID   `gorm:"type:uuid" json:"destinazione_scarico_id"`
+	DestinazioneScarico   *Destination `gorm:"foreignKey:DestinazioneScaricoID;references:ID" json:"-"`
+	DataRitiro            string       `gorm:"type:varchar(20);index" json:"data_ritiro"`
+	OraRitiroDa           string       `gorm:"type:varchar(10)" json:"ora_ritiro_da"`
+	OraRitiroA            string       `gorm:"type:varchar(10)" json:"ora_ritiro_a"`
+	DataConsegna          string       `gorm:"type:varchar(20)" json:"data_consegna"`
+	OraConsegnaDa         string       `gorm:"type:varchar(10)" json:"ora_consegna_da"`
+	OraConsegnaA          string       `gorm:"type:varchar(10)" json:"ora_consegna_a"`
+	Tariffa               float64      `gorm:"not null;default:0" json:"tariffa"`
+	TipoTariffa           string       `gorm:"type:varchar(20);default:forfait" json:"tipo_tariffa"`
+	Tipologia             string       `gorm:"type:varchar(20);default:nazionale;index" json:"tipologia"`
+	CategoriaTrasporto    string       `gorm:"type:varchar(100)" json:"categoria_trasporto"`
+	RifOrdineCliente      string       `gorm:"type:varchar(100)" json:"rif_ordine_cliente"`
+	// Riferimento e note per fermata (maschera legacy: "Rif. carico/Note
+	// carico" sul mittente, "Rif. scarico/Note scarico" sul destinatario) —
+	// distinti da RifOrdineCliente/Note che restano globali sull'ordine.
+	RifCarico     string `gorm:"type:varchar(100)" json:"rif_carico"`
+	NoteCarico    string `gorm:"type:text" json:"note_carico"`
+	RifScarico    string `gorm:"type:varchar(100)" json:"rif_scarico"`
+	NoteScarico   string `gorm:"type:text" json:"note_scarico"`
+	AndataRitorno bool   `gorm:"not null;default:false" json:"andata_ritorno"`
+	// Provvisorio: l'ordine è inserito ma non ancora confermato dal cliente
+	// ("Ord. Provvisorio" della maschera legacy) — resta pianificabile ma la
+	// UI lo evidenzia; non è uno stato del ciclo di vita.
+	Provvisorio      bool           `gorm:"not null;default:false;index" json:"provvisorio"`
+	Note             string         `gorm:"type:text" json:"note"`
+	Items            []OrderItem    `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
+	ServiziAccessori datatypes.JSON `json:"servizi_accessori"`
+	CostiAccessori   datatypes.JSON `json:"costi_accessori"`
+	Stato            OrderStato     `gorm:"type:varchar(20);not null;default:PIANIFICABILE;index" json:"stato"`
+	GarageID         *uuid.UUID     `gorm:"type:uuid" json:"garage_id"`
+	Garage           *Garage        `gorm:"foreignKey:GarageID;references:ID" json:"-"`
+	MotriceID        *uuid.UUID     `gorm:"type:uuid" json:"motrice_id"`
+	Motrice          *Motrice       `gorm:"foreignKey:MotriceID;references:ID" json:"-"`
+	SemirimorchioID  *uuid.UUID     `gorm:"type:uuid" json:"semirimorchio_id"`
+	Semirimorchio    *Semirimorchio `gorm:"foreignKey:SemirimorchioID;references:ID" json:"-"`
+	AutistaID        *uuid.UUID     `gorm:"type:uuid" json:"autista_id"`
+	Autista          *Driver        `gorm:"foreignKey:AutistaID;references:ID" json:"-"`
+	VettoreID        *uuid.UUID     `gorm:"type:uuid" json:"vettore_id"`
+	Vettore          *Carrier       `gorm:"foreignKey:VettoreID;references:ID" json:"-"`
+	WashStationID    *uuid.UUID     `gorm:"type:uuid" json:"wash_station_id"`
+	WashStation      *WashStation   `gorm:"foreignKey:WashStationID;references:ID" json:"-"`
+	RouteID          *uuid.UUID     `gorm:"type:uuid" json:"route_id"`
+	Route            *OrderRoute    `gorm:"foreignKey:RouteID;references:ID" json:"-"`
+	ViaggioID        *uuid.UUID     `gorm:"type:uuid" json:"viaggio_id"`
+	FatturaID        *uuid.UUID     `gorm:"type:uuid" json:"fattura_id"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
