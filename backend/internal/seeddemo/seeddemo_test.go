@@ -162,9 +162,8 @@ func TestSeedInboundChannelPayloads(t *testing.T) {
 
 // TestSeedPdfDraftsFollowTemplateZones e' il cuore della simulazione: un
 // draft del canale pdf deve avere valorizzati esattamente i campi che il suo
-// template mappa, perche' e' cosi' che si comporta pdfengine.BuildDraft su un
-// PDF vero. Se il seed tornasse a inventare i campi (tutti pieni, template
-// ignorato) questo test cade.
+// template mappa, perche' e' quello che un import da PDF porta a casa. Se il
+// seed tornasse a riempire tutto ignorando il template, questo test cade.
 func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
 	db := seededDB(t)
 
@@ -229,23 +228,21 @@ func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
 		if !tpl.targets["client"] && o.Client != tpl.client {
 			t.Errorf("%s: senza zona client il draft dovrebbe ereditare %q, ha %q", o.Ref, tpl.client, o.Client)
 		}
-		// ref: senza zona dedicata BuildDraft ripiega sul nome del file.
+		// ref: senza zona dedicata resta il nome del file allegato.
 		if !tpl.targets["ref"] && !strings.Contains(o.Ref, "_") {
 			t.Errorf("%s: senza zona ref il draft dovrebbe portare il nome del file", o.Ref)
 		}
-		// sender_email: nessun template mappa il target, quindi arriva dal
-		// mittente della mail o dal primo indirizzo del template.
+		// sender_email: nessun template mappa il target, arriva dal mittente
+		// della mail che portava il PDF.
 		if o.SenderEmail == "" {
 			t.Errorf("%s: draft pdf senza mittente", o.Ref)
 		}
-		// kg: la zona esiste su tutti i template, ma sulle righe "MOD" e'
-		// simulata illeggibile — resta 0, come in un import reale.
-		illeggibile := strings.Contains(o.Ref, "-MOD-")
-		if !illeggibile && o.Kg == 0 {
-			t.Errorf("%s: kg non estratti dalla zona", o.Ref)
+		// kg: la zona c'e' su tutti e tre i template.
+		if tpl.targets["kg"] && o.Kg == 0 {
+			t.Errorf("%s: il template mappa i kg ma il draft e' a 0", o.Ref)
 		}
-		if illeggibile && o.Kg != 0 {
-			t.Errorf("%s: zona kg simulata illeggibile ma kg valgono %d", o.Ref, o.Kg)
+		if !tpl.targets["kg"] && o.Kg != 0 {
+			t.Errorf("%s: il template non mappa i kg ma il draft vale %d", o.Ref, o.Kg)
 		}
 	}
 	if checked == 0 {
@@ -253,9 +250,8 @@ func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
 	}
 }
 
-// TestSeedPdfNotesJoinZones: un target mappato su due zone (le due righe di
-// istruzioni del template Parmalat) viene ricongiunto da BuildDraft con uno
-// spazio. E' l'unico caso in cui un campo del draft nasce da piu' letture.
+// TestSeedPdfNotesJoinZones: il template Parmalat mappa "notes" su due zone
+// (istruzioni di carico e di scarico) e il draft porta il testo di entrambe.
 func TestSeedPdfNotesJoinZones(t *testing.T) {
 	db := seededDB(t)
 

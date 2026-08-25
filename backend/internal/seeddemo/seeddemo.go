@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,9 +21,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/models"
-	"fratelli-feccia/internal/services/pdfengine"
 	"fratelli-feccia/pkg/utils"
 )
 
@@ -624,15 +621,14 @@ func Seed(db *gorm.DB) error {
 	//
 	// Le zone mappate sono diverse da template a template di proposito: sono
 	// loro a decidere quali campi l'import riesce a estrarre, e i draft del
-	// canale PDF vengono costruiti passando per pdfengine.BuildDraft (vedi
-	// sotto), quindi restano vuoti esattamente i campi che il template non
-	// mappa — come in un import vero.
+	// canale PDF (sotto) portano valorizzati solo quelli — il resto lo
+	// completa l'operatore, come dopo un import vero.
 	//
-	//   A (Ferrero)  — luoghi, date, kg, tariffa: nessun ref → il draft
-	//                  ricade sul nome del file, nessun prodotto.
+	//   A (Ferrero)  — luoghi, date, kg, tariffa: nessun ref (resta il nome
+	//                  del file), nessun prodotto.
 	//   B (Barilla)  — solo ref, prodotto e kg: niente luoghi né date.
 	//   C (Parmalat) — ragione sociale, ref, luoghi, kg e le istruzioni
-	//                  spalmate su due zone (BuildDraft le ricongiunge).
+	//                  spalmate su due zone.
 	tplFieldsA := []models.PdfTemplateField{
 		{ID: "1", Target: "load_place", Label: "Luogo di carico", Page: 0, X: 0.08, Y: 0.42, W: 0.35, H: 0.03},
 		{ID: "2", Target: "load_date", Label: "Data ritiro", Page: 0, X: 0.08, Y: 0.46, W: 0.25, H: 0.03},
@@ -721,24 +717,17 @@ func Seed(db *gorm.DB) error {
 
 	type inboundParty struct {
 		cust models.Customer
-		// Canale pdf: template usato per l'import, più i dati che servono a
-		// rigiocare l'estrazione (le zone del template e i suoi mittenti,
-		// senza rileggerli dal JSON appena scritto).
-		tpl        *models.PdfTemplate
-		tplFields  []models.PdfTemplateField
-		tplSenders []string
-		// filePrefix: nome del PDF allegato. Conta perché BuildDraft, quando
-		// il template non ha una zona "ref", ripiega sul nome del file.
+		// Canale pdf: template usato per l'import e le sue zone, che sono
+		// quelle a decidere quali campi il draft porta valorizzati.
+		tpl       *models.PdfTemplate
+		tplFields []models.PdfTemplateField
+		// filePrefix: nome del PDF allegato, usato come riferimento quando il
+		// template non ha una zona "ref" da cui leggerlo.
 		filePrefix string
-		// pdfClient: la ragione sociale come è stampata sul PDF, letta solo
-		// dai template che mappano il target "client". Volutamente diversa
-		// dall'anagrafica: è il motivo per cui Convert non risolve il cliente
-		// per nome (vedi il commento sulla sicurezza in inboundorders).
+		// pdfClient: la ragione sociale come è stampata sul PDF, usata solo
+		// dai template che mappano il target "client".
 		pdfClient string
-		// sender: mittente della mail che portava il PDF. Vuoto sul primo
-		// template per esercitare il fallback di BuildDraft sul primo
-		// indirizzo del template.
-		sender string
+		sender    string
 	}
 	channels := []struct {
 		code   string // prefisso del Ref: in dashboard si legge subito da dove arriva la richiesta
@@ -746,11 +735,11 @@ func Seed(db *gorm.DB) error {
 		partie []inboundParty
 	}{
 		{code: "PDF", source: models.InboundOrderSourcePDF, partie: []inboundParty{
-			{cust: tplCustomers[0], tpl: &templates[0], tplFields: tplFieldsA, tplSenders: tplSenders[0],
-				filePrefix: "transporeon", pdfClient: "FERRERO S.p.A.", sender: ""},
-			{cust: tplCustomers[1], tpl: &templates[1], tplFields: tplFieldsB, tplSenders: tplSenders[1],
+			{cust: tplCustomers[0], tpl: &templates[0], tplFields: tplFieldsA,
+				filePrefix: "transporeon", pdfClient: "FERRERO S.p.A.", sender: tplCustomers[0].Email},
+			{cust: tplCustomers[1], tpl: &templates[1], tplFields: tplFieldsB,
 				filePrefix: "transport_order", pdfClient: "BARILLA G.R. F.LLI SPA", sender: tplCustomers[1].Email},
-			{cust: tplCustomers[2], tpl: &templates[2], tplFields: tplFieldsC, tplSenders: tplSenders[2],
+			{cust: tplCustomers[2], tpl: &templates[2], tplFields: tplFieldsC,
 				filePrefix: "ordine_trasporto", pdfClient: "PARMALAT S.p.A. - Div. Logistica", sender: tplCustomers[2].Email},
 		}},
 		{code: "MAIL", source: models.InboundOrderSourceMail, partie: []inboundParty{
@@ -790,11 +779,6 @@ func Seed(db *gorm.DB) error {
 	// produrre. Creati qui con la stessa nota di provenienza che scriverebbe
 	// inboundorders.convertNote.
 	convertedOrders := make([]models.Order, 0, len(channels)*3)
-
-	// Motore PDF senza API key: BuildDraft è puro (nessun poppler, nessuna
-	// chiamata alla visione), serve solo la stessa logica di mappatura
-	// zone → campi che gira in produzione.
-	pdfEngine := pdfengine.NewPdfEngineService("")
 
 	seq := 0
 	for _, ch := range channels {
@@ -836,52 +820,57 @@ func Seed(db *gorm.DB) error {
 				}
 
 				if party.tpl != nil {
-					// Estrazione simulata, non dati inventati: il testo che il
-					// PDF stamperebbe passa per pdfengine.BuildDraft — la
-					// stessa funzione dietro POST /pdf/import — quindi i campi
-					// del draft sono esattamente quelli che il template riesce
-					// a mappare, con gli stessi fallback (client dal template,
-					// mittente dal primo indirizzo, ref dal nome del file) e
-					// lo stesso parsing dei kg. Se BuildDraft cambia, il seed
-					// la segue.
-					zoneText := map[string]string{
-						"client":  party.pdfClient,
-						"ref":     refCode,
-						"product": prod.Descrizione,
-						// Come sul foglio: separatore delle migliaia e unità
-						// di misura, che è ciò che cleanNumber deve digerire.
-						"kg":             fmt.Sprintf("%d.%03d kg", kg/1000, kg%1000),
-						"load_date":      ritiro.Format("2006-01-02"),
-						"load_place":     carico.Nome,
-						"delivery_date":  consegna.Format("2006-01-02"),
-						"delivery_place": scarico.Nome,
-						"rate":           inboundRates[seq%len(inboundRates)],
-						// Due righe distinte sul PDF: sui template che mappano
-						// "notes" su due zone, BuildDraft le ricongiunge.
-						"notes": "Carico ADR: documenti in cabina.|Scarico con sponda idraulica.",
+					o.TemplateID = &party.tpl.ID
+
+					// Dati estratti dal template: il draft porta soltanto i
+					// campi le cui zone quel template mappa, il resto resta
+					// vuoto e lo completa l'operatore. È la differenza tra un
+					// import da PDF e un ordine inserito a mano, ed è per
+					// template: i tre layout leggono cose diverse.
+					letto := map[string]bool{}
+					for _, f := range party.tplFields {
+						letto[f.Target] = true
 					}
-					if st.slug == "MOD" {
-						// Una zona che non si legge (scansione storta, nessun
-						// layer di testo e nessuna API key per la visione):
-						// resta a Method "empty" e i kg restano 0, com'è
-						// sempre possibile in un import reale.
-						delete(zoneText, "kg")
+					o.Product, o.Kg = "", 0
+					o.LoadDate, o.LoadPlace = "", ""
+					o.DeliveryDate, o.DeliveryPlace = "", ""
+					o.Rate, o.Notes = "", ""
+
+					if letto["client"] {
+						// Ragione sociale come è scritta sul foglio: di
+						// proposito diversa dall'anagrafica, è il motivo per
+						// cui Convert non risolve il cliente per nome.
+						o.Client = party.pdfClient
 					}
-					draft, _ := pdfEngine.BuildDraft(
-						dto.PdfTemplateResponse{
-							ID: party.tpl.ID, Name: party.tpl.Name, Client: party.tpl.Client,
-							Senders: party.tplSenders, Fields: toFieldDTOs(party.tplFields),
-						},
-						simulateZoneReads(party.tplFields, zoneText),
-						party.sender,
-						fmt.Sprintf("%s_%s.pdf", party.filePrefix, refCode),
-					)
-					o.Client, o.SenderEmail = draft.Client, draft.SenderEmail
-					o.Ref, o.Product, o.Kg = draft.Ref, draft.Product, draft.Kg
-					o.LoadDate, o.LoadPlace = draft.LoadDate, draft.LoadPlace
-					o.DeliveryDate, o.DeliveryPlace = draft.DeliveryDate, draft.DeliveryPlace
-					o.Rate, o.Notes = draft.Rate, draft.Notes
-					o.TemplateID = draft.TemplateID
+					if !letto["ref"] {
+						// Senza una zona per il riferimento resta il nome del
+						// file allegato, che è quanto l'import ha in mano.
+						o.Ref = party.filePrefix + "_" + refCode
+					}
+					if letto["product"] {
+						o.Product = prod.Descrizione
+					}
+					if letto["kg"] {
+						o.Kg = kg
+					}
+					if letto["load_date"] {
+						o.LoadDate = ritiro.Format("2006-01-02")
+					}
+					if letto["load_place"] {
+						o.LoadPlace = carico.Nome
+					}
+					if letto["delivery_date"] {
+						o.DeliveryDate = consegna.Format("2006-01-02")
+					}
+					if letto["delivery_place"] {
+						o.DeliveryPlace = scarico.Nome
+					}
+					if letto["rate"] {
+						o.Rate = inboundRates[seq%len(inboundRates)]
+					}
+					if letto["notes"] {
+						o.Notes = "Carico ADR: documenti in cabina. Scarico con sponda idraulica."
+					}
 				}
 
 				if ch.source == models.InboundOrderSourcePortal {
@@ -999,50 +988,6 @@ func buildInvoiceLines(orders []models.Order, destByID map[uuid.UUID]models.Dest
 		totale += o.Tariffa
 	}
 	return righe, totale
-}
-
-// simulateZoneReads produce ciò che pdfengine.Extract restituirebbe leggendo
-// un PDF con quel template: un valore per ogni zona (per id di zona), che è
-// la forma che BuildDraft consuma. Il testo simulato è indicizzato per
-// target — quello che il foglio stampa in quel punto — così le zone che il
-// template non ha vengono semplicemente mai lette, ed è il template a
-// decidere quali campi il draft riesce a valorizzare.
-//
-// Un target mappato su più zone (es. due righe di istruzioni) prende una
-// parte per zona, separate da "|": è il caso che fa scattare il join con lo
-// spazio dentro BuildDraft. Le zone senza testo tornano con Method "empty",
-// come quando la zona è bianca o la visione non legge nulla.
-func simulateZoneReads(fields []models.PdfTemplateField, textByTarget map[string]string) map[string]dto.PdfExtractedValueDTO {
-	parts := make(map[string][]string, len(textByTarget))
-	for target, text := range textByTarget {
-		parts[target] = strings.Split(text, "|")
-	}
-
-	values := make(map[string]dto.PdfExtractedValueDTO, len(fields))
-	for _, f := range fields {
-		queue := parts[f.Target]
-		if len(queue) == 0 || strings.TrimSpace(queue[0]) == "" {
-			values[f.ID] = dto.PdfExtractedValueDTO{Method: "empty"}
-			continue
-		}
-		values[f.ID] = dto.PdfExtractedValueDTO{Value: queue[0], Confidence: 1.0, Method: "poppler-text"}
-		parts[f.Target] = queue[1:]
-	}
-	return values
-}
-
-// toFieldDTOs converte le zone del modello nella forma che il servizio
-// espone (e che BuildDraft accetta). Duplica la mappatura di pdftemplates
-// invece di esportarla: qui serve solo per rigiocare l'estrazione nel seed.
-func toFieldDTOs(fields []models.PdfTemplateField) []dto.PdfTemplateFieldDTO {
-	out := make([]dto.PdfTemplateFieldDTO, len(fields))
-	for i, f := range fields {
-		out[i] = dto.PdfTemplateFieldDTO{
-			ID: f.ID, Target: f.Target, Label: f.Label, Page: f.Page,
-			X: f.X, Y: f.Y, W: f.W, H: f.H,
-		}
-	}
-	return out
 }
 
 func mustUser(login, name, role, password string) models.User {
