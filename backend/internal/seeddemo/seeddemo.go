@@ -715,19 +715,36 @@ func Seed(db *gorm.DB) error {
 		{"MOD", models.InboundOrderStatusModify, false, false},
 	}
 
+	// pdfExtracted è il set di valori "già estratti" di un template: quello
+	// che l'import legge da quel layout, scritto a mano una volta per
+	// template e non derivato dalla riga della matrice. I campi vuoti sono
+	// vuoti perché quel template non ha la zona corrispondente — è
+	// l'informazione che rende un draft da PDF diverso da un ordine inserito
+	// a mano, ed è verificata dal test sulle zone.
+	//
+	// Le date sono offset da oggi e non date assolute: un valore fisso tipo
+	// "2026-09-14" invecchierebbe e finirebbe nel passato del calendario.
+	type pdfExtracted struct {
+		client         string
+		ref            string
+		product        string
+		kg             int
+		loadInDays     int // 0 = zona assente
+		loadPlace      string
+		deliveryInDays int
+		deliveryPlace  string
+		rate           string
+		notes          string
+	}
 	type inboundParty struct {
 		cust models.Customer
-		// Canale pdf: template usato per l'import e le sue zone, che sono
-		// quelle a decidere quali campi il draft porta valorizzati.
+		// Canale pdf: template usato per l'import e il suo set estratto.
 		tpl       *models.PdfTemplate
-		tplFields []models.PdfTemplateField
-		// filePrefix: nome del PDF allegato, usato come riferimento quando il
+		extracted pdfExtracted
+		// filePrefix: nome del PDF allegato, che fa da riferimento quando il
 		// template non ha una zona "ref" da cui leggerlo.
 		filePrefix string
-		// pdfClient: la ragione sociale come è stampata sul PDF, usata solo
-		// dai template che mappano il target "client".
-		pdfClient string
-		sender    string
+		sender     string
 	}
 	channels := []struct {
 		code   string // prefisso del Ref: in dashboard si legge subito da dove arriva la richiesta
@@ -735,12 +752,31 @@ func Seed(db *gorm.DB) error {
 		partie []inboundParty
 	}{
 		{code: "PDF", source: models.InboundOrderSourcePDF, partie: []inboundParty{
-			{cust: tplCustomers[0], tpl: &templates[0], tplFields: tplFieldsA,
-				filePrefix: "transporeon", pdfClient: "FERRERO S.p.A.", sender: tplCustomers[0].Email},
-			{cust: tplCustomers[1], tpl: &templates[1], tplFields: tplFieldsB,
-				filePrefix: "transport_order", pdfClient: "BARILLA G.R. F.LLI SPA", sender: tplCustomers[1].Email},
-			{cust: tplCustomers[2], tpl: &templates[2], tplFields: tplFieldsC,
-				filePrefix: "ordine_trasporto", pdfClient: "PARMALAT S.p.A. - Div. Logistica", sender: tplCustomers[2].Email},
+			// Transporeon: legge luoghi, date, peso e nolo. Nessuna zona per
+			// riferimento e prodotto, quindi il draft arriva senza.
+			{cust: tplCustomers[0], tpl: &templates[0], filePrefix: "transporeon",
+				sender: tplCustomers[0].Email, extracted: pdfExtracted{
+					kg:         24000,
+					loadInDays: 4, loadPlace: "Ferrero Alba - Stab. P.le Pietro Ferrero",
+					deliveryInDays: 7, deliveryPlace: "Ferrero Deutschland Stadtallendorf",
+					rate: "€ 2.450",
+				}},
+			// Transport Order Confirmation: solo riferimento, prodotto e peso.
+			{cust: tplCustomers[1], tpl: &templates[1], filePrefix: "transport_order",
+				sender: tplCustomers[1].Email, extracted: pdfExtracted{
+					ref: "4500871-23", product: "Pasta secca in cartoni", kg: 26000,
+				}},
+			// Modulo logistica Parmalat: intesta la ragione sociale come è
+			// scritta sul foglio — di proposito diversa dall'anagrafica, è il
+			// motivo per cui Convert non risolve il cliente per nome.
+			{cust: tplCustomers[2], tpl: &templates[2], filePrefix: "ordine_trasporto",
+				sender: tplCustomers[2].Email, extracted: pdfExtracted{
+					client: "PARMALAT S.p.A. - Div. Logistica", ref: "PL/2026/00418",
+					kg:            22000,
+					loadPlace:     "Parmalat Collecchio - Magazzino 2",
+					deliveryPlace: "Lactalis Verona - Piattaforma",
+					notes:         "Carico ADR: documenti in cabina. Scarico con sponda idraulica.",
+				}},
 		}},
 		{code: "MAIL", source: models.InboundOrderSourceMail, partie: []inboundParty{
 			{cust: customers[7], sender: customers[7].Email},
@@ -820,57 +856,34 @@ func Seed(db *gorm.DB) error {
 				}
 
 				if party.tpl != nil {
+					// Il draft porta il set estratto del suo template, uguale
+					// su tutte le righe: cambia solo lo stato.
+					e := party.extracted
 					o.TemplateID = &party.tpl.ID
+					o.Product, o.Kg = e.product, e.kg
+					o.LoadPlace, o.DeliveryPlace = e.loadPlace, e.deliveryPlace
+					o.Rate, o.Notes = e.rate, e.notes
+					o.LoadDate, o.DeliveryDate = "", ""
+					if e.loadInDays > 0 {
+						o.LoadDate = today.AddDate(0, 0, e.loadInDays).Format("2006-01-02")
+					}
+					if e.deliveryInDays > 0 {
+						o.DeliveryDate = today.AddDate(0, 0, e.deliveryInDays).Format("2006-01-02")
+					}
+					if e.client != "" {
+						o.Client = e.client
+					}
 
-					// Dati estratti dal template: il draft porta soltanto i
-					// campi le cui zone quel template mappa, il resto resta
-					// vuoto e lo completa l'operatore. È la differenza tra un
-					// import da PDF e un ordine inserito a mano, ed è per
-					// template: i tre layout leggono cose diverse.
-					letto := map[string]bool{}
-					for _, f := range party.tplFields {
-						letto[f.Target] = true
+					// Riferimento: quello estratto, o il nome del file
+					// allegato se il template non ha la zona. Il suffisso di
+					// stato c'è perché il set è fisso ma inbound_orders_ref_
+					// client_key pretende una riga per stato — ed è anche
+					// così che in dashboard si ritrova la riga da provare.
+					base := e.ref
+					if base == "" {
+						base = party.filePrefix + "_ordine"
 					}
-					o.Product, o.Kg = "", 0
-					o.LoadDate, o.LoadPlace = "", ""
-					o.DeliveryDate, o.DeliveryPlace = "", ""
-					o.Rate, o.Notes = "", ""
-
-					if letto["client"] {
-						// Ragione sociale come è scritta sul foglio: di
-						// proposito diversa dall'anagrafica, è il motivo per
-						// cui Convert non risolve il cliente per nome.
-						o.Client = party.pdfClient
-					}
-					if !letto["ref"] {
-						// Senza una zona per il riferimento resta il nome del
-						// file allegato, che è quanto l'import ha in mano.
-						o.Ref = party.filePrefix + "_" + refCode
-					}
-					if letto["product"] {
-						o.Product = prod.Descrizione
-					}
-					if letto["kg"] {
-						o.Kg = kg
-					}
-					if letto["load_date"] {
-						o.LoadDate = ritiro.Format("2006-01-02")
-					}
-					if letto["load_place"] {
-						o.LoadPlace = carico.Nome
-					}
-					if letto["delivery_date"] {
-						o.DeliveryDate = consegna.Format("2006-01-02")
-					}
-					if letto["delivery_place"] {
-						o.DeliveryPlace = scarico.Nome
-					}
-					if letto["rate"] {
-						o.Rate = inboundRates[seq%len(inboundRates)]
-					}
-					if letto["notes"] {
-						o.Notes = "Carico ADR: documenti in cabina. Scarico con sponda idraulica."
-					}
+					o.Ref = base + "-" + st.slug
 				}
 
 				if ch.source == models.InboundOrderSourcePortal {
@@ -911,8 +924,12 @@ func Seed(db *gorm.DB) error {
 						DataConsegna: consegna.Format("2006-01-02"), OraConsegnaDa: o.OraConsegnaDa, OraConsegnaA: o.OraConsegnaA,
 						Tariffa: o.TariffaProposta, TipoTariffa: "forfait", Tipologia: "nazionale",
 						CategoriaTrasporto: "Standard", RifOrdineCliente: o.Ref,
+						// Prodotto: quello che la richiesta riporta come testo
+						// se c'è (un template può non estrarlo), altrimenti
+						// l'anagrafica scelta in conversione.
 						Note: fmt.Sprintf("Prodotto: %s | Kg: %d | Da richiesta %s %s del %s",
-							prod.Descrizione, o.Kg, ch.source, o.Ref, o.ReceivedAt.Format("02/01/2006")),
+							firstNonEmptyStr(o.Product, prod.Descrizione), o.Kg, ch.source, o.Ref,
+							o.ReceivedAt.Format("02/01/2006")),
 						Items: []models.OrderItem{
 							{ID: uuid.New(), ProdottoID: prod.ID, Quantita: 1, Peso: float64(o.Kg)},
 						},
@@ -988,6 +1005,13 @@ func buildInvoiceLines(orders []models.Order, destByID map[uuid.UUID]models.Dest
 		totale += o.Tariffa
 	}
 	return righe, totale
+}
+
+func firstNonEmptyStr(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
 }
 
 func mustUser(login, name, role, password string) models.User {
