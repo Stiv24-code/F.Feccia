@@ -83,18 +83,34 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d clienti\n", len(customers))
 
-	// Login pronto per il portale cliente (ruolo "cliente", legato al primo
-	// cliente seedato) — comodo in dev/demo per non dover passare da
-	// /register-client ogni volta. Credenziali fisse ma sovrascrivibili,
-	// stesso pattern di SEED_ADMIN_EMAIL/PASSWORD sopra.
+	// Login pronti per il portale cliente (ruolo "cliente") — comodi in
+	// dev/demo per non dover passare da /register-cliente ogni volta.
+	// Credenziali fisse ma sovrascrivibili, stesso pattern di
+	// SEED_ADMIN_EMAIL/PASSWORD sopra.
+	//
+	// Tre account e non uno: le richieste che arrivano dal portale (canale
+	// "portal" nella sezione ORDINI IN ARRIVO) sono scopate per cliente_id
+	// (inboundorders.ListForClient), quindi con un solo login non si vede che
+	// ogni utente esterno legge soltanto la propria coda. Il primo resta
+	// quello con le credenziali da env, per non cambiare le abitudini; la
+	// password è la stessa per tutti e tre, così SEED_CLIENT_PASSWORD
+	// continua a valere per l'intero gruppo.
 	clientEmail := getEnv("SEED_CLIENT_EMAIL", "client@gmail.com")
 	clientPassword := getEnv("SEED_CLIENT_PASSWORD", "12345")
-	clientUser := mustUser(clientEmail, customers[0].RagioneSociale, utils.RoleCliente, clientPassword)
-	clientUser.CustomerID = &customers[0].ID
-	if err := db.Create(&clientUser).Error; err != nil {
-		return fmt.Errorf("utente cliente: %w", err)
+	portalCustomers := []models.Customer{customers[0], customers[1], customers[2]}
+	portalLogins := []string{clientEmail, "client2@gmail.com", "client3@gmail.com"}
+	clientUsers := make([]models.User, 0, len(portalLogins))
+	for i, login := range portalLogins {
+		u := mustUser(login, portalCustomers[i].RagioneSociale, utils.RoleCliente, clientPassword)
+		u.CustomerID = &portalCustomers[i].ID
+		clientUsers = append(clientUsers, u)
 	}
-	fmt.Printf("✓ utente cliente (%s / %s) -> %s\n", clientEmail, clientPassword, customers[0].RagioneSociale)
+	if err := db.Create(&clientUsers).Error; err != nil {
+		return fmt.Errorf("utenti cliente: %w", err)
+	}
+	for i, u := range clientUsers {
+		fmt.Printf("✓ utente cliente (%s / %s) -> %s\n", u.Login, clientPassword, portalCustomers[i].RagioneSociale)
+	}
 
 	// ─────────────────────────── DESTINAZIONI ───────────────────────────
 	// Caricate da un export reale Visirun (POI Carico-Scarico) invece di una
@@ -593,54 +609,15 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d indisponibilita' autisti\n", len(unavails))
 
-	// ─────────────────────────── ORDINI IN ARRIVO (PDF/e-mail) ───────────────────────────
-	// Bozze non ancora accettate per la tab "In arrivo": stesso concetto di
-	// Order ma senza FK (Client/Product sono testo libero, come nella realtà
-	// un ordine ricevuto via mail/PDF). Riusa le stesse anagrafiche clienti/
-	// prodotti/destinazioni seminate sopra invece di inventarne di nuove.
-	inboundStatuses := weighted(map[string]int{"pending": 6, "accepted": 1, "modify": 1})
-	inboundSources := []string{models.InboundOrderSourceMail, models.InboundOrderSourcePDF, models.InboundOrderSourceSeed}
-	inboundRates := []string{"€ 1.480", "€ 1.850", "€ 2.100", "€ 2.250", "€ 2.400", "€ 2.650", "€ 3.800", "€ 480"}
-	inboundNotes := []string{"", "", "Serve sponda idraulica per lo scarico.", "Cliente richiede conferma telefonica prima del ritiro."}
-	// Minuti trascorsi da "ora": copre i bucket del formattatore relativo del
-	// frontend (min/h/ieri/data) così il tab non mostra solo "20 min fa".
-	inboundAgoMinutes := []int{20, 35, 60, 120, 180, 1440, 1500, 2900}
-
-	inboundOrders := make([]models.InboundOrder, 0, len(inboundAgoMinutes))
-	for _, minutesAgo := range inboundAgoMinutes {
-		cust := pick(customers)
-		carico := pick(destinations)
-		scarico := pick(destinations)
-		for scarico.ID == carico.ID {
-			scarico = pick(destinations)
-		}
-		prod := pick(products)
-		stato := models.InboundOrderStatus(pick(inboundStatuses))
-		portal := stato == models.InboundOrderStatusPending && randBelow(3) == 0
-
-		deliveryDate := ""
-		if randBelow(4) != 0 {
-			deliveryDate = today.AddDate(0, 0, randRange(2, 20)).Format("2006-01-02")
-		}
-
-		inboundOrders = append(inboundOrders, models.InboundOrder{
-			ID:      uuid.New(),
-			Client:  cust.RagioneSociale, SenderEmail: cust.Email,
-			Ref:     fmt.Sprintf("%d/%02d", randRange(100000, 999999), randRange(10, 99)),
-			Product: prod.Descrizione, Kg: randRange(5000, 26000),
-			LoadDate: today.AddDate(0, 0, randRange(-2, 15)).Format("2006-01-02"), LoadPlace: carico.Nome,
-			DeliveryDate: deliveryDate, DeliveryPlace: scarico.Nome,
-			Rate: pick(inboundRates), Notes: pick(inboundNotes),
-			Portal: portal, Status: stato, Source: pick(inboundSources),
-			ReceivedAt: today.Add(-time.Duration(minutesAgo) * time.Minute),
-		})
-	}
-	if err := db.Create(&inboundOrders).Error; err != nil {
-		return fmt.Errorf("ordini in arrivo: %w", err)
-	}
-	fmt.Printf("✓ %d ordini in arrivo\n", len(inboundOrders))
-
 	// ─────────────────────────── TEMPLATE PDF ───────────────────────────
+	// Seminati prima degli ordini in arrivo: i draft del canale PDF
+	// referenziano template_id, quindi la riga del template deve già
+	// esistere (la FK è ON DELETE SET NULL, ma un id inventato violerebbe
+	// comunque il vincolo).
+	//
+	// Un template per ciascuno dei tre clienti del canale PDF, così ogni
+	// layout ha davvero delle richieste importate dietro invece di restare
+	// una riga isolata nella pagina Template.
 	tplFieldsA, _ := json.Marshal([]models.PdfTemplateField{
 		{ID: "1", Target: "load_place", Label: "Luogo di carico", Page: 0, X: 0.08, Y: 0.42, W: 0.35, H: 0.03},
 		{ID: "2", Target: "load_date", Label: "Data ritiro", Page: 0, X: 0.08, Y: 0.46, W: 0.25, H: 0.03},
@@ -654,17 +631,219 @@ func Seed(db *gorm.DB) error {
 		{ID: "2", Target: "product", Label: "Prodotto", Page: 0, X: 0.1, Y: 0.30, W: 0.4, H: 0.03},
 		{ID: "3", Target: "kg", Label: "Peso (kg)", Page: 0, X: 0.1, Y: 0.34, W: 0.2, H: 0.03},
 	})
-	sendersA, _ := json.Marshal([]string{customers[5].Email, "@ferrero.com"})
-	sendersB, _ := json.Marshal([]string{customers[3].Email})
+	tplFieldsC, _ := json.Marshal([]models.PdfTemplateField{
+		{ID: "1", Target: "client", Label: "Ragione sociale", Page: 0, X: 0.06, Y: 0.10, W: 0.45, H: 0.03},
+		{ID: "2", Target: "ref", Label: "Nr. ordine", Page: 0, X: 0.60, Y: 0.10, W: 0.30, H: 0.03},
+		{ID: "3", Target: "load_place", Label: "Ritiro presso", Page: 0, X: 0.06, Y: 0.38, W: 0.40, H: 0.03},
+		{ID: "4", Target: "delivery_place", Label: "Consegna presso", Page: 0, X: 0.52, Y: 0.38, W: 0.40, H: 0.03},
+		{ID: "5", Target: "kg", Label: "Quantità (kg)", Page: 0, X: 0.06, Y: 0.55, W: 0.20, H: 0.03},
+		{ID: "6", Target: "notes", Label: "Istruzioni", Page: 0, X: 0.06, Y: 0.70, W: 0.85, H: 0.06},
+	})
+	// Clienti del canale PDF: Ferrero, Barilla, Parmalat (indici stabili
+	// nella lista customers qui sopra).
+	tplCustomers := []models.Customer{customers[5], customers[3], customers[1]}
+	sendersA, _ := json.Marshal([]string{tplCustomers[0].Email, "@ferrero.com"})
+	sendersB, _ := json.Marshal([]string{tplCustomers[1].Email})
+	sendersC, _ := json.Marshal([]string{tplCustomers[2].Email, "@parmalat.it"})
 
 	templates := []models.PdfTemplate{
-		{ID: uuid.New(), Name: "Trasporto Transporeon (Trimble)", Client: customers[5].RagioneSociale, Senders: datatypes.JSON(sendersA), Fields: datatypes.JSON(tplFieldsA)},
-		{ID: uuid.New(), Name: "Transport Order Confirmation", Client: customers[3].RagioneSociale, Senders: datatypes.JSON(sendersB), Fields: datatypes.JSON(tplFieldsB)},
+		{ID: uuid.New(), Name: "Trasporto Transporeon (Trimble)", Client: tplCustomers[0].RagioneSociale, Senders: datatypes.JSON(sendersA), Fields: datatypes.JSON(tplFieldsA)},
+		{ID: uuid.New(), Name: "Transport Order Confirmation", Client: tplCustomers[1].RagioneSociale, Senders: datatypes.JSON(sendersB), Fields: datatypes.JSON(tplFieldsB)},
+		{ID: uuid.New(), Name: "Ordine di trasporto (mod. logistica)", Client: tplCustomers[2].RagioneSociale, Senders: datatypes.JSON(sendersC), Fields: datatypes.JSON(tplFieldsC)},
 	}
 	if err := db.Create(&templates).Error; err != nil {
 		return fmt.Errorf("template pdf: %w", err)
 	}
 	fmt.Printf("✓ %d template pdf\n", len(templates))
+
+	// ────────── ORDINI IN ARRIVO: matrice canale × stato ──────────
+	// Bozze non ancora convertite per la tab "In arrivo". Prima erano 8 righe
+	// con canale e stato estratti a caso: bastava un seed sfortunato per non
+	// vedere mai un draft da portale o uno in modifica. Qui la matrice è
+	// esplicita — ogni canale copre ogni stato per tre clienti — così le
+	// schermate di accettazione e il portale cliente hanno sempre tutti i
+	// casi da mostrare.
+	//
+	// I tre canali non portano gli stessi dati, ed è il punto della matrice:
+	//   • pdf    — import da template: template_id valorizzato, client e
+	//              luoghi restano testo libero (è quello che il template ha
+	//              letto dal PDF) e cliente_id resta nil, quindi Convert
+	//              esige un cliente_id scelto dall'operatore (vedi il
+	//              commento sulla sicurezza in services/inboundorders).
+	//   • mail   — scraper della casella: come sopra, senza template.
+	//   • portal — utente esterno autenticato sul portale: cliente_id,
+	//              committente e destinazioni sono FK vere, orari e tariffa
+	//              proposta arrivano strutturati e la conversione è esatta.
+	//
+	// Gli stati in dashboard sono cinque, non i tre di InboundOrderStatus:
+	// "pending" si sdoppia col flag portal ("Da confermare su portale") e
+	// "accepted" col link order_id (già convertito → Convert risponde 409).
+	inboundStates := []struct {
+		slug      string
+		status    models.InboundOrderStatus
+		portal    bool // da confermare sul portale DEL CLIENTE (Transporeon & co)
+		converted bool // order_id valorizzato: richiesta già diventata ordine
+	}{
+		{"PEND", models.InboundOrderStatusPending, false, false},
+		{"PORT", models.InboundOrderStatusPending, true, false},
+		{"ACC", models.InboundOrderStatusAccepted, false, false},
+		{"CONV", models.InboundOrderStatusAccepted, false, true},
+		{"MOD", models.InboundOrderStatusModify, false, false},
+	}
+
+	type inboundParty struct {
+		cust   models.Customer
+		tpl    *models.PdfTemplate // solo canale pdf
+		sender string
+	}
+	channels := []struct {
+		code   string // prefisso del Ref: in dashboard si legge subito da dove arriva la richiesta
+		source string
+		partie []inboundParty
+	}{
+		{code: "PDF", source: models.InboundOrderSourcePDF, partie: []inboundParty{
+			{cust: tplCustomers[0], tpl: &templates[0], sender: tplCustomers[0].Email},
+			{cust: tplCustomers[1], tpl: &templates[1], sender: tplCustomers[1].Email},
+			{cust: tplCustomers[2], tpl: &templates[2], sender: tplCustomers[2].Email},
+		}},
+		{code: "MAIL", source: models.InboundOrderSourceMail, partie: []inboundParty{
+			{cust: customers[7], sender: customers[7].Email},
+			{cust: customers[9], sender: customers[9].Email},
+			{cust: customers[13], sender: customers[13].Email},
+		}},
+		// Canale portale: i clienti sono quelli con un login RoleCliente
+		// seminato nella sezione CLIENTI, così ogni account trova la propria
+		// coda in /portale — e vede solo la propria (ListForClient filtra su
+		// cliente_id).
+		{code: "WEB", source: models.InboundOrderSourcePortal, partie: []inboundParty{
+			{cust: portalCustomers[0], sender: portalLogins[0]},
+			{cust: portalCustomers[1], sender: portalLogins[1]},
+			{cust: portalCustomers[2], sender: portalLogins[2]},
+		}},
+	}
+
+	inboundRates := []string{"€ 1.480", "€ 1.850", "€ 2.100", "€ 2.250", "€ 2.400", "€ 2.650", "€ 3.800", "€ 480"}
+	inboundNotes := []string{"", "Serve sponda idraulica per lo scarico.", "Cliente richiede conferma telefonica prima del ritiro.", "Carico ADR: documenti in cabina.", ""}
+	// Minuti trascorsi da "ora", ciclati sulle righe: coprono i bucket del
+	// formattatore relativo del frontend (min/h/ieri/data) così la coda non
+	// mostra solo "20 min fa".
+	inboundAgoMinutes := []int{20, 35, 60, 120, 180, 1440, 1500, 2900, 5800}
+	// Orari strutturati: li ha solo il canale portale (il form li chiede);
+	// mail e pdf no, restano vuoti come nella realtà.
+	oraPortale := []struct{ ritiroDa, ritiroA, consegnaDa, consegnaA string }{
+		{"07:00", "12:00", "08:00", "16:00"},
+		{"06:00", "10:00", "14:00", "18:00"},
+		{"08:00", "13:00", "07:00", "12:00"},
+	}
+
+	inboundOrders := make([]models.InboundOrder, 0, len(channels)*len(inboundStates)*3)
+	// Gli stati "CONV" hanno bisogno di un Order vero dietro: order_id è
+	// esattamente ciò che rende Convert idempotente, quindi un draft
+	// "convertito" senza ordine sarebbe uno stato che il codice non può
+	// produrre. Creati qui con la stessa nota di provenienza che scriverebbe
+	// inboundorders.convertNote.
+	convertedOrders := make([]models.Order, 0, len(channels)*3)
+
+	seq := 0
+	for _, ch := range channels {
+		for pi, party := range ch.partie {
+			for _, st := range inboundStates {
+				if ch.source == models.InboundOrderSourcePortal && st.portal {
+					// "Da confermare su portale" = il PO va confermato sul
+					// portale del cliente: non ha senso su una richiesta che
+					// il cliente ci ha già inviato dal nostro portale.
+					continue
+				}
+				seq++
+				carico := destinations[(seq*3)%len(destinations)]
+				scarico := destinations[(seq*7+1)%len(destinations)]
+				if scarico.ID == carico.ID {
+					scarico = destinations[(seq*7+2)%len(destinations)]
+				}
+				prod := products[seq%len(products)]
+				kg := 6000 + (seq%9)*2000
+				ritiro := today.AddDate(0, 0, 1+(seq%12))
+				consegna := ritiro.AddDate(0, 0, 1+(seq%3))
+
+				o := models.InboundOrder{
+					ID:     uuid.New(),
+					Client: party.cust.RagioneSociale, SenderEmail: party.sender,
+					// Ref parlante (canale-stato-cliente) invece di un numero
+					// random: è la colonna con cui in dashboard si ritrova la
+					// riga che si voleva provare. Resta unico per (ref,
+					// client), come pretende inbound_orders_ref_client_key.
+					Ref:     fmt.Sprintf("%s-%s-%02d", ch.code, st.slug, pi+1),
+					Product: prod.Descrizione, Kg: kg,
+					LoadDate: ritiro.Format("2006-01-02"), LoadPlace: carico.Nome,
+					DeliveryDate: consegna.Format("2006-01-02"), DeliveryPlace: scarico.Nome,
+					Rate: inboundRates[seq%len(inboundRates)], Notes: inboundNotes[seq%len(inboundNotes)],
+					Portal: st.portal, Status: st.status, Source: ch.source,
+					ReceivedAt: today.Add(-time.Duration(inboundAgoMinutes[seq%len(inboundAgoMinutes)]) * time.Minute),
+				}
+				if party.tpl != nil {
+					o.TemplateID = &party.tpl.ID
+				}
+				if ch.source == models.InboundOrderSourcePortal {
+					// Payload strutturato del portale: FK vere più orari e
+					// tariffa desiderata. TariffaProposta è una proposta del
+					// cliente, non un prezzo — Convert la usa solo come
+					// default davanti agli occhi dell'operatore.
+					o.ClienteID = &party.cust.ID
+					o.CommittenteID = &party.cust.ID
+					o.DestinazioneCaricoID = &carico.ID
+					o.DestinazioneScaricoID = &scarico.ID
+					orari := oraPortale[pi%len(oraPortale)]
+					o.OraRitiroDa, o.OraRitiroA = orari.ritiroDa, orari.ritiroA
+					o.OraConsegnaDa, o.OraConsegnaA = orari.consegnaDa, orari.consegnaA
+					o.TariffaProposta = float64(900 + (seq%10)*150)
+					o.Rate = fmt.Sprintf("€ %.0f (proposta cliente)", o.TariffaProposta)
+					o.Notes = "Richiesta inserita dal portale cliente. " + o.Notes
+				}
+
+				if st.converted {
+					// Il cliente da fatturare: sul draft pdf/mail cliente_id
+					// è nil per progetto (il mittente non è attendibile), qui
+					// mettiamo l'anagrafica che l'operatore avrebbe scelto in
+					// fase di conversione. La tariffa passa solo se è quella
+					// proposta dal portale: il Rate di un draft mail è testo
+					// libero e Convert non lo parsa mai.
+					ordID := uuid.New()
+					convertedOrders = append(convertedOrders, models.Order{
+						ID: ordID, Progressivo: fmt.Sprintf("%s/R%03d", today.Format("06"), len(convertedOrders)+1),
+						ClienteID:             party.cust.ID,
+						DestinazioneCaricoID:  &carico.ID,
+						DestinazioneScaricoID: &scarico.ID,
+						DataRitiro:            o.LoadDate, OraRitiroDa: o.OraRitiroDa, OraRitiroA: o.OraRitiroA,
+						DataConsegna: o.DeliveryDate, OraConsegnaDa: o.OraConsegnaDa, OraConsegnaA: o.OraConsegnaA,
+						Tariffa: o.TariffaProposta, TipoTariffa: "forfait", Tipologia: "nazionale",
+						CategoriaTrasporto: "Standard", RifOrdineCliente: o.Ref,
+						Note: fmt.Sprintf("Prodotto: %s | Kg: %d | Da richiesta %s %s del %s",
+							prod.Descrizione, kg, ch.source, o.Ref, o.ReceivedAt.Format("02/01/2006")),
+						Items: []models.OrderItem{
+							{ID: uuid.New(), ProdottoID: prod.ID, Quantita: 1, Peso: float64(kg)},
+						},
+						ServiziAccessori: []byte("[]"), CostiAccessori: []byte("[]"),
+						Stato: models.OrderStatoPianificabile,
+					})
+					o.OrderID = &ordID
+				}
+
+				inboundOrders = append(inboundOrders, o)
+			}
+		}
+	}
+
+	// Gli ordini prima dei draft: order_id li referenzia.
+	if len(convertedOrders) > 0 {
+		if err := db.Create(&convertedOrders).Error; err != nil {
+			return fmt.Errorf("ordini da richieste convertite: %w", err)
+		}
+	}
+	if err := db.Create(&inboundOrders).Error; err != nil {
+		return fmt.Errorf("ordini in arrivo: %w", err)
+	}
+	fmt.Printf("✓ %d ordini in arrivo (%d canali × stati × 3 clienti, %d già convertiti in ordine)\n",
+		len(inboundOrders), len(channels), len(convertedOrders))
 
 	fmt.Println()
 	fmt.Println("═══════════════════════════════════════")
@@ -677,6 +856,9 @@ func Seed(db *gorm.DB) error {
 	fmt.Printf("  planner          m.rossi@feccia.it                %s\n", plannerPassword)
 	fmt.Printf("  operatore        l.bianchi@feccia.it              %s\n", operatorePassword)
 	fmt.Printf("  amministrazione  g.ferrari@feccia.it              %s\n", amminPassword)
+	for i, login := range portalLogins {
+		fmt.Printf("  cliente portale  %-32s %s  (%s)\n", login, clientPassword, portalCustomers[i].RagioneSociale)
+	}
 	fmt.Println("═══════════════════════════════════════")
 	return nil
 }
