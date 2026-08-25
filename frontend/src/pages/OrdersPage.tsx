@@ -214,7 +214,11 @@ export default function OrdersPage() {
               )) : orders.length === 0 ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nessun ordine trovato</TableCell></TableRow>
               ) : orders.map(o => (
-                <TableRow key={o.id} className="hover:bg-muted/60">
+                <TableRow
+                  key={o.id}
+                  className="hover:bg-muted/60 cursor-pointer"
+                  onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}
+                >
                   <TableCell className="py-2 font-mono font-medium">{o.progressivo}</TableCell>
                   <TableCell className="py-2 max-w-[150px] truncate">{o.cliente?.ragione_sociale}</TableCell>
                   <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_carico?.nome}</TableCell>
@@ -228,9 +232,9 @@ export default function OrdersPage() {
                       {o.provvisorio && <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">provvisorio</Badge>}
                     </div>
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini' } })}><Eye className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}><Eye className="h-3 w-3" /></Button>
                       {o.data_consegna && o.destinazione_scarico?.nome && (
                         <Button
                           variant="ghost" size="icon" className="h-7 w-7"

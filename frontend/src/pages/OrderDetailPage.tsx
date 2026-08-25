@@ -22,8 +22,13 @@ export default function OrderDetailPage() {
   // Reached from both /planner (row click) and /ordini (see OrdersPage) —
   // the caller passes where "back" should go via route state, defaulting
   // to the original Planner-only behaviour when absent.
-  const backTo = (location.state as { from?: string; fromLabel?: string } | null)?.from ?? '/planner';
-  const backLabel = (location.state as { from?: string; fromLabel?: string } | null)?.fromLabel ?? 'Planner';
+  const routeState = location.state as { from?: string; fromLabel?: string; readOnly?: boolean } | null;
+  const backTo = routeState?.from ?? '/planner';
+  const backLabel = routeState?.fromLabel ?? 'Planner';
+  // Consultazione da /ordini (vedi OrdersPage) — solo lettura: niente
+  // Assign/Avvia/Chiudi/Scarta/Riporta a da pianificare, quei cambi di stato
+  // restano un'azione del Planner.
+  const readOnly = routeState?.readOnly === true;
   const [order, setOrder] = useState<DtoOrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -103,31 +108,33 @@ export default function OrderDetailPage() {
         </button>
         <span className="text-muted-foreground">/</span>
         <span className="font-mono text-sm font-semibold">{order.progressivo}</span>
-        <div className="ml-auto flex items-center gap-2">
-          {order.stato === 'PIANIFICABILE' && (
-            <Button variant="outline" className="text-destructive" onClick={handleDiscard} data-testid="order-detail-discard">
-              <Ban className="h-4 w-4 mr-2" /> Scarta
-            </Button>
-          )}
-          {order.stato === 'PIANIFICATO' && !order.viaggio_id && (
-            <>
+        {!readOnly && (
+          <div className="ml-auto flex items-center gap-2">
+            {order.stato === 'PIANIFICABILE' && (
               <Button variant="outline" className="text-destructive" onClick={handleDiscard} data-testid="order-detail-discard">
                 <Ban className="h-4 w-4 mr-2" /> Scarta
               </Button>
-              <Button variant="outline" onClick={handleUnassign} data-testid="order-detail-unassign">
-                <RotateCcw className="h-4 w-4 mr-2" /> Riporta a da pianificare
+            )}
+            {order.stato === 'PIANIFICATO' && !order.viaggio_id && (
+              <>
+                <Button variant="outline" className="text-destructive" onClick={handleDiscard} data-testid="order-detail-discard">
+                  <Ban className="h-4 w-4 mr-2" /> Scarta
+                </Button>
+                <Button variant="outline" onClick={handleUnassign} data-testid="order-detail-unassign">
+                  <RotateCcw className="h-4 w-4 mr-2" /> Riporta a da pianificare
+                </Button>
+                <Button onClick={handleStart} data-testid="order-detail-start">
+                  <PlayCircle className="h-4 w-4 mr-2" /> Avvia viaggio
+                </Button>
+              </>
+            )}
+            {order.stato === 'VIAGGIO' && (
+              <Button onClick={handleClose} data-testid="order-detail-close">
+                <CheckCircle className="h-4 w-4 mr-2" /> Chiudi
               </Button>
-              <Button onClick={handleStart} data-testid="order-detail-start">
-                <PlayCircle className="h-4 w-4 mr-2" /> Avvia viaggio
-              </Button>
-            </>
-          )}
-          {order.stato === 'VIAGGIO' && (
-            <Button onClick={handleClose} data-testid="order-detail-close">
-              <CheckCircle className="h-4 w-4 mr-2" /> Chiudi
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       <Card className="rounded-xl border shadow-sm p-5 space-y-4" data-testid="order-detail-assign-form">
@@ -164,7 +171,14 @@ export default function OrderDetailPage() {
         </div>
 
         {order.stato === 'PIANIFICABILE' ? (
-          <AssignOrderForm order={order} onAssigned={fetchOrder} />
+          readOnly ? (
+            <>
+              <OrderRouteMap carico={carico} scarico={scarico} height={280} />
+              <RouteItinerary stops={fullItineraryStops} />
+            </>
+          ) : (
+            <AssignOrderForm order={order} onAssigned={fetchOrder} />
+          )
         ) : (
           <>
             <OrderRouteMap carico={carico} scarico={scarico} garage={order.garage} washStation={order.wash_station} routePoints={order.route?.points as [number, number][] | undefined} height={280} />
