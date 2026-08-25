@@ -7,6 +7,7 @@ import { toggleTheme as toggleThemeAction } from '@/store/themeSlice';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { CommandPalette } from '@/components/shared/CommandPalette';
 import {
   LayoutDashboard, Users, MapPin, Truck, UserCircle, Building2,
@@ -68,6 +69,11 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [openGroups, setOpenGroups] = useState({ 'Anagrafiche': true });
+  // Sidebar compressa: i gruppi (Anagrafiche, Ordini) non hanno più spazio
+  // per una sotto-lista inline, quindi mostrano un flyout invece — stato
+  // separato da openGroups perché quello resta quello "vero" per quando la
+  // sidebar si riespande.
+  const [flyoutOpen, setFlyoutOpen] = useState(null);
   const visibleNavItems = filterByRole(navItems, user?.role);
 
   const toggleGroup = (label) => {
@@ -142,6 +148,40 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
             if (item.children) {
               const isOpen = openGroups[item.label];
               const hasActiveChild = item.children.some(c => isActive(c.path));
+              if (collapsed) {
+                return (
+                  <Popover
+                    key={item.label}
+                    open={flyoutOpen === item.label}
+                    onOpenChange={(open) => setFlyoutOpen(open ? item.label : null)}
+                  >
+                    <PopoverTrigger asChild>
+                      <button
+                        data-testid={`sidebar-nav-group-${item.label.toLowerCase()}`}
+                        className="w-full flex items-center justify-center rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5"
+                        style={{ color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
+                        title={item.label}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="right" align="start" className="w-56 p-1">
+                      <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{item.label}</p>
+                      {item.children.map((child) => (
+                        <button
+                          key={child.path}
+                          data-testid={`sidebar-nav-item-${child.path.replace(/\//g, '-').slice(1)}`}
+                          onClick={() => { setFlyoutOpen(null); handleNav(child.path); }}
+                          className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left transition-colors ${isActive(child.path) ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                        >
+                          <child.icon className="h-3.5 w-3.5 shrink-0" />
+                          <span>{child.label}</span>
+                        </button>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                );
+              }
               return (
                 <div key={item.label}>
                   <button

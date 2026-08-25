@@ -11,6 +11,7 @@ import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import AppShell from '@/components/layout/AppShell';
 import OrdiniTabsLayout from '@/components/layout/OrdiniTabsLayout';
+import AnagraficheTabsLayout from '@/components/layout/AnagraficheTabsLayout';
 import ClientPortalShell from '@/components/layout/ClientPortalShell';
 import DashboardPage from '@/pages/DashboardPage';
 import '@/App.css';
@@ -64,18 +65,18 @@ function StaffRoutes() {
         <Routes>
           <Route index element={<DashboardPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="anagrafiche/clienti" element={<CustomersPage />} />
+          <Route path="anagrafiche/clienti" element={<AnagraficheTabsLayout><CustomersPage /></AnagraficheTabsLayout>} />
           <Route path="anagrafiche/clienti/:id/cruscotto" element={<CustomerDashboardPage />} />
-          <Route path="anagrafiche/destinazioni" element={<DestinationsPage />} />
-          <Route path="anagrafiche/mezzi" element={<VehiclesPage />} />
-          <Route path="anagrafiche/autisti" element={<DriversPage />} />
-          <Route path="anagrafiche/vettori" element={<CarriersPage />} />
-          <Route path="anagrafiche/prodotti" element={<ProductsPage />} />
-          <Route path="anagrafiche/garage" element={<GaragesPage />} />
-          <Route path="anagrafiche/lavaggi" element={<WashStationsPage />} />
-          <Route path="anagrafiche/nazioni" element={<CountriesPage />} />
-          <Route path="anagrafiche/banche" element={<BanksPage />} />
-          <Route path="anagrafiche/voci-contabili" element={<AccountingEntriesPage />} />
+          <Route path="anagrafiche/destinazioni" element={<AnagraficheTabsLayout><DestinationsPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/mezzi" element={<AnagraficheTabsLayout><VehiclesPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/autisti" element={<AnagraficheTabsLayout><DriversPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/vettori" element={<AnagraficheTabsLayout><CarriersPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/prodotti" element={<AnagraficheTabsLayout><ProductsPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/garage" element={<AnagraficheTabsLayout><GaragesPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/lavaggi" element={<AnagraficheTabsLayout><WashStationsPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/nazioni" element={<AnagraficheTabsLayout><CountriesPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/banche" element={<AnagraficheTabsLayout><BanksPage /></AnagraficheTabsLayout>} />
+          <Route path="anagrafiche/voci-contabili" element={<AnagraficheTabsLayout><AccountingEntriesPage /></AnagraficheTabsLayout>} />
           <Route path="listini" element={<PriceListsPage />} />
           <Route path="ordini" element={<OrdiniTabsLayout><OrdersPage /></OrdiniTabsLayout>} />
           <Route path="ordini-in-ingresso" element={<OrdiniTabsLayout><InboundOrdersPage /></OrdiniTabsLayout>} />

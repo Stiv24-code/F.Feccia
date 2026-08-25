@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getOrders, createOrder, deleteOrder, downloadOrderCmrPdf, getReturnSuggestions, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useGetCustomersQuery } from '@/store/api/appApi';
@@ -35,6 +36,7 @@ const emptyForm: DtoOrderRequest = {
 };
 
 export default function OrdersPage() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<DtoOrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -42,8 +44,6 @@ export default function OrdersPage() {
   const [tipologiaFilter, setTipologiaFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<DtoOrderResponse | null>(null);
   // Ritorni (#32): dialog separato con candidati di ritorno per il riempimento
   // viaggi a vuoto. Score e motivi calcolati lato backend.
   const [returnsOpen, setReturnsOpen] = useState(false);
@@ -230,7 +230,7 @@ export default function OrdersPage() {
                   </TableCell>
                   <TableCell className="py-2">
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedOrder(o); setDetailOpen(true); }}><Eye className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini' } })}><Eye className="h-3 w-3" /></Button>
                       {o.data_consegna && o.destinazione_scarico?.nome && (
                         <Button
                           variant="ghost" size="icon" className="h-7 w-7"
@@ -374,35 +374,6 @@ export default function OrdersPage() {
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio Ordine</DialogTitle></DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Progressivo:</span><span className="font-mono font-medium">{selectedOrder.progressivo}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedOrder.cliente?.ragione_sociale}</span></div>
-              {selectedOrder.committente && <div className="flex justify-between"><span className="text-muted-foreground">Committente:</span><span>{selectedOrder.committente.ragione_sociale}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Carico:</span><span>{selectedOrder.destinazione_carico?.nome}</span></div>
-              {selectedOrder.rif_carico && <div className="flex justify-between"><span className="text-muted-foreground">Rif. carico:</span><span className="font-mono text-xs">{selectedOrder.rif_carico}</span></div>}
-              {selectedOrder.note_carico && <div className="flex justify-between gap-4"><span className="text-muted-foreground shrink-0">Note carico:</span><span className="text-right">{selectedOrder.note_carico}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Scarico:</span><span>{selectedOrder.destinazione_scarico?.nome}</span></div>
-              {selectedOrder.rif_scarico && <div className="flex justify-between"><span className="text-muted-foreground">Rif. scarico:</span><span className="font-mono text-xs">{selectedOrder.rif_scarico}</span></div>}
-              {selectedOrder.note_scarico && <div className="flex justify-between gap-4"><span className="text-muted-foreground shrink-0">Note scarico:</span><span className="text-right">{selectedOrder.note_scarico}</span></div>}
-              <div className="flex justify-between"><span className="text-muted-foreground">Data Ritiro:</span><span>{selectedOrder.data_ritiro} {selectedOrder.ora_ritiro_da}-{selectedOrder.ora_ritiro_a}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Data Consegna:</span><span>{selectedOrder.data_consegna} {selectedOrder.ora_consegna_da}-{selectedOrder.ora_consegna_a}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tariffa:</span><span className="font-medium">€ {formatEuro(selectedOrder.tariffa || 0)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tipologia:</span><Badge variant="outline" className="text-[10px]">{selectedOrder.tipologia}</Badge></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Stato:</span><StatusBadge stato={selectedOrder.stato} /></div>
-              {selectedOrder.provvisorio && <div className="flex justify-between"><span className="text-muted-foreground">Provvisorio:</span><Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">sì</Badge></div>}
-              {selectedOrder.motrice?.targa && <div className="flex justify-between"><span className="text-muted-foreground">Motrice:</span><span className="font-mono">{selectedOrder.motrice.targa}</span></div>}
-              {selectedOrder.autista && <div className="flex justify-between"><span className="text-muted-foreground">Autista:</span><span>{selectedOrder.autista.nome} {selectedOrder.autista.cognome}</span></div>}
-              {selectedOrder.note && <div><span className="text-muted-foreground">Note:</span><p className="mt-1">{selectedOrder.note}</p></div>}
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 

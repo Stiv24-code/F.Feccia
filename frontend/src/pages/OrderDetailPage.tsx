@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getOrder, startOrder, closeOrder, discardOrder, unassignOrder } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { DtoOrderResponse } from '@/api/data-contracts';
@@ -18,6 +18,12 @@ import { logger } from '@/lib/logger';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Reached from both /planner (row click) and /ordini (see OrdersPage) —
+  // the caller passes where "back" should go via route state, defaulting
+  // to the original Planner-only behaviour when absent.
+  const backTo = (location.state as { from?: string; fromLabel?: string } | null)?.from ?? '/planner';
+  const backLabel = (location.state as { from?: string; fromLabel?: string } | null)?.fromLabel ?? 'Planner';
   const [order, setOrder] = useState<DtoOrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +70,7 @@ export default function OrderDetailPage() {
   };
   const handleDiscard = async () => {
     if (!order?.id || !window.confirm(`Scartare l'ordine ${order.progressivo}? L'operazione non è reversibile.`)) return;
-    try { await discardOrder(order.id); toast.success(`Ordine ${order.progressivo} scartato`); navigate('/planner'); }
+    try { await discardOrder(order.id); toast.success(`Ordine ${order.progressivo} scartato`); navigate(backTo); }
     catch (e) { toast.error(getApiErrorMessage(e) || 'Errore'); }
   };
 
@@ -89,11 +95,11 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <button
-          type="button" onClick={() => navigate('/planner')}
+          type="button" onClick={() => navigate(backTo)}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
           data-testid="order-detail-back"
         >
-          <ArrowLeft className="h-4 w-4" /> Planner
+          <ArrowLeft className="h-4 w-4" /> {backLabel}
         </button>
         <span className="text-muted-foreground">/</span>
         <span className="font-mono text-sm font-semibold">{order.progressivo}</span>
