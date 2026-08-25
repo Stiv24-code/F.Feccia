@@ -98,7 +98,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--sidebar-bg)' }}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-14 shrink-0" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+      <div className={`flex items-center gap-3 h-14 shrink-0 ${collapsed ? 'px-2 justify-center' : 'px-4'}`} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'var(--sidebar-accent)', color: '#fff' }}>
           FF
         </div>
@@ -142,17 +142,18 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
             if (item.children) {
               const isOpen = openGroups[item.label];
               const hasActiveChild = item.children.some(c => isActive(c.path));
-              // Sidebar compressa: niente etichetta/chevron per aprire un
-              // gruppo, quindi i figli restano sempre visibili come righe a
-              // sola icona nella stessa colonna invece di un flyout separato.
-              const showChildren = collapsed || isOpen;
+              // Sidebar compressa (come nel design): solo l'icona del
+              // gruppo, senza sotto-lista. Il click porta al primo figlio
+              // invece di aprire/chiudere un accordion che qui non c'è
+              // spazio per mostrare.
+              const showChildren = !collapsed && isOpen;
               return (
                 <div key={item.label}>
                   <button
                     data-testid={`sidebar-nav-group-${item.label.toLowerCase()}`}
-                    onClick={() => !collapsed && toggleGroup(item.label)}
+                    onClick={() => collapsed ? handleNav(item.children[0].path) : toggleGroup(item.label)}
                     title={collapsed ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${collapsed ? 'justify-center' : ''}`}
+                    className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] ${hasActiveChild ? 'font-semibold' : 'font-medium'} transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${collapsed ? 'justify-center' : ''}`}
                     style={{ color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
@@ -171,7 +172,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                           data-testid={`sidebar-nav-item-${child.path.replace(/\//g, '-').slice(1)}`}
                           onClick={() => handleNav(child.path)}
                           title={collapsed ? child.label : undefined}
-                          className={`w-full flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 ${collapsed ? 'justify-center' : 'border-l-2'} ${isActive(child.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
+                          className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[12.5px] ${isActive(child.path) ? 'font-semibold' : 'font-medium'} transition-colors duration-150 ${collapsed ? 'justify-center' : 'border-l-2'} ${isActive(child.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
                           style={isActive(child.path)
                             ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)', borderColor: collapsed ? undefined : 'var(--sidebar-accent)' }
                             : { color: 'var(--sidebar-muted)', borderColor: collapsed ? undefined : 'transparent' }}
@@ -190,7 +191,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                 key={item.path}
                 data-testid={`sidebar-nav-item-${item.path.replace(/\//g, '-').slice(1)}`}
                 onClick={() => handleNav(item.path)}
-                className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${isActive(item.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] ${isActive(item.path) ? 'font-semibold' : 'font-medium'} transition-colors duration-150 ${isActive(item.path) ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
                 style={isActive(item.path) ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)' } : { color: 'var(--sidebar-muted)' }}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -291,7 +292,7 @@ const AppShell = ({ children }) => {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block shrink-0 h-full transition-[width] duration-200 ${collapsed ? 'w-[76px]' : 'w-[260px]'}`}
+        className={`hidden lg:block shrink-0 h-full transition-[width] duration-200 ${collapsed ? 'w-[58px]' : 'w-[260px]'}`}
         style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.15)' }}
       >
         <SidebarContent collapsed={collapsed} theme={theme} toggleTheme={toggleTheme} onToggleCollapsed={toggleCollapsed} />
