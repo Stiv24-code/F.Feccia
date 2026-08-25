@@ -205,7 +205,8 @@ if (fleetQ !== null) {
       .bindTooltip('<span class="lbl">In transito · ' + Math.round(truckPct) + '%</span>', { permanent: true, direction: 'bottom', offset: [0, 14], className: 'no-bg', opacity: 1 });
   }
   var altQ = q.get('alt');
-  if (altQ !== null && G && W) {
+  var tagQ = q.get('tag') || null;
+  if (altQ !== null && G) {
     // modalità percorsi alternativi: OSRM alternatives sul tratto principale,
     // il canvas riceve km/durate via postMessage e seleziona con ?alt=N
     var selIdx = Math.max(0, +altQ || 0);
@@ -241,19 +242,19 @@ if (fleetQ !== null) {
         routes.forEach(function(rt, i) {
           if (i === selIdx) return;
           L.polyline(rt.coords, { color: '#8aa0bf', weight: 3, opacity: .8, dashArray: '7 9' }).addTo(map)
-            .on('click', function(e) { L.DomEvent.stopPropagation(e); parent.postMessage({ tmsRoute: i }, '*'); })
+            .on('click', function(e) { L.DomEvent.stopPropagation(e); parent.postMessage({ tmsRoute: i, tag: tagQ }, '*'); })
             .bindTooltip('<span class="lbl">' + LETT[i] + ' · ' + rt.km + ' km</span>', { permanent: true, direction: 'center', className: 'no-bg', opacity: 1 });
         });
         var sel = L.polyline(routes[selIdx].coords, { color: '#2a6fdb', weight: 4 }).addTo(map)
           .bindTooltip('<span class="lbl" style="border-color:#2a6fdb;color:#1d55ad">' + LETT[selIdx] + ' · ' + routes[selIdx].km + ' km</span>', { permanent: true, direction: 'center', className: 'no-bg', opacity: 1 });
-        parent.postMessage({ tmsAlts: routes.map(function(rt) { return { km: rt.km, min: rt.min }; }) }, '*');
+        parent.postMessage({ tmsAlts: routes.map(function(rt) { return { km: rt.km, min: rt.min }; }), tag: tagQ }, '*');
         placeTruck(routes[selIdx].coords);
       })
-      .catch(function() { routeLine.setStyle({ opacity: 1, dashArray: null }); parent.postMessage({ tmsAlts: [] }, '*'); });
+      .catch(function() { routeLine.setStyle({ opacity: 1, dashArray: null }); parent.postMessage({ tmsAlts: [], tag: tagQ }, '*'); });
   } else {
   // se il canvas aspetta le alternative ma partenza/lavaggio non sono risolvibili,
   // rispondi comunque: senza questo il "Calcolo dei percorsi…" resterebbe appeso
-  if (altQ !== null) parent.postMessage({ tmsAlts: [] }, '*');
+  if (altQ !== null) parent.postMessage({ tmsAlts: [], tag: tagQ }, '*');
   roadRoute([A, B]).then(function(coords) {
     map.removeLayer(routeLine);
     var road = L.polyline(coords, { color: '#2a6fdb', weight: 3.5 }).addTo(map);
