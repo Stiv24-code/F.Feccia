@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useAppSelector } from '@/store/hooks';
 
 // Stesso fix icone di MapPage.js — necessario ovunque venga montata una
 // MapContainer, altrimenti il marker di default risulta senza immagine
@@ -47,6 +48,9 @@ export interface MapPickerProps {
 // geocoding scelto. flyToSignal (un valore che cambia ad ogni selezione) fa
 // volare la mappa lì.
 export function MapPicker({ lat, lng, flyToSignal }: MapPickerProps) {
+  // Stesso switch tile di OrderRouteMap — le tile chiare Esri stonano su
+  // sfondo scuro, in dark mode si passa a CartoDB Dark Matter.
+  const isDark = useAppSelector((s) => s.theme.theme === 'dark');
   const hasPoint = typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng);
   const center: [number, number] = hasPoint ? [lat as number, lng as number] : DEFAULT_CENTER;
 
@@ -59,10 +63,18 @@ export function MapPicker({ lat, lng, flyToSignal }: MapPickerProps) {
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom={false}
         >
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
-            attribution="Tiles &copy; Esri"
-          />
+          {isDark ? (
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              maxZoom={19}
+            />
+          ) : (
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+              attribution="Tiles &copy; Esri"
+            />
+          )}
           {flyToSignal != null && <FlyToOnSignal lat={lat} lng={lng} flyToSignal={flyToSignal} />}
           {hasPoint && <Marker position={[lat as number, lng as number]} />}
         </MapContainer>

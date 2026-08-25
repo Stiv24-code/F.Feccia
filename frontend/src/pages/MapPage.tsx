@@ -11,6 +11,7 @@ import { MapContainer, TileLayer, LayersControl, Marker, Popup, Polyline, Circle
 import L from 'leaflet';
 import { Truck, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { useAppSelector } from '@/store/hooks';
 
 // Fix icone Leaflet
 // @ts-expect-error — _getIconUrl esiste a runtime ma non è nei type di leaflet
@@ -101,6 +102,9 @@ const FitBounds = ({ routes, garages, washStations }: { routes: DtoMapRoute[]; g
 };
 
 export default function MapPage() {
+  // Stesso switch tile di OrderRouteMap/MapPicker — default scuro quando il
+  // tema è dark, le altre basemap Esri restano comunque selezionabili a mano.
+  const isDark = useAppSelector((s) => s.theme.theme === 'dark');
   const [data, setData] = useState<DtoMapTripsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRoute, setSelectedRoute] = useState<DtoMapRoute | null>(null);
@@ -201,10 +205,17 @@ export default function MapPage() {
               specifico) e di OpenStreetMap.
             */}
             <LayersControl position="topright">
-              <LayersControl.BaseLayer checked name="OpenStreetMap">
+              <LayersControl.BaseLayer checked={!isDark} name="OpenStreetMap">
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  maxZoom={19}
+                />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer checked={isDark} name="CartoDB — Dark Matter">
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   maxZoom={19}
                 />
               </LayersControl.BaseLayer>
