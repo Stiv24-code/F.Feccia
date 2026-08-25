@@ -1,7 +1,9 @@
 package seeddemo
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -155,6 +157,123 @@ func TestSeedInboundChannelPayloads(t *testing.T) {
 	}
 	if len(tplUsed) != len(templates) {
 		t.Errorf("template con richieste dietro: %d su %d", len(tplUsed), len(templates))
+	}
+}
+
+// TestSeedPdfDraftsFollowTemplateZones e' il cuore della simulazione: un
+// draft del canale pdf deve avere valorizzati esattamente i campi che il suo
+// template mappa, perche' e' cosi' che si comporta pdfengine.BuildDraft su un
+// PDF vero. Se il seed tornasse a inventare i campi (tutti pieni, template
+// ignorato) questo test cade.
+func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
+	db := seededDB(t)
+
+	var templates []models.PdfTemplate
+	if err := db.Find(&templates).Error; err != nil {
+		t.Fatalf("lettura template: %v", err)
+	}
+	type tplInfo struct {
+		client  string
+		targets map[string]bool
+	}
+	byID := map[string]tplInfo{}
+	for _, tpl := range templates {
+		var fields []models.PdfTemplateField
+		if err := json.Unmarshal(tpl.Fields, &fields); err != nil {
+			t.Fatalf("template %s: fields non deserializzabili: %v", tpl.Name, err)
+		}
+		targets := map[string]bool{}
+		for _, f := range fields {
+			targets[f.Target] = true
+		}
+		byID[tpl.ID.String()] = tplInfo{client: tpl.Client, targets: targets}
+	}
+
+	// Campi del draft che vengono solo da una zona: se il target non e'
+	// mappato devono restare vuoti, se e' mappato devono avere un valore.
+	zoneOnly := func(o models.InboundOrder) map[string]string {
+		return map[string]string{
+			"product":        o.Product,
+			"load_date":      o.LoadDate,
+			"load_place":     o.LoadPlace,
+			"delivery_date":  o.DeliveryDate,
+			"delivery_place": o.DeliveryPlace,
+			"rate":           o.Rate,
+			"notes":          o.Notes,
+		}
+	}
+
+	checked := 0
+	for _, o := range inbound(t, db) {
+		if o.Source != models.InboundOrderSourcePDF {
+			continue
+		}
+		tpl, ok := byID[o.TemplateID.String()]
+		if !ok {
+			t.Fatalf("%s: template sconosciuto", o.Ref)
+		}
+		checked++
+
+		for target, got := range zoneOnly(o) {
+			if tpl.targets[target] && got == "" {
+				t.Errorf("%s: il template mappa %q ma il draft e' vuoto", o.Ref, target)
+			}
+			if !tpl.targets[target] && got != "" {
+				t.Errorf("%s: il template non mappa %q ma il draft vale %q", o.Ref, target, got)
+			}
+		}
+
+		// client: dalla zona se mappata (la ragione sociale come e' stampata
+		// sul PDF, che di proposito non coincide con l'anagrafica), altrimenti
+		// il fallback sul cliente del template.
+		if !tpl.targets["client"] && o.Client != tpl.client {
+			t.Errorf("%s: senza zona client il draft dovrebbe ereditare %q, ha %q", o.Ref, tpl.client, o.Client)
+		}
+		// ref: senza zona dedicata BuildDraft ripiega sul nome del file.
+		if !tpl.targets["ref"] && !strings.Contains(o.Ref, "_") {
+			t.Errorf("%s: senza zona ref il draft dovrebbe portare il nome del file", o.Ref)
+		}
+		// sender_email: nessun template mappa il target, quindi arriva dal
+		// mittente della mail o dal primo indirizzo del template.
+		if o.SenderEmail == "" {
+			t.Errorf("%s: draft pdf senza mittente", o.Ref)
+		}
+		// kg: la zona esiste su tutti i template, ma sulle righe "MOD" e'
+		// simulata illeggibile — resta 0, come in un import reale.
+		illeggibile := strings.Contains(o.Ref, "-MOD-")
+		if !illeggibile && o.Kg == 0 {
+			t.Errorf("%s: kg non estratti dalla zona", o.Ref)
+		}
+		if illeggibile && o.Kg != 0 {
+			t.Errorf("%s: zona kg simulata illeggibile ma kg valgono %d", o.Ref, o.Kg)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("nessun draft dal canale pdf")
+	}
+}
+
+// TestSeedPdfNotesJoinZones: un target mappato su due zone (le due righe di
+// istruzioni del template Parmalat) viene ricongiunto da BuildDraft con uno
+// spazio. E' l'unico caso in cui un campo del draft nasce da piu' letture.
+func TestSeedPdfNotesJoinZones(t *testing.T) {
+	db := seededDB(t)
+
+	var tpl models.PdfTemplate
+	if err := db.Where("name LIKE ?", "Ordine di trasporto%").First(&tpl).Error; err != nil {
+		t.Fatalf("template a due zone note: %v", err)
+	}
+	var rows []models.InboundOrder
+	if err := db.Where("template_id = ?", tpl.ID).Find(&rows).Error; err != nil {
+		t.Fatalf("lettura draft: %v", err)
+	}
+	if len(rows) == 0 {
+		t.Fatal("nessun draft per il template a due zone note")
+	}
+	for _, o := range rows {
+		if !strings.Contains(o.Notes, "documenti in cabina.") || !strings.Contains(o.Notes, "sponda idraulica.") {
+			t.Errorf("%s: le due zone note non risultano unite: %q", o.Ref, o.Notes)
+		}
 	}
 }
 
