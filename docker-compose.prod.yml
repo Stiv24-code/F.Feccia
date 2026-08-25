@@ -112,8 +112,65 @@ services:
     networks:
       - tms
 
+  # pgAdmin — interfaccia web per Postgres (sotto un sottodominio dedicato,
+  # stessa logica di Grafana in docker-compose.observability.yml). Bind solo
+  # su 127.0.0.1 — raggiungibile da fuori solo tramite l'nginx a livello
+  # host (TLS via certbot), stesso modello di grafana.ffeccia.homes.
+  #
+  # PGADMIN_DEFAULT_EMAIL/PASSWORD sono il login del pannello pgAdmin stesso,
+  # non le credenziali del DB. Il server Postgres è pre-registrato al primo
+  # avvio via il config `pgadmin_servers` sotto (host/porta/db/utente — presi
+  # da .env, stessa interpolazione già usata per environment/GO_DB_*): resta
+  # solo da inserire la password una volta al primo login (con "save
+  # password"), niente form da compilare a mano. La password stessa non è
+  # pre-seedata: richiederebbe un file pgpass con permessi 0600, fragile da
+  # garantire tramite bind-mount — un click in più è più robusto.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      # Niente re-login ad ogni redeploy dell'immagine — il cookie di sessione
+      # altrimenti cambia ad ogni riavvio del container.
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-8091}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    configs:
+      - source: pgadmin_servers
+        target: /pgadmin4/servers.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - tms
+
 volumes:
   postgres_data:
+  pgadmin_data:
+
+# Pre-registra il server Postgres in pgAdmin al primo avvio (importato in
+# automatico se non già presente per PGADMIN_DEFAULT_EMAIL) — evita di
+# compilare a mano host/porta/db/utente nel form "Add New Server". La
+# password non è qui (vedi commento sul servizio pgadmin sopra).
+configs:
+  pgadmin_servers:
+    content: |
+      {
+        "Servers": {
+          "1": {
+            "Name": "F.Feccia — postgres",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "${GO_DB_NAME}",
+            "Username": "${GO_DB_USER}",
+            "SSLMode": "prefer"
+          }
+        }
+      }
 
 networks:
   tms:
