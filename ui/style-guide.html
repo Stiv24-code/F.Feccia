@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Style guide · TMS F.lli Feccia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#2a6fdb;--side:#1c2534;--acc-2:#1d55ad;--acc-3:#7fa8e8;--acc-soft:#eef3fb;--acc-bg:#e4eefc;--acc-bd:#bfd3f2;--navy:#1c2534;--navy-2:#2e3a4e;--navy-tx:#8ea0bd;--navy-tx2:#c8d2e2;--tx-2:#38445a;--tx-3:#5b6b80;--tx-4:#7c879a;--tx-5:#9aa4b4;--bd-1:#d4dae4;--bd-2:#e3e6ec;--bd-3:#eef0f4;--bg:#f4f5f7;--hover:#f4f6f9;--hover-acc:#f6f9fe;--chip-bg:#f1f3f6;--seg-bg:#e6eaf0;--neg:#c0392b;--neg-bg:#fdecec;--neg-bd:#f0c5c0;--warn:#8a6508;--warn-bg:#fdf1c7;--warn-bd:#eedda0;--pos:#1f7a4d;--pos-bg:#e9f5ee;--pos-bd:#bfe0cd;--pos-2:#2e8b57;--r-3:3px;--r-4:4px;--r-5:5px;--r-6:6px;--r-7:7px;--r-8:8px;--r-9:9px;--r-10:10px;--r-11:11px;--r-12:12px;--r-14:14px;--r-16:16px;--font:Inter,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f5f7;font-family:Inter,sans-serif;color:#1c2534}
+.top{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:0 22px;height:54px;background:#1c2534;color:#fff}
+.top b{font:700 14px Inter,sans-serif}
+.top span.sub{font:400 11.5px Inter,sans-serif;color:#8ea0bd}
+.top .btn{margin-left:auto}
+.wrap{display:flex;gap:0;align-items:flex-start}
+.panel{width:270px;flex:none;position:sticky;top:54px;height:calc(100vh - 54px);overflow:auto;background:#fff;border-right:1px solid #e3e6ec;padding:14px 16px 30px}
+.main{flex:1;min-width:0;padding:18px 22px 60px}
+.grp{font:700 9.5px Inter,sans-serif;letter-spacing:.1em;color:#7c879a;margin:16px 0 7px;text-transform:uppercase}
+.tok{display:flex;align-items:center;gap:8px;padding:3px 0}
+.tok input[type=color]{width:26px;height:26px;border:1px solid #d4dae4;border-radius:6px;padding:1px;background:#fff;cursor:pointer;flex:none}
+.tok .lbl{font:500 11.5px Inter,sans-serif;color:#38445a;flex:1;min-width:0}
+.tok .var{font:400 9.5px ui-monospace,monospace;color:#9aa4b4;white-space:nowrap}
+.ctl{font:500 11.5px Inter,sans-serif;color:#38445a}
+select.ctl,input[type=range]{width:100%;margin-top:4px}
+select.ctl{border:1px solid #d4dae4;border-radius:7px;padding:7px 9px;background:#fff;font:500 12px Inter,sans-serif;color:#1c2534;outline:none}
+.btn{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--font);border-radius:7px;padding:7px 13px;cursor:pointer;border:1px solid transparent;user-select:none}
+.btn.primary{background:var(--acc);color:#fff}.btn.primary:hover{background:var(--acc-2)}
+.btn.ghost{background:#fff;color:var(--tx-2);border-color:var(--bd-1)}.btn.ghost:hover{background:var(--hover)}
+.btn.mini{padding:5px 10px;font-size:10.5px}
+.sec{background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(28,37,52,.07);padding:16px 18px;margin-bottom:16px}
+.sec h2{font:700 13px Inter,sans-serif;color:#1c2534;margin:0 0 3px}
+.sec .note{font:400 11px Inter,sans-serif;color:#9aa4b4;margin:0 0 13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.frameWrap{position:relative;width:100%;overflow:hidden;border:1px solid #e3e6ec;border-radius:12px;background:#f4f5f7}
+#appFrame{width:1440px;height:940px;border:0;transform-origin:0 0;display:block}
+.sw{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.sw .cell{border:1px solid #e3e6ec;border-radius:8px;overflow:hidden}
+.sw .chip{height:44px}
+.sw .meta{padding:6px 8px;background:#fff}
+.sw .meta b{display:block;font:600 10.5px Inter,sans-serif;color:#1c2534}
+.sw .meta span{font:400 9px ui-monospace,monospace;color:#9aa4b4}
+.badge{font:600 10.5px var(--font);border-radius:99px;padding:4px 11px;white-space:nowrap}
+.type-row{display:flex;align-items:baseline;gap:14px;padding:6px 0;border-bottom:1px solid #eef0f4}
+.type-row:last-child{border-bottom:0}
+.type-spec{font:400 10px ui-monospace,monospace;color:#9aa4b4;width:130px;flex:none}
+table.demo{border-collapse:collapse;width:100%}
+table.demo th{font:700 9.5px var(--font);letter-spacing:.08em;color:var(--tx-4);text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd-2);text-transform:uppercase}
+table.demo td{font:500 12px var(--font);color:var(--tx-2);padding:10px;border-bottom:1px solid var(--bd-3)}
+table.demo tr:hover td{background:var(--hover-acc)}
+.inp{font:400 12px var(--font);color:var(--navy);border:1px solid var(--bd-1);border-radius:var(--r-7);padding:8px 12px;background:#fff;outline:none;width:210px}
+.inp:focus{border-color:var(--acc)}
+.side-demo{width:190px;background:var(--side);border-radius:var(--r-10);padding:12px;display:flex;flex-direction:column;gap:4px}
+.side-it{display:flex;align-items:center;gap:10px;font:500 12.5px var(--font);color:var(--navy-tx);border-radius:var(--r-8);padding:9px 12px;cursor:pointer}
+.side-it.on{color:#fff;background:rgba(255,255,255,.12);font-weight:600}
+.kpi{background:#fff;border:1px solid var(--bd-2);border-radius:var(--r-11);padding:14px 16px;width:200px}
+.kpi .ic{width:29px;height:29px;border-radius:var(--r-8);background:var(--acc-soft);display:grid;place-items:center;color:var(--acc)}
+.prog{width:120px;height:4px;background:var(--seg-bg);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;width:62%;background:var(--pos-2);border-radius:99px}
+#cssOut{display:none;width:100%;height:120px;font:11px ui-monospace,monospace;color:#38445a;border:1px solid #d4dae4;border-radius:7px;padding:8px;margin-top:8px}
+.toast{position:fixed;bottom:18px;right:18px;background:#1c2534;color:#fff;font:600 12px Inter,sans-serif;border-radius:8px;padding:10px 16px;opacity:0;transition:opacity .25s;pointer-events:none}
+.seg{display:flex;background:#e6eaf0;border-radius:8px;padding:3px;gap:2px}
+.seg span{flex:1;text-align:center;font:600 11.5px Inter,sans-serif;color:#7c879a;border-radius:6px;padding:6px 0;cursor:pointer;user-select:none}
+.seg span.on{background:#fff;color:#1c2534;box-shadow:0 1px 2px rgba(28,37,52,.12)}
+.top .btn{font:600 10.5px Inter,sans-serif}.top .btn.primary{background:#2a6fdb}.top .btn.primary:hover{background:#1d55ad}.top .btn.ghost{background:#fff;color:#38445a;border-color:#d4dae4}.top .btn.ghost:hover{background:#f4f6f9}
+/* modalità scura dei componenti: stesso filtro dell'app */
+body.sg-dark .sec:not(.frame-sec){filter:invert(.94) hue-rotate(180deg)}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>Style guide · TMS F.lli Feccia</b>
+  <span class="sub">i token modificati qui sono un'anteprima — si applicano davvero aggiornando il canvas</span>
+  <span class="btn ghost mini" onclick="resetTokens()">Ripristina</span>
+  <span class="btn primary mini btn" onclick="copyCss()">Copia CSS</span>
+</div>
+<div class="wrap">
+
+  <div class="panel" id="panel">
+    <div class="grp">Tema</div>
+    <div class="seg">
+      <span id="themeBase" class="on" onclick="applyPreset('base')">TMS attuale</span>
+      <span id="themeGlass" onclick="applyPreset('glass')">✦ Glass SBG</span>
+    </div>
+    <div id="glassCtl" style="display:none">
+      <label class="ctl" style="display:block;margin-top:8px">Intensità vetro · <span id="glassLbl">100%</span>
+        <input type="range" min="20" max="100" value="100" oninput="setGlass(this.value)">
+      </label>
+      <label class="ctl" style="display:block;margin-top:8px">Sfondo
+        <select class="ctl" id="bgSel" onchange="setGlassBg(this.value)">
+          <option value="aurora">Aurora SBG</option>
+          <option value="flusso">Aurora animata</option>
+          <option value="mesh">Mesh SBG</option>
+          <option value="pulito">Pulito</option>
+        </select>
+      </label>
+    </div>
+    <div class="grp">Modalità</div>
+    <div class="seg">
+      <span id="modeLight" class="on" onclick="setMode(false)">☀ Chiara</span>
+      <span id="modeDark" onclick="setMode(true)">☾ Scura</span>
+    </div>
+    <div class="grp">Tipografia</div>
+    <label class="ctl">Font
+      <select class="ctl" id="fontSel" onchange="setFont(this.value)">
+        <option value="Inter">Inter (attuale)</option>
+        <option value="Outfit">Outfit</option>
+        <option value="Manrope">Manrope</option>
+        <option value="IBM Plex Sans">IBM Plex Sans</option>
+        <option value="Sora">Sora</option>
+        <option value="Figtree">Figtree</option>
+      </select>
+    </label>
+    <div class="grp">Forma</div>
+    <label class="ctl">Arrotondamento angoli · <span id="radLbl">100%</span>
+      <input type="range" min="0" max="200" value="100" oninput="setRadius(this.value)">
+    </label>
+    <!-- gruppi colore generati da JS -->
+    <div id="colorGroups"></div>
+  </div>
+
+  <div class="main">
+
+    <div class="sec frame-sec">
+      <h2>Anteprima dal vivo</h2>
+      <p class="note">È l'app vera: naviga pure — ogni modifica ai token qui a sinistra si applica all'istante.</p>
+      <div class="frameWrap" id="frameWrap"><iframe id="appFrame" src="tms-unificato.html"></iframe></div>
+    </div>
+
+    <div class="sec">
+      <h2>Palette</h2>
+      <p class="note">I 32 colori adottati nel TMS, per famiglia. Clicca i campioni nel pannello a sinistra per cambiarli.</p>
+      <div class="sw" id="swatches"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Tipografia</h2>
+      <p class="note">Scala reale usata nelle schermate (Inter · pesi 400–800).</p>
+      <div class="type-row"><span class="type-spec">700 · 15px</span><span style="font:700 15px var(--font);color:var(--navy)">Titolo di pagina — Ordini</span></div>
+      <div class="type-row"><span class="type-spec">700 · 13px</span><span style="font:700 13px var(--font);color:var(--navy)">Titolo di card — Andamento ordini</span></div>
+      <div class="type-row"><span class="type-spec">600 · 12.5px</span><span style="font:600 12.5px var(--font);color:var(--tx-2)">Voce di navigazione / etichetta tab</span></div>
+      <div class="type-row"><span class="type-spec">600 · 12px</span><span style="font:600 12px var(--font);color:var(--navy)">Contenuto primario di riga — Ferrero S.p.A.</span></div>
+      <div class="type-row"><span class="type-spec">500 · 11.5px</span><span style="font:500 11.5px var(--font);color:var(--tx-2)">Valore secondario — Alba (CN) → Bologna</span></div>
+      <div class="type-row"><span class="type-spec">400 · 11px</span><span style="font:400 11px var(--font);color:var(--tx-3)">Testo descrittivo e note</span></div>
+      <div class="type-row"><span class="type-spec">700 · 10px caps</span><span style="font:700 10px var(--font);letter-spacing:.1em;color:var(--tx-4)">INTESTAZIONE DI SEZIONE</span></div>
+      <div class="type-row"><span class="type-spec">400 · 10px</span><span style="font:400 10px var(--font);color:var(--tx-5)">Metadati — ricevuto 2 h fa</span></div>
+    </div>
+
+    <div class="sec">
+      <h2>Bottoni</h2>
+      <p class="note">Primario, secondario, distruttivo con conferma inline, azione testuale.</p>
+      <div class="row">
+        <span class="btn primary">+ Nuovo ordine</span>
+        <span class="btn ghost">Export CSV</span>
+        <span class="btn" style="color:var(--neg);border-color:var(--neg-bd);background:#fff">Scarta</span>
+        <span class="btn" style="color:#fff;background:var(--neg)">Elimina</span>
+        <span class="btn primary" style="opacity:.45;cursor:default">Disabilitato</span>
+        <span style="font:600 11.5px var(--font);color:var(--acc);cursor:pointer">Vedi nel planner →</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Badge di stato e chip</h2>
+      <p class="note">Stati ordine/viaggio, chip filtro con conteggio, chip canale della coda in arrivo.</p>
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge" style="color:var(--neg);background:var(--neg-bg);border:1px solid var(--neg-bd)">Da pianificare</span>
+        <span class="badge" style="color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-bd)">Pianificato</span>
+        <span class="badge" style="color:var(--acc-2);background:var(--acc-bg);border:1px solid var(--acc-bd)">In viaggio</span>
+        <span class="badge" style="color:var(--pos);background:var(--pos-bg);border:1px solid var(--pos-bd)">Consegnato</span>
+        <span class="badge" style="color:var(--tx-2);background:#fff;border:1px solid var(--bd-1)">Neutro</span>
+      </div>
+      <div class="row">
+        <span class="badge" style="color:var(--tx-2);background:#fff;border:1px solid #c9d2de">Tutti <b>31</b> ordini</span>
+        <span class="badge" style="color:var(--neg);background:var(--neg-bg);border:1px solid var(--neg-bd);box-shadow:0 0 0 2px rgba(28,37,52,.3)">Da pianificare <b>22</b> · attivo</span>
+        <span class="badge" style="color:#1d55ad;background:var(--acc-bg);border:1px solid var(--acc-bd)">Transporeon</span>
+        <span class="badge" style="color:#0d7d72;background:#e6f5f2;border:1px solid #bfe3dd">Trimble</span>
+        <span class="badge" style="color:var(--neg);background:var(--neg-bg);border:1px solid var(--neg-bd)">Email · AI</span>
+        <span class="badge" style="color:var(--pos);background:var(--pos-bg);border:1px solid var(--pos-bd)">Form TMS</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Input e selezione</h2>
+      <div class="row">
+        <input class="inp" placeholder="Cerca ordine, cliente, tratta...">
+        <input class="inp" style="border-color:var(--acc)" value="Campo attivo">
+        <input class="inp" style="border-color:var(--warn-bd);background:#fffdf4" placeholder="non presente nel PDF">
+        <select class="inp" style="width:auto;cursor:pointer"><option>Stefano Galli · GB 990 FN · disponibile</option><option>Andrea Ricci · GK 583 EN</option></select>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Card KPI e avanzamento</h2>
+      <div class="row">
+        <div class="kpi">
+          <div style="display:flex;align-items:center;gap:8px"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span><span style="font:600 11.5px var(--font);color:var(--tx-4)">Ordini · luglio</span></div>
+          <div style="font:700 23px var(--font);color:var(--navy);margin-top:9px">31</div>
+          <div style="font:500 10.5px var(--font);color:var(--pos);margin-top:2px">+12% su giugno</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px"><span class="prog"><i></i></span><span style="font:400 11px var(--font);color:var(--tx-4)">avanzamento viaggio · 62%</span></div>
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:99px;background:#1d55ad;animation:blink 1.3s ease-in-out infinite"></span><span style="font:400 11px var(--font);color:var(--tx-4)">viaggio live</span></div>
+          <span class="badge" style="color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-bd)">⚠ 2 campi non presenti nel PDF — da completare</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Tabella</h2>
+      <table class="demo">
+        <tr><th>Ordine</th><th>Cliente</th><th>Tratta</th><th>Ritiro</th><th>Stato</th></tr>
+        <tr><td style="font-weight:700;color:var(--acc)">ORD-2631</td><td style="color:var(--navy);font-weight:600">Ferrero S.p.A.</td><td>Alba (CN) → Bologna</td><td>06/07 06–09</td><td><span class="badge" style="color:var(--neg);background:var(--neg-bg);border:1px solid var(--neg-bd)">Da pianificare</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--acc)">ORD-2642</td><td style="color:var(--navy);font-weight:600">Inalpi S.p.A.</td><td>Moretta (CN) → München (DE)</td><td>09/07 06–10</td><td><span class="badge" style="color:var(--acc-2);background:var(--acc-bg);border:1px solid var(--acc-bd)">In viaggio</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--acc)">ORD-2643</td><td style="color:var(--navy);font-weight:600">Inalpi S.p.A.</td><td>Moretta (CN) → Bologna</td><td>06/07 06–09</td><td><span class="badge" style="color:var(--pos);background:var(--pos-bg);border:1px solid var(--pos-bd)">Consegnato</span></td></tr>
+      </table>
+    </div>
+
+    <div class="sec">
+      <h2>Navigazione</h2>
+      <div class="row" style="align-items:flex-start">
+        <div class="side-demo">
+          <div class="side-it on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</div>
+          <div class="side-it"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Ordini <span style="margin-left:auto;width:8px;height:8px;border-radius:99px;background:var(--acc)"></span></div>
+          <div class="side-it"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Planner</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:22px;border-bottom:1px solid var(--bd-2);padding:0 4px">
+            <span style="font:600 12.5px var(--font);color:var(--navy);padding:10px 2px;border-bottom:2px solid var(--acc)">In arrivo <span class="badge" style="font-size:9.5px;color:var(--navy);background:#fff;border:1px solid var(--bd-1);padding:1px 7px">4</span></span>
+            <span style="font:500 12.5px var(--font);color:var(--tx-4);padding:10px 2px">Registro ordini</span>
+            <span style="font:500 12.5px var(--font);color:var(--tx-4);padding:10px 2px">Template PDF</span>
+          </div>
+          <div style="border:1.5px dashed #c4ccd8;border-radius:var(--r-9);padding:13px 16px;font:400 11.5px var(--font);color:var(--tx-5);background:#fff">Stato vuoto — Seleziona gli ordini a sinistra…</div>
+        </div>
+      </div>
+    </div>
+
+    <textarea id="cssOut" readonly></textarea>
+  </div>
+</div>
+<div class="toast" id="toast">CSS copiato ✓</div>
+<style>@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}</style>
+<script>
+var COLORS = [
+  ['Accento', [
+    ['--acc', 'Accento primario'], ['--acc-2', 'Accento scuro / hover'], ['--acc-3', 'Accento chiaro (su navy)'],
+    ['--acc-soft', 'Fondo accento tenue'], ['--acc-bg', 'Badge blu · fondo'], ['--acc-bd', 'Badge blu · bordo']]],
+  ['Testo', [
+    ['--navy', 'Testo forte'], ['--tx-2', 'Testo secondario'], ['--tx-3', 'Testo descrittivo'],
+    ['--tx-4', 'Etichette'], ['--tx-5', 'Metadati / placeholder']]],
+  ['Sidebar', [
+    ['--side', 'Sidebar · sfondo'], ['--navy-2', 'Sidebar · separatori'], ['--navy-tx', 'Sidebar · voci'], ['--navy-tx2', 'Sidebar · testo chiaro']]],
+  ['Sfondi e bordi', [
+    ['--bg', 'Sfondo app'], ['--bd-1', 'Bordi input'], ['--bd-2', 'Bordi card'], ['--bd-3', 'Righe tabella'],
+    ['--hover', 'Hover neutro'], ['--hover-acc', 'Hover riga'], ['--chip-bg', 'Chip · fondo'], ['--seg-bg', 'Track / segmented']]],
+  ['Semantici · negativo', [['--neg', 'Rosso'], ['--neg-bg', 'Rosso · fondo'], ['--neg-bd', 'Rosso · bordo']]],
+  ['Semantici · attenzione', [['--warn', 'Ambra'], ['--warn-bg', 'Ambra · fondo'], ['--warn-bd', 'Ambra · bordo']]],
+  ['Semantici · positivo', [['--pos', 'Verde'], ['--pos-bg', 'Verde · fondo'], ['--pos-bd', 'Verde · bordo'], ['--pos-2', 'Verde avanzamento']]]
+];
+var RADII = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16];
+var FONTS = {
+  'Inter': 'Inter:wght@400;500;600;700;800',
+  'Outfit': 'Outfit:wght@400;500;600;700;800',
+  'Manrope': 'Manrope:wght@400;500;600;700;800',
+  'IBM Plex Sans': 'IBM+Plex+Sans:wght@400;500;600;700',
+  'Sora': 'Sora:wght@400;500;600;700;800',
+  'Figtree': 'Figtree:wght@400;500;600;700;800'
+};
+var DEFAULTS = {};
+var flat = [];
+COLORS.forEach(function(g) { g[1].forEach(function(t) { flat.push(t); }); });
+var rootCS = getComputedStyle(document.documentElement);
+flat.forEach(function(t) { DEFAULTS[t[0]] = rootCS.getPropertyValue(t[0]).trim(); });
+
+// l'iframe si aggiorna via postMessage: funziona anche aprendo la pagina da file://
+function postToApp(tokens, fontHref, css) {
+  var f = document.getElementById('appFrame');
+  var msg = { tmsTokens: tokens, tmsFontHref: fontHref || null };
+  if (css != null) msg.tmsCss = css;
+  try { f.contentWindow.postMessage(msg, '*'); } catch (e) {}
+}
+function setVar(name, val) {
+  document.documentElement.style.setProperty(name, val);
+  var t = {}; t[name] = val;
+  postToApp(t);
+}
+// resa in modalità scura: stessa matematica del filtro dell'app (invert(.94) + hue-rotate(180deg))
+function darkHex(hex) {
+  var c = hex.replace('#', '');
+  if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  var r = parseInt(c.substr(0, 2), 16) / 255, g = parseInt(c.substr(2, 2), 16) / 255, b = parseInt(c.substr(4, 2), 16) / 255;
+  r = 0.94 - 0.88 * r; g = 0.94 - 0.88 * g; b = 0.94 - 0.88 * b;   // invert(.94)
+  var R = -0.574 * r + 1.430 * g + 0.144 * b;                       // hue-rotate(180deg)
+  var G = 0.426 * r + 0.430 * g + 0.144 * b;
+  var B = 0.426 * r + 1.430 * g - 0.856 * b;
+  var h = function(x) { x = Math.max(0, Math.min(1, x)); return ('0' + Math.round(x * 255).toString(16)).slice(-2); };
+  return '#' + h(R) + h(G) + h(B);
+}
+// inversa esatta: la matrice di hue-rotate(180deg) è involutiva (H·H = I), poi si disfa l'invert
+function lightFromDark(hex) {
+  var c = hex.replace('#', '');
+  if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  var r = parseInt(c.substr(0, 2), 16) / 255, g = parseInt(c.substr(2, 2), 16) / 255, b = parseInt(c.substr(4, 2), 16) / 255;
+  var R = -0.574 * r + 1.430 * g + 0.144 * b;
+  var G = 0.426 * r + 0.430 * g + 0.144 * b;
+  var B = 0.426 * r + 1.430 * g - 0.856 * b;
+  var h = function(x) { x = (0.94 - x) / 0.88; x = Math.max(0, Math.min(1, x)); return ('0' + Math.round(x * 255).toString(16)).slice(-2); };
+  return '#' + h(R) + h(G) + h(B);
+}
+// i picker mostrano SEMPRE il colore reale della modalità corrente
+function syncPickers() {
+  var cs = getComputedStyle(document.documentElement);
+  document.querySelectorAll('.tok input[type=color]').forEach(function(i) {
+    var v = cs.getPropertyValue(i.dataset.v).trim();
+    i.value = sgDark ? darkHex(v) : v;
+  });
+}
+function allTokens() {
+  var cs = getComputedStyle(document.documentElement);
+  var out = {};
+  flat.forEach(function(t) { out[t[0]] = cs.getPropertyValue(t[0]).trim(); });
+  RADII.forEach(function(r) { out['--r-' + r] = cs.getPropertyValue('--r-' + r).trim(); });
+  out['--font'] = cs.getPropertyValue('--font').trim();
+  return out;
+}
+
+// pannello colori
+var host = document.getElementById('colorGroups');
+COLORS.forEach(function(g) {
+  var h = document.createElement('div'); h.className = 'grp'; h.textContent = g[0]; host.appendChild(h);
+  g[1].forEach(function(t) {
+    var row = document.createElement('label'); row.className = 'tok';
+    var inp = document.createElement('input'); inp.type = 'color'; inp.value = DEFAULTS[t[0]]; inp.dataset.v = t[0];
+    inp.addEventListener('input', function() {
+      // in chiaro il picker È il token; in scuro si risale alla sorgente con l'inversa del filtro
+      setVar(t[0], sgDark ? lightFromDark(inp.value) : inp.value);
+      renderSwatches();
+    });
+    inp.addEventListener('change', function() {
+      // a fine scelta riallinea il picker al colore davvero ottenibile (il filtro comprime i estremi)
+      if (sgDark) { var cs = getComputedStyle(document.documentElement); inp.value = darkHex(cs.getPropertyValue(t[0]).trim()); }
+    });
+    var lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = t[1];
+    var vr = document.createElement('span'); vr.className = 'var'; vr.textContent = t[0];
+    row.appendChild(inp); row.appendChild(lbl); row.appendChild(vr);
+    host.appendChild(row);
+  });
+});
+
+// campioni palette
+function renderSwatches() {
+  var cs = getComputedStyle(document.documentElement);
+  var out = '';
+  flat.forEach(function(t) {
+    var v = cs.getPropertyValue(t[0]).trim();
+    var shown = (typeof sgDark !== 'undefined' && sgDark) ? 'in scuro · ' + darkHex(v) : t[0] + ' · ' + v;
+    out += '<div class="cell"><div class="chip" style="background:var(' + t[0] + ')"></div><div class="meta"><b>' + t[1] + '</b><span>' + shown + '</span></div></div>';
+  });
+  document.getElementById('swatches').innerHTML = out;
+}
+renderSwatches();
+
+function setRadius(pct) {
+  document.getElementById('radLbl').textContent = pct + '%';
+  RADII.forEach(function(r) { setVar('--r-' + r, Math.round(r * pct / 100) + 'px'); });
+}
+function setFont(name) {
+  var href = 'https://fonts.googleapis.com/css2?family=' + FONTS[name] + '&display=swap';
+  if (!document.querySelector('link[href="' + href + '"]')) {
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+    document.head.appendChild(l);
+  }
+  var val = name === 'Inter' ? 'Inter,sans-serif' : "'" + name + "',Inter,sans-serif";
+  document.documentElement.style.setProperty('--font', val);
+  postToApp({ '--font': val }, href);
+}
+// ── tema Glass SBG: palette dal logo (blu 2858a0–4870b8, verde 48a038, arancio f0a020, navy 081020) ──
+var GLASS_TOKENS = {
+  '--acc': '#3565af', '--acc-2': '#27508f', '--acc-3': '#8fb3e2',
+  '--acc-soft': '#edf3fb', '--acc-bg': '#e2edf9', '--acc-bd': '#b9d0ec',
+  '--side': '#0d1b33', '--navy': '#182742', '--navy-2': '#22375a', '--navy-tx': '#93a7c4', '--navy-tx2': '#c9d7ea',
+  '--tx-2': '#34435f', '--tx-3': '#556482', '--tx-4': '#76849f', '--tx-5': '#9aa7bd',
+  '--bd-1': '#a8b8d0', '--bd-2': '#bccbdf', '--bd-3': '#d2dcea',
+  '--bg': '#e9f0f8', '--hover': '#f1f5fb', '--hover-acc': '#ecf3fb', '--chip-bg': '#edf2f9', '--seg-bg': '#e1e9f4',
+  '--neg': '#c0392b', '--neg-bg': '#fdecec', '--neg-bd': '#f0c5c0',
+  '--warn': '#a86a14', '--warn-bg': '#fdf3e0', '--warn-bd': '#eedcb2',
+  '--pos': '#2f7d3a', '--pos-bg': '#e7f4e6', '--pos-bd': '#c4e2c2', '--pos-2': '#48a038'
+};
+var glassK = 100;   // intensità vetro 20–100
+var customSheet = false; // true se gli slider hanno generato un foglio diverso dal nativo
+function postGlassFlag(v) {
+  var f = document.getElementById('appFrame');
+  try { f.contentWindow.postMessage({ tmsGlass: v }, '*'); } catch (e) {}
+}
+var glassBg = 'mesh';   // variante sfondo
+function buildGlass() {
+  var k = glassK / 100;
+  var L = function(a, b) { return Math.round((a + (b - a) * k) * 100) / 100; };
+  var Li = function(a, b) { return Math.round(a + (b - a) * k); };
+  // i motori normalizzano gli attributi style (rgb(...), spazi): ogni aggancio va scritto in entrambe le forme
+  var CARD = '.tms-app [style*="box-shadow:0 1px 2px rgba(28,37,52,.07)"],.tms-app [style*="box-shadow: rgba(28, 37, 52, 0.07)"],.tms-app [style*="box-shadow:0 1px 3px rgba(28,37,52,.08)"],.tms-app [style*="box-shadow: rgba(28, 37, 52, 0.08)"]';
+  var BCARD = '.tms-app [style*="background:#fff"][style*="border:1px solid var(--bd-2)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-2)"]';
+  var HEAD = '.tms-app [style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]';
+  var ROWS = '.tms-app [style*="border-bottom:1px solid #e9ecf1"],.tms-app [style*="border-bottom: 1px solid rgb(233, 236, 241)"],.tms-app [style*="border-bottom:1px solid var(--bd-3)"],.tms-app [style*="border-bottom: 1px solid var(--bd-3)"]';
+  var THEAD = '.tms-app [style*="background:#f8f9fb"],.tms-app [style*="background: rgb(248, 249, 251)"]';
+  var COLS = '.tms-app [style*="background:var(--chip-bg)"],.tms-app [style*="background: var(--chip-bg)"]';
+  var FIELDS = '.tms-app input[style*="background:#fff"],.tms-app input[style*="background: rgb(255, 255, 255)"],.tms-app select[style*="background-color:#fff"],.tms-app select[style*="background-color: rgb(255, 255, 255)"],.tms-app [style*="background:#fff"][style*="border:1px solid var(--bd-1)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-1)"]';
+  var SIDE = '.tms-app [style*="background:var(--side)"],.tms-app [style*="background: var(--side)"]';
+  var DSIDE = '.tms-app.tms-dark [style*="background:var(--side)"],.tms-app.tms-dark [style*="background: var(--side)"]';
+  var DSIDE_TXT = function(a, b) {
+    return '.tms-app.tms-dark [style*="background:var(--side)"] [style*="' + a + '"],' +
+           '.tms-app.tms-dark [style*="background: var(--side)"] [style*="' + b + '"],' +
+           '.tms-app.tms-dark [style*="background:var(--side)"] [style*="' + b + '"],' +
+           '.tms-app.tms-dark [style*="background: var(--side)"] [style*="' + a + '"]';
+  };
+  // card di planner (ombra .06) e mappa (bordo sinistro colorato): vetro SENZA toccare i bordi semantici
+  var PCARD = '.tms-app [style*="background:#fff"][style*="box-shadow:0 1px 2px rgba(28,37,52,.06)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="box-shadow: rgba(28, 37, 52, 0.06)"],.tms-app [style*="background:#fff"][style*="border-left:4px solid"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border-left: 4px solid"]';
+  var blur = function(px) { return 'backdrop-filter:blur(' + px + 'px) saturate(1.6);-webkit-backdrop-filter:blur(' + px + 'px) saturate(1.6);'; };
+
+  // varianti di sfondo (i colori restano quelli del logo SBG)
+  var blobs = function(a1, a2, a3) {
+    return 'radial-gradient(1200px 700px at 90% -15%, rgba(53,101,175,' + a1 + '), transparent 62%),' +
+           'radial-gradient(900px 640px at -12% 32%, rgba(72,160,56,' + a2 + '), transparent 56%),' +
+           'radial-gradient(1000px 700px at 58% 122%, rgba(40,88,160,' + a3 + '), transparent 62%),' +
+           'radial-gradient(520px 400px at 32% 6%, rgba(255,255,255,.8), transparent 70%),' +
+           'linear-gradient(160deg,#e9f0fa 0%,#dbe8f6 45%,#cddef2 100%)';
+  };
+  var bg;
+  if (glassBg === 'pulito') {
+    bg = '.tms-app{background:linear-gradient(165deg,#f0f5fc 0%,#dfe9f6 55%,#cfdff1 100%)!important}';
+  } else if (glassBg === 'mesh') {
+    bg = '.tms-app{background:' +
+      'radial-gradient(620px 480px at 12% 8%, rgba(53,101,175,' + L(.2, .5) + '), transparent 58%),' +
+      'radial-gradient(560px 460px at 88% 12%, rgba(143,179,226,' + L(.3, .7) + '), transparent 60%),' +
+      'radial-gradient(640px 520px at 82% 88%, rgba(72,160,56,' + L(.14, .34) + '), transparent 58%),' +
+      'radial-gradient(600px 500px at 12% 92%, rgba(40,88,160,' + L(.2, .48) + '), transparent 60%),' +
+      'radial-gradient(480px 380px at 50% 45%, rgba(255,255,255,.75), transparent 72%),' +
+      'linear-gradient(160deg,#eaf1fa 0%,#d9e6f5 100%)!important}';
+  } else {
+    bg = '.tms-app{background:' + blobs(L(.18, .5), L(.1, .3), L(.15, .44)) + '!important}';
+    if (glassBg === 'flusso') {
+      // le animazioni CSS non battono le dichiarazioni !important: i blob animati vivono su ::before
+      var fl = function(a1, a2, a3) {
+        return 'radial-gradient(1200px 700px at 90% -15%, rgba(53,101,175,' + a1 + '), transparent 62%),' +
+               'radial-gradient(900px 640px at -12% 32%, rgba(72,160,56,' + a2 + '), transparent 56%),' +
+               'radial-gradient(1000px 700px at 58% 122%, rgba(40,88,160,' + a3 + '), transparent 62%),' +
+               'radial-gradient(520px 400px at 32% 6%, rgba(255,255,255,.8), transparent 70%)';
+      };
+      bg = '.tms-app{background:linear-gradient(160deg,#e9f0fa 0%,#dbe8f6 45%,#cddef2 100%)!important;isolation:isolate}' +
+        '.tms-app::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;' +
+        'background:' + fl(L(.22, .55), L(.12, .34), L(.18, .48)) + ';' +
+        'background-size:170% 170%,180% 180%,175% 175%,160% 160%;' +
+        'animation:tmsBgFlow 26s ease-in-out infinite alternate}' +
+        '@keyframes tmsBgFlow{' +
+        '0%{background-position:0% 0%,100% 20%,60% 100%,20% 0%}' +
+        '50%{background-position:70% 40%,30% 80%,10% 30%,70% 60%}' +
+        '100%{background-position:100% 80%,0% 40%,90% 0%,40% 100%}}';
+    }
+  }
+  return [
+    bg,
+    /* card con ombra soffice → vetro pieno (dashboard, liste, planner, mappa) */
+    CARD + '{background:rgba(255,255,255,' + L(.64, .26) + ')!important;' + blur(Li(12, 26)),
+    '  border:1px solid rgba(255,255,255,.8)!important;',
+    '  box-shadow:0 16px 44px rgba(30,60,120,.14), inset 0 1px 0 rgba(255,255,255,.9)!important}',
+    /* card bordate bianche → vetro leggero */
+    BCARD + '{background:rgba(255,255,255,' + L(.68, .3) + ')!important;' + blur(Li(10, 20)),
+    '  border:1px solid rgba(255,255,255,.75)!important}',
+    /* barre in alto (testata pagina + riga tab) → vetro sospeso */
+    HEAD + '{background:rgba(255,255,255,' + L(.6, .2) + ')!important;' + blur(Li(14, 30)),
+    '  border-bottom:1px solid rgba(255,255,255,.6)!important}',
+    /* tabelle: intestazioni e righe traslucide dentro il vetro */
+    THEAD + '{background:rgba(255,255,255,' + L(.35, .12) + ')!important}',
+    ROWS + '{background:transparent!important}',
+    /* colonne kanban e superfici neutre → velo leggero senza blur */
+    COLS + '{background:rgba(255,255,255,' + L(.3, .1) + ')!important}',
+    /* card planner/mappa: vetro leggero, bordo colorato intatto */
+    PCARD + '{background:rgba(230,241,254,' + L(.62, .24) + ')!important;' + blur(Li(10, 20)) + '}',
+    /* input e select: trasparenza leggera senza blur (leggeri per il rendering) */
+    FIELDS + '{background:rgba(255,255,255,' + L(.8, .55) + ')!important}',
+    /* divider: decisi in chiaro (token), e in SCURO sorgenti scure che il filtro ribalta in chiare */
+    '.tms-app.tms-dark{--bd-1:rgba(14,26,48,.55);--bd-2:rgba(14,26,48,.4);--bd-3:rgba(14,26,48,.28)}',
+    '.tms-app.tms-dark [style*="border-bottom:1px solid #e9ecf1"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(233, 236, 241)"],.tms-app.tms-dark [style*="border-bottom:1px solid #f2f4f7"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(242, 244, 247)"]{border-bottom-color:rgba(14,26,48,.38)!important}',
+    '.tms-app [style*="border-bottom:1px solid #e9ecf1"],.tms-app [style*="border-bottom: 1px solid rgb(233, 236, 241)"]{border-bottom-color:rgba(96,116,148,.32)!important}',
+    '.tms-app [style*="border-bottom:1px solid #f2f4f7"],.tms-app [style*="border-bottom: 1px solid rgb(242, 244, 247)"]{border-bottom-color:rgba(96,116,148,.24)!important}',
+    /* bordi dei vetri in scuro: sorgente blu notte → il filtro li rende chiari e i pannelli ritrovano il contorno */
+    '.tms-app.tms-dark [style*="box-shadow:0 1px 2px rgba(28,37,52,.07)"],.tms-app.tms-dark [style*="box-shadow: rgba(28, 37, 52, 0.07)"],.tms-app.tms-dark [style*="box-shadow:0 1px 3px rgba(28,37,52,.08)"],.tms-app.tms-dark [style*="box-shadow: rgba(28, 37, 52, 0.08)"]{border-color:rgba(12,26,48,.4)!important}',
+    '.tms-app.tms-dark [style*="background:#fff"][style*="border:1px solid var(--bd-2)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-2)"]{border-color:rgba(12,26,48,.35)!important}',
+    '.tms-app.tms-dark [style*="background:#fff"][style*="box-shadow:0 1px 2px rgba(28,37,52,.06)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="box-shadow: rgba(28, 37, 52, 0.06)"],.tms-app.tms-dark [style*="background:#fff"][style*="border-left:4px solid"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border-left: 4px solid"]{border-top-color:rgba(12,26,48,.32)!important;border-right-color:rgba(12,26,48,.32)!important;border-bottom-color:rgba(12,26,48,.32)!important}',
+    /* testate pagina in scuro: il filo sotto l'header deve invertirsi in chiaro */
+    '.tms-app.tms-dark [style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]{border-bottom-color:rgba(12,26,48,.5)!important}',
+    /* menù contestuali e popover: PIENI, si devono staccare dal vetro (dopo FIELDS per vincere a parità di specificità) */
+    '.tms-app [style*="position:absolute"][style*="box-shadow:0 6px 20px rgba(28,37,52,.16)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.16) 0px 6px 20px"],.tms-app [style*="position:absolute"][style*="box-shadow:0 6px 20px rgba(28,37,52,.14)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.14) 0px 6px 20px"]{',
+    '  background:rgba(255,255,255,.97)!important;',
+    '  backdrop-filter:blur(30px) saturate(1.4);-webkit-backdrop-filter:blur(30px) saturate(1.4);',
+    '  box-shadow:0 18px 44px rgba(30,60,120,.24)!important}',
+    /* sidebar in vetro scuro SBG */
+    SIDE + '{background:rgba(9,20,42,' + L(.9, .68) + ')!important;' + blur(Li(14, 26)) + '}',
+    /* modalità scura: il filtro invert ribalta tutto — superficie E testi della sidebar partono dai colori opposti
+       (sorgenti calcolate con lightFromDark, così il filtro li riporta esattamente dove vogliamo) */
+    DSIDE + '{background:rgba(226,242,255,' + L(.94, .82) + ')!important;' + blur(Li(14, 26)) + '}',
+    DSIDE_TXT('color:#fff', 'color: rgb(255, 255, 255)') + '{color:#000!important}',
+    DSIDE_TXT('color:var(--navy-tx)', 'color: var(--navy-tx)') + '{color:' + lightFromDark('#a9bcd8') + '!important}',
+    DSIDE_TXT('color:var(--navy-tx2)', 'color: var(--navy-tx2)') + '{color:' + lightFromDark('#d4e0f0') + '!important}',
+    /* pagina Mappa: mappa a tutta larghezza, chips e pannello viaggi sovrapposti in vetro */
+    '.tms-app [style*="grid-template-columns:1.9fr 1fr"],.tms-app [style*="grid-template-columns: 1.9fr 1fr"]{display:block!important;position:relative!important;padding:0!important;overflow:hidden}',
+    '.tms-app div:has(> iframe[title="Mappa flotta"]){display:contents!important}',
+    '.tms-app iframe[title="Mappa flotta"]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border:none!important;border-radius:0!important}',
+    '.tms-app div:has(> iframe[title="Mappa flotta"]) > div:first-child{position:absolute!important;top:14px!important;left:20px!important;right:440px!important;z-index:12!important;background:rgba(255,255,255,' + L(.55, .35) + ');' + blur(Li(10, 18)),
+    '  border:1px solid rgba(255,255,255,.7);border-radius:99px;padding:7px 12px!important}',
+    '.tms-app.tms-dark div:has(> iframe[title="Mappa flotta"]) > div:first-child{border-color:rgba(12,26,48,.5)!important}',
+    '.tms-app.tms-dark [style*="grid-template-columns:1.9fr 1fr"] > div:last-child,.tms-app.tms-dark [style*="grid-template-columns: 1.9fr 1fr"] > div:last-child{border-color:rgba(12,26,48,.45)!important}',
+    '.tms-app [style*="grid-template-columns:1.9fr 1fr"] > div:last-child,.tms-app [style*="grid-template-columns: 1.9fr 1fr"] > div:last-child{position:absolute!important;top:66px!important;right:18px!important;bottom:16px!important;width:400px!important;z-index:11!important;',
+    '  background:rgba(255,255,255,' + L(.5, .26) + ')!important;' + blur(Li(14, 26)),
+    '  border:1px solid rgba(255,255,255,.75)!important;border-radius:16px!important;box-shadow:0 18px 48px rgba(30,60,120,.18)!important}'
+  ].join('\n');
+}
+function setGlassBg(v) {
+  glassBg = v;
+  if (sgTheme === 'glass') { customSheet = true; postToApp({}, null, buildGlass()); }
+}
+function setGlass(v) {
+  glassK = +v;
+  document.getElementById('glassLbl').textContent = v + '%';
+  if (sgTheme === 'glass') { customSheet = true; postToApp({}, null, buildGlass()); }
+}
+var sgTheme = 'base';
+function applyPreset(name) {
+  sgTheme = name;
+  document.getElementById('themeBase').classList.toggle('on', name === 'base');
+  document.getElementById('themeGlass').classList.toggle('on', name === 'glass');
+  document.getElementById('glassCtl').style.display = name === 'glass' ? 'block' : 'none';
+  if (name === 'glass') {
+    Object.keys(GLASS_TOKENS).forEach(function(k) { setVar(k, GLASS_TOKENS[k]); });
+    setRadius(135);
+    document.querySelector('input[type=range]').value = 135;
+    setFont('Outfit');
+    document.getElementById('fontSel').value = 'Outfit';
+    customSheet = false;
+    postToApp({}, null, '');
+    postGlassFlag(true);
+  } else {
+    resetTokens();
+  }
+  syncPickers();
+  renderSwatches();
+}
+var sgDark = false;
+function setMode(dark) {
+  sgDark = dark;
+  document.body.classList.toggle('sg-dark', dark);
+  document.getElementById('modeLight').classList.toggle('on', !dark);
+  document.getElementById('modeDark').classList.toggle('on', dark);
+  var f = document.getElementById('appFrame');
+  try { f.contentWindow.postMessage({ tmsDark: dark }, '*'); } catch (e) {}
+  renderSwatches();
+  syncPickers();
+}
+function resetTokens() {
+  flat.forEach(function(t) { setVar(t[0], DEFAULTS[t[0]]); });
+  syncPickers();
+  setRadius(100);
+  document.querySelector('input[type=range]').value = 100;
+  setVar('--font', 'Inter,sans-serif');
+  document.getElementById('fontSel').value = 'Inter';
+  postToApp({}, null, '');
+  postGlassFlag(false);
+  customSheet = false;
+  sgTheme = 'base';
+  document.getElementById('themeBase').classList.add('on');
+  document.getElementById('themeGlass').classList.remove('on');
+  renderSwatches();
+}
+function copyCss() {
+  var cs = getComputedStyle(document.documentElement);
+  var parts = flat.map(function(t) { return t[0] + ':' + cs.getPropertyValue(t[0]).trim(); });
+  RADII.forEach(function(r) { parts.push('--r-' + r + ':' + cs.getPropertyValue('--r-' + r).trim()); });
+  parts.push('--font:' + cs.getPropertyValue('--font').trim());
+  var css = ':root{' + parts.join(';') + '}';
+  if (sgTheme === 'glass') css += '\n\n/* tema Glass SBG — foglio aggiuntivo per le superfici */\n' + buildGlass();
+  var ta = document.getElementById('cssOut'); ta.value = css; ta.style.display = 'block';
+  (navigator.clipboard ? navigator.clipboard.writeText(css) : Promise.reject()).then(function() {
+    var t = document.getElementById('toast'); t.style.opacity = 1; setTimeout(function() { t.style.opacity = 0; }, 1600);
+  }).catch(function() { ta.select(); });
+}
+
+// scala l'anteprima alla larghezza disponibile e riapplica i token quando l'app carica
+function fitFrame() {
+  var w = document.getElementById('frameWrap').clientWidth;
+  var sc = w / 1440;
+  var f = document.getElementById('appFrame');
+  f.style.transform = 'scale(' + sc + ')';
+  document.getElementById('frameWrap').style.height = Math.round(940 * sc) + 'px';
+}
+window.addEventListener('resize', fitFrame);
+fitFrame();
+// carica sempre la build fresca dell'app: mai una copia in cache
+document.getElementById('appFrame').src = 'tms-unificato.html?sg=' + Date.now();
+applyPreset('glass');
+document.getElementById('bgSel').value = 'mesh';
+document.getElementById('appFrame').addEventListener('load', function() {
+  // riallinea l'app appena carica (con un piccolo retry: il listener nasce col runtime)
+  var tries = 0;
+  var t = setInterval(function() {
+    postToApp(allTokens(), null, sgTheme === 'glass' && customSheet ? buildGlass() : '');
+    postGlassFlag(sgTheme === 'glass');
+    var f = document.getElementById('appFrame');
+    try { f.contentWindow.postMessage({ tmsDark: sgDark }, '*'); } catch (e) {}
+    if (++tries >= 5) clearInterval(t);
+  }, 400);
+});
+</script>
+</body>
+</html>
