@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -72,6 +73,26 @@ function fmtRelative(iso?: string): string {
   return isYesterday ? `ieri ${time}` : d.toLocaleDateString('it-IT');
 }
 
+// load_date/delivery_date sono testo libero estratto dal parser mail (es.
+// "25/07 · 14:30", "10/08", senza anno né formato garantito) — non date
+// vere. Estrazione best-effort del primo giorno/mese trovato, per il filtro
+// Ritiro/Consegna: se il formato non combacia il record resta visibile solo
+// sotto "Tutte le date".
+function extractDayMonth(s?: string): { day: number; month: number } | null {
+  if (!s) return null;
+  const m = s.match(/(\d{1,2})[/.](\d{1,2})/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+  return { day, month };
+}
+
+function matchesDayMonth(s: string | undefined, target: Date): boolean {
+  const dm = extractDayMonth(s);
+  return !!dm && dm.day === target.getDate() && dm.month === target.getMonth() + 1;
+}
+
 function mailtoModify(o: DtoInboundOrderResponse) {
   const subject = `Ordine ${o.ref} — richiesta di modifica`;
   const body = [
@@ -94,6 +115,7 @@ export default function InboundOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [fStatus, setFStatus] = useState('queue');
   const [fText, setFText] = useState('');
+  const [fDate, setFDate] = useState<'all' | 'today' | 'tomorrow' | 'week'>('all');
   const [selected, setSelected] = useState<DtoInboundOrderResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // order id con azione in corso
   const [scraping, setScraping] = useState(false);
@@ -125,11 +147,14 @@ export default function InboundOrdersPage() {
     };
   }, [orders]);
 
-  const pills: Array<[string, string, number]> = [
-    ['queue', 'Tutti · in coda', counts.queue],
-    ['due', 'Da approvare', counts.due],
-    ['portal', 'Da confermare su portale', counts.portal],
-    ['accepted', 'Accettati', counts.accepted],
+  // Stessa palette dei badge di stato in tabella (statoInfo/STATUS_BADGE) —
+  // il colore identifica la categoria indipendentemente dalla selezione,
+  // che si distingue con un bordo/anello più marcato.
+  const pills: Array<[string, string, number, string]> = [
+    ['queue', 'Tutti · in coda', counts.queue, 'border-border text-foreground hover:bg-muted'],
+    ['due', 'Da approvare', counts.due, 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300'],
+    ['portal', 'Da confermare su portale', counts.portal, 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300'],
+    ['accepted', 'Accettati', counts.accepted, 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'],
   ];
 
   const visible = useMemo(() => orders.filter((o) => {
@@ -141,8 +166,16 @@ export default function InboundOrdersPage() {
       const hay = `${o.ref} ${o.product} ${o.load_place} ${o.delivery_place} ${o.load_date} ${o.delivery_date} ${o.client} ${o.sender_email}`.toLowerCase();
       if (!hay.includes(fText.toLowerCase())) return false;
     }
+    if (fDate !== 'all') {
+      const today = new Date();
+      const targets = fDate === 'today' ? [today]
+        : fDate === 'tomorrow' ? [new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)]
+        : Array.from({ length: 7 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
+      const inRange = targets.some((t) => matchesDayMonth(o.load_date, t) || matchesDayMonth(o.delivery_date, t));
+      if (!inRange) return false;
+    }
     return true;
-  }), [orders, fStatus, fText]);
+  }), [orders, fStatus, fText, fDate]);
 
   async function doAction(o: DtoInboundOrderResponse, action: 'accept' | 'modify' | 'reset') {
     if (!o.id) return;
@@ -198,17 +231,27 @@ export default function InboundOrdersPage() {
             className="pl-9 h-9 text-sm"
           />
         </div>
-        <div className="flex rounded-lg border p-0.5 gap-0.5">
-          {pills.map(([value, label, n]) => (
-            <Button
+        <Select value={fDate} onValueChange={(v) => setFDate(v as typeof fDate)}>
+          <SelectTrigger className="h-9 w-[180px] text-sm" title="Filtra su ritiro o consegna — data testuale estratta dal parser, best-effort">
+            <SelectValue placeholder="Ritiro/Consegna" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Ritiro/Consegna: tutte le date</SelectItem>
+            <SelectItem value="today">Oggi</SelectItem>
+            <SelectItem value="tomorrow">Domani</SelectItem>
+            <SelectItem value="week">Prossimi 7 giorni</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {pills.map(([value, label, n, colorClasses]) => (
+            <button
               key={value}
-              variant={fStatus === value ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 gap-1.5 px-2 text-xs"
+              type="button"
               onClick={() => setFStatus(value)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${colorClasses} ${fStatus === value ? 'ring-2 ring-offset-1 ring-offset-background ring-current' : ''}`}
             >
               {label} <span className="font-semibold">{n}</span>
-            </Button>
+            </button>
           ))}
         </div>
         <Button
