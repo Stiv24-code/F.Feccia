@@ -12,6 +12,12 @@ type Scraper interface {
 	Scrape(ctx context.Context) (added, scanned int, err error)
 }
 
+// scrapeRunTimeout bounds a single scrape run so a hung mail server (Graph
+// or IMAP) can't wedge the ticker loop forever — well under the minimum
+// ScrapeIntervalMin (5 minutes, see config.go) so a stuck run never bleeds
+// into the next tick.
+const scrapeRunTimeout = 2 * time.Minute
+
 // StartMailScrapeJob starts the periodic mailbox read (OrderMesh's automatic
 // scrape), following the same ticker/shutdown pattern as the other jobs.
 // The caller decides whether to start it at all (mailbox configured and
@@ -38,7 +44,9 @@ func runMailScrapeJob(ctx context.Context, scraper Scraper, interval time.Durati
 			slog.Info("Mail scrape job stopped", "reason", ctx.Err())
 			return
 		case <-ticker.C:
-			added, scanned, err := scraper.Scrape(ctx)
+			runCtx, cancel := context.WithTimeout(ctx, scrapeRunTimeout)
+			added, scanned, err := scraper.Scrape(runCtx)
+			cancel()
 			if err != nil {
 				slog.Error("scrape periodico fallito", "error", err)
 				continue

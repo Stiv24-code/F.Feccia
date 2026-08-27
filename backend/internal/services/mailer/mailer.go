@@ -10,8 +10,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"mime"
+	"net"
 	"net/smtp"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +24,11 @@ import (
 	"fratelli-feccia/internal/dto"
 	"fratelli-feccia/internal/services/inboundorders"
 )
+
+// smtpTimeout bounds the whole SMTP exchange (dial + STARTTLS/TLS handshake
+// + auth + DATA) — smtp.SendMail and tls.Dial have no timeout of their own,
+// so a stalled server would otherwise hang the send forever.
+const smtpTimeout = 30 * time.Second
 
 type MailerService struct {
 	cfg config.InboundConfig
@@ -68,11 +75,13 @@ func (s *MailerService) SendHTML(ctx context.Context, to, subject, htmlBody stri
 }
 
 // send delivers a UTF-8 mail through the configured SMTP server. Port 587
-// (and any other) uses smtp.SendMail, which upgrades with STARTTLS when the
-// server advertises it; port 465 needs an implicit-TLS dial. Traced as its
-// own span — SMTP is a genuinely slow, blocking network call (this session's
-// Brevo debugging alone: IP authorization, sender verification, DKIM/DMARC
-// — all show up as "did the send hang or fail fast" in a trace).
+// (and any other) upgrades with STARTTLS when the server advertises it; port
+// 465 needs an implicit-TLS dial. Both paths share a single dial+session
+// deadline (smtpTimeout) — net/smtp has no context support, so this is the
+// substitute for ctx cancellation. Traced as its own span — SMTP is a
+// genuinely slow, blocking network call (this session's Brevo debugging
+// alone: IP authorization, sender verification, DKIM/DMARC — all show up as
+// "did the send hang or fail fast" in a trace).
 func (s *MailerService) send(ctx context.Context, to, subject, contentType, body string) (err error) {
 	_, span := otel.Tracer("fratelli-feccia/mailer").Start(ctx, "mailer.send",
 		trace.WithAttributes(attribute.String("mail.content_type", contentType)),
@@ -109,19 +118,31 @@ func (s *MailerService) send(ctx context.Context, to, subject, contentType, body
 		auth = &autoAuth{user: cfg.SMTPUser, pass: cfg.SMTPPass, host: cfg.SMTPHost}
 	}
 
-	if cfg.SMTPPort != "465" {
-		return smtp.SendMail(addr, auth, from, []string{to}, []byte(msg))
-	}
-
-	conn, err := tls.Dial("tcp", addr, &tls.Config{ServerName: cfg.SMTPHost})
+	conn, err := net.DialTimeout("tcp", addr, smtpTimeout)
 	if err != nil {
 		return err
 	}
+	if err := conn.SetDeadline(time.Now().Add(smtpTimeout)); err != nil {
+		conn.Close()
+		return err
+	}
+	if cfg.SMTPPort == "465" {
+		conn = tls.Client(conn, &tls.Config{ServerName: cfg.SMTPHost})
+	}
+
 	c, err := smtp.NewClient(conn, cfg.SMTPHost)
 	if err != nil {
+		conn.Close()
 		return err
 	}
 	defer c.Close()
+	if cfg.SMTPPort != "465" {
+		if ok, _ := c.Extension("STARTTLS"); ok {
+			if err := c.StartTLS(&tls.Config{ServerName: cfg.SMTPHost}); err != nil {
+				return err
+			}
+		}
+	}
 	if auth != nil {
 		if err := c.Auth(auth); err != nil {
 			return err
