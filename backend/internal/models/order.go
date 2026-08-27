@@ -68,17 +68,24 @@ type Order struct {
 	DestinazioneCarico    *Destination `gorm:"foreignKey:DestinazioneCaricoID;references:ID" json:"-"`
 	DestinazioneScaricoID *uuid.UUID   `gorm:"type:uuid" json:"destinazione_scarico_id"`
 	DestinazioneScarico   *Destination `gorm:"foreignKey:DestinazioneScaricoID;references:ID" json:"-"`
-	DataRitiro            string       `gorm:"type:varchar(20);index" json:"data_ritiro"`
-	OraRitiroDa           string       `gorm:"type:varchar(10)" json:"ora_ritiro_da"`
-	OraRitiroA            string       `gorm:"type:varchar(10)" json:"ora_ritiro_a"`
-	DataConsegna          string       `gorm:"type:varchar(20)" json:"data_consegna"`
-	OraConsegnaDa         string       `gorm:"type:varchar(10)" json:"ora_consegna_da"`
-	OraConsegnaA          string       `gorm:"type:varchar(10)" json:"ora_consegna_a"`
-	Tariffa               float64      `gorm:"not null;default:0" json:"tariffa"`
-	TipoTariffa           string       `gorm:"type:varchar(20);default:forfait" json:"tipo_tariffa"`
-	Tipologia             string       `gorm:"type:varchar(20);default:nazionale;index" json:"tipologia"`
-	CategoriaTrasporto    string       `gorm:"type:varchar(100)" json:"categoria_trasporto"`
-	RifOrdineCliente      string       `gorm:"type:varchar(100)" json:"rif_ordine_cliente"`
+	// DataRitiro/DataConsegna seguono la larghezza di InboundOrder.LoadDate:
+	// Convert ci copia dentro la data del draft cosi' com'e', quindi una
+	// colonna piu' stretta a valle sposterebbe soltanto il 22001 dal momento
+	// dell'import a quello della conversione. Restano varchar e non date
+	// perche' il valore puo' essere una finestra ("22/07/26 15:00 -
+	// 23/07/26 04:00 CEST") che nessun parser normalizza senza perdere meta'
+	// dell'informazione.
+	DataRitiro         string  `gorm:"type:varchar(100);index" json:"data_ritiro"`
+	OraRitiroDa        string  `gorm:"type:varchar(10)" json:"ora_ritiro_da"`
+	OraRitiroA         string  `gorm:"type:varchar(10)" json:"ora_ritiro_a"`
+	DataConsegna       string  `gorm:"type:varchar(100)" json:"data_consegna"`
+	OraConsegnaDa      string  `gorm:"type:varchar(10)" json:"ora_consegna_da"`
+	OraConsegnaA       string  `gorm:"type:varchar(10)" json:"ora_consegna_a"`
+	Tariffa            float64 `gorm:"not null;default:0" json:"tariffa"`
+	TipoTariffa        string  `gorm:"type:varchar(20);default:forfait" json:"tipo_tariffa"`
+	Tipologia          string  `gorm:"type:varchar(20);default:nazionale;index" json:"tipologia"`
+	CategoriaTrasporto string  `gorm:"type:varchar(100)" json:"categoria_trasporto"`
+	RifOrdineCliente   string  `gorm:"type:varchar(100)" json:"rif_ordine_cliente"`
 	// Riferimento e note per fermata (maschera legacy: "Rif. carico/Note
 	// carico" sul mittente, "Rif. scarico/Note scarico" sul destinatario) —
 	// distinti da RifOrdineCliente/Note che restano globali sull'ordine.

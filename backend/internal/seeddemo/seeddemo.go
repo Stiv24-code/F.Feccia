@@ -615,70 +615,57 @@ func Seed(db *gorm.DB) error {
 	// esistere (la FK è ON DELETE SET NULL, ma un id inventato violerebbe
 	// comunque il vincolo).
 	//
-	// Un template per ciascuno dei tre clienti del canale PDF, così ogni
-	// layout ha davvero delle richieste importate dietro invece di restare
-	// una riga isolata nella pagina Template.
+	// Un solo template, quello vero: il layout OneTobeONE, la piattaforma da
+	// cui passano gli ordini PDF dei clienti oil & fats (Bunge Loders &
+	// co). Prima qui c'erano tre layout inventati per far vedere che zone
+	// diverse estraggono campi diversi; ora che il layout di produzione
+	// esiste, tenerne accanto tre finti rendeva la pagina Template una
+	// vetrina di roba che nessuno importerà mai.
 	//
-	// Le zone mappate sono diverse da template a template di proposito: sono
-	// loro a decidere quali campi l'import riesce a estrarre, e i draft del
-	// canale PDF (sotto) portano valorizzati solo quelli — il resto lo
-	// completa l'operatore, come dopo un import vero.
+	// L'id è fisso e non uuid.New(): è lo stesso della riga in produzione,
+	// così i draft già importati che referenziano template_id continuano a
+	// puntare a un template esistente invece di restare appesi.
 	//
-	//   A (Ferrero)  — luoghi, date, kg, tariffa: nessun ref (resta il nome
-	//                  del file), nessun prodotto.
-	//   B (Barilla)  — solo ref, prodotto e kg: niente luoghi né date.
-	//   C (Parmalat) — ragione sociale, ref, luoghi, kg e le istruzioni
-	//                  spalmate su due zone.
-	tplFieldsA := []models.PdfTemplateField{
-		{ID: "1", Target: "load_place", Label: "Luogo di carico", Page: 0, X: 0.08, Y: 0.42, W: 0.35, H: 0.03},
-		{ID: "2", Target: "load_date", Label: "Data ritiro", Page: 0, X: 0.08, Y: 0.46, W: 0.25, H: 0.03},
-		{ID: "3", Target: "delivery_place", Label: "Luogo di scarico", Page: 0, X: 0.55, Y: 0.42, W: 0.35, H: 0.03},
-		{ID: "4", Target: "delivery_date", Label: "Data consegna", Page: 0, X: 0.55, Y: 0.46, W: 0.25, H: 0.03},
-		{ID: "5", Target: "kg", Label: "Peso (kg)", Page: 0, X: 0.08, Y: 0.20, W: 0.2, H: 0.03},
-		{ID: "6", Target: "rate", Label: "Tariffa", Page: 0, X: 0.55, Y: 0.20, W: 0.2, H: 0.03},
+	// Le zone coprono quasi tutto (mittente, riferimento, cliente, luoghi,
+	// date, kg, prodotto) ma non nolo e note: sono quelle due assenze a
+	// rendere un draft da PDF diverso da un ordine inserito a mano, ed è
+	// quello che i draft del canale PDF qui sotto riproducono.
+	oneToBeOneFields := []models.PdfTemplateField{
+		{ID: "fld-ea9a76703b", Target: "sender_email", Label: "email", Page: 0, X: 0.4351732122267362, Y: 0.09076340588639494, W: 0.2233633014769391, H: 0.01724504283375815},
+		{ID: "fld-2f82cf5db6", Target: "ref", Label: "rif_ordine", Page: 0, X: 0.2130936861227976, Y: 0.3766681337793485, W: 0.0667522059869885, H: 0.013614510233768803},
+		{ID: "fld-692aad3ae3", Target: "client", Label: "cliente", Page: 0, X: 0.7175865571442129, Y: 0.3893750411586737, W: 0.1655969354710916, H: 0.018152680311691736},
+		{ID: "fld-7672bd77e1", Target: "load_place", Label: "indirizzo_carico", Page: 0, X: 0.2831595512605042, Y: 0.5909344631828979, W: 0.1852889512605042, H: 0.03293428622327795},
+		{ID: "fld-677a495289", Target: "load_date", Label: "Window_carico", Page: 0, X: 0.7384071392482668, Y: 0.6009184581284224, W: 0.10359977583908306, H: 0.01581338712128729},
+		{ID: "fld-853270f960", Target: "kg", Label: "kg_loading", Page: 0, X: 0.7368420124794954, Y: 0.6298980379768442, W: 0.08985879156465168, H: 0.012706890067580206},
+		{ID: "fld-248b6fc78d", Target: "product", Label: "prodotto", Page: 0, X: 0.1052631166575535, Y: 0.6798178915222515, W: 0.23106556196170044, H: 0.015429750566145997},
+		{ID: "fld-038c23b3ac", Target: "delivery_place", Label: "indirizzo_scarico", Page: 0, X: 0.27727853724040596, Y: 0.7333682776676481, W: 0.1553273201169501, H: 0.037213015413062045},
+		{ID: "fld-278d8592c5", Target: "delivery_date", Label: "Window_scarico", Page: 0, X: 0.7368422083561162, Y: 0.7469828311807793, W: 0.1452428657058281, H: 0.012706890067580204},
 	}
-	tplFieldsB := []models.PdfTemplateField{
-		{ID: "1", Target: "ref", Label: "Riferimento", Page: 0, X: 0.1, Y: 0.12, W: 0.3, H: 0.03},
-		{ID: "2", Target: "product", Label: "Prodotto", Page: 0, X: 0.1, Y: 0.30, W: 0.4, H: 0.03},
-		{ID: "3", Target: "kg", Label: "Peso (kg)", Page: 0, X: 0.1, Y: 0.34, W: 0.2, H: 0.03},
-	}
-	tplFieldsC := []models.PdfTemplateField{
-		{ID: "1", Target: "client", Label: "Ragione sociale", Page: 0, X: 0.06, Y: 0.10, W: 0.45, H: 0.03},
-		{ID: "2", Target: "ref", Label: "Nr. ordine", Page: 0, X: 0.60, Y: 0.10, W: 0.30, H: 0.03},
-		{ID: "3", Target: "load_place", Label: "Ritiro presso", Page: 0, X: 0.06, Y: 0.38, W: 0.40, H: 0.03},
-		{ID: "4", Target: "delivery_place", Label: "Consegna presso", Page: 0, X: 0.52, Y: 0.38, W: 0.40, H: 0.03},
-		{ID: "5", Target: "kg", Label: "Quantità (kg)", Page: 0, X: 0.06, Y: 0.55, W: 0.20, H: 0.03},
-		{ID: "6", Target: "notes", Label: "Istruzioni carico", Page: 0, X: 0.06, Y: 0.70, W: 0.85, H: 0.03},
-		{ID: "7", Target: "notes", Label: "Istruzioni scarico", Page: 0, X: 0.06, Y: 0.74, W: 0.85, H: 0.03},
-	}
+	// Su OneTobeONE il mittente è sempre la piattaforma, mai lo shipper:
+	// stesso indirizzo per ordini di clienti diversi. Salvato come indirizzo
+	// nudo più il dominio perché matchesSender confronta per uguaglianza
+	// esatta o per "@dominio" — una stringa con le parentesi angolari
+	// ("<no-reply@onetobeone.com") non aggancerebbe mai nulla.
+	oneToBeOneSenders := []string{"no-reply@onetobeone.com", "@onetobeone.com"}
 	// Clienti del canale PDF: Ferrero, Barilla, Parmalat (indici stabili
-	// nella lista customers qui sopra).
+	// nella lista customers qui sopra). Restano tre perché una piattaforma
+	// smista ordini di shipper diversi con un unico layout — è proprio il
+	// caso che il template deve reggere.
 	tplCustomers := []models.Customer{customers[5], customers[3], customers[1]}
-	tplSenders := [][]string{
-		{tplCustomers[0].Email, "@ferrero.com"},
-		{tplCustomers[1].Email},
-		{tplCustomers[2].Email, "@parmalat.it"},
-	}
-	tplFields := [][]models.PdfTemplateField{tplFieldsA, tplFieldsB, tplFieldsC}
-	tplNames := []string{
-		"Trasporto Transporeon (Trimble)",
-		"Transport Order Confirmation",
-		"Ordine di trasporto (mod. logistica)",
-	}
 
-	templates := make([]models.PdfTemplate, len(tplNames))
-	for i := range templates {
-		senders, _ := json.Marshal(tplSenders[i])
-		fields, _ := json.Marshal(tplFields[i])
-		templates[i] = models.PdfTemplate{
-			ID: uuid.New(), Name: tplNames[i], Client: tplCustomers[i].RagioneSociale,
-			Senders: datatypes.JSON(senders), Fields: datatypes.JSON(fields),
-		}
+	tplSendersJSON, _ := json.Marshal(oneToBeOneSenders)
+	tplFieldsJSON, _ := json.Marshal(oneToBeOneFields)
+	template := models.PdfTemplate{
+		ID:      uuid.MustParse("90f08b85-abc3-4b8b-8f97-f08b30522a74"),
+		Name:    "OneTobeONE",
+		Client:  "OneTobeONE/bunge",
+		Senders: datatypes.JSON(tplSendersJSON),
+		Fields:  datatypes.JSON(tplFieldsJSON),
 	}
-	if err := db.Create(&templates).Error; err != nil {
+	if err := db.Create(&template).Error; err != nil {
 		return fmt.Errorf("template pdf: %w", err)
 	}
-	fmt.Printf("✓ %d template pdf\n", len(templates))
+	fmt.Println("✓ 1 template pdf (OneTobeONE)")
 
 	// ────────── ORDINI IN ARRIVO: matrice canale × stato ──────────
 	// Bozze non ancora convertite per la tab "In arrivo". Prima erano 8 righe
@@ -715,9 +702,9 @@ func Seed(db *gorm.DB) error {
 		{"MOD", models.InboundOrderStatusModify, false, false},
 	}
 
-	// pdfExtracted è il set di valori "già estratti" di un template: quello
-	// che l'import legge da quel layout, scritto a mano una volta per
-	// template e non derivato dalla riga della matrice. I campi vuoti sono
+	// pdfExtracted è il set di valori "già estratti" da un PDF: quello che
+	// l'import legge attraverso le zone del template, scritto a mano per
+	// ogni mittente e non derivato dalla riga della matrice. I campi vuoti sono
 	// vuoti perché quel template non ha la zona corrispondente — è
 	// l'informazione che rende un draft da PDF diverso da un ordine inserito
 	// a mano, ed è verificata dal test sulle zone.
@@ -733,8 +720,6 @@ func Seed(db *gorm.DB) error {
 		loadPlace      string
 		deliveryInDays int
 		deliveryPlace  string
-		rate           string
-		notes          string
 	}
 	type inboundParty struct {
 		cust models.Customer
@@ -752,30 +737,36 @@ func Seed(db *gorm.DB) error {
 		partie []inboundParty
 	}{
 		{code: "PDF", source: models.InboundOrderSourcePDF, partie: []inboundParty{
-			// Transporeon: legge luoghi, date, peso e nolo. Nessuna zona per
-			// riferimento e prodotto, quindi il draft arriva senza.
-			{cust: tplCustomers[0], tpl: &templates[0], filePrefix: "transporeon",
-				sender: tplCustomers[0].Email, extracted: pdfExtracted{
-					kg:         24000,
-					loadInDays: 4, loadPlace: "Ferrero Alba - Stab. P.le Pietro Ferrero",
-					deliveryInDays: 7, deliveryPlace: "Ferrero Deutschland Stadtallendorf",
-					rate: "€ 2.450",
+			// Il caso reale che ha fatto da apripista: ordine Bunge Loders
+			// via OneTobeONE. Riprodotto com'è arrivato — indirizzi completi
+			// di ragione sociale e nazione, finestra di carico su due giorni
+			// con fuso — perché è la forma di dato che faceva fallire
+			// l'import quando load_date era varchar(20). Averla nel seed
+			// significa che ogni ambiente demo la esercita.
+			{cust: tplCustomers[0], tpl: &template, filePrefix: "onetobeone_bunge",
+				sender: oneToBeOneSenders[0], extracted: pdfExtracted{
+					client: "Bunge Loders Croklaan", ref: "30360487",
+					product: "Fully refined palm oil/PALM OIL MB", kg: 25000,
+					loadInDays: 4, loadPlace: "Bunge Loders Croklaan B.V.. Antarcticaweg 191 3199 KA Rotterdam, NL",
+					deliveryInDays: 7, deliveryPlace: "Warehouse IRCA SPA Via Gran Bretagna 3 21013 Gallarate, IT",
 				}},
-			// Transport Order Confirmation: solo riferimento, prodotto e peso.
-			{cust: tplCustomers[1], tpl: &templates[1], filePrefix: "transport_order",
-				sender: tplCustomers[1].Email, extracted: pdfExtracted{
-					ref: "4500871-23", product: "Pasta secca in cartoni", kg: 26000,
+			// Stesso layout, shipper diverso: è il punto di una piattaforma.
+			// La ragione sociale è quella scritta sul foglio, di proposito
+			// diversa dall'anagrafica — è il motivo per cui Convert si
+			// rifiuta di risolvere il cliente per nome.
+			{cust: tplCustomers[1], tpl: &template, filePrefix: "onetobeone_barilla",
+				sender: oneToBeOneSenders[0], extracted: pdfExtracted{
+					client: "BARILLA G.R. F.lli - Shipping Dept.", ref: "4500871-23",
+					product: "Pasta secca in cartoni", kg: 26000,
+					loadInDays: 2, loadPlace: "Barilla Pedrignano - Via Mantova 166, 43122 Parma, IT",
+					deliveryInDays: 5, deliveryPlace: "Barilla France SAS - ZI Nord, 59000 Lille, FR",
 				}},
-			// Modulo logistica Parmalat: intesta la ragione sociale come è
-			// scritta sul foglio — di proposito diversa dall'anagrafica, è il
-			// motivo per cui Convert non risolve il cliente per nome.
-			{cust: tplCustomers[2], tpl: &templates[2], filePrefix: "ordine_trasporto",
-				sender: tplCustomers[2].Email, extracted: pdfExtracted{
+			{cust: tplCustomers[2], tpl: &template, filePrefix: "onetobeone_parmalat",
+				sender: oneToBeOneSenders[0], extracted: pdfExtracted{
 					client: "PARMALAT S.p.A. - Div. Logistica", ref: "PL/2026/00418",
-					kg:            22000,
-					loadPlace:     "Parmalat Collecchio - Magazzino 2",
-					deliveryPlace: "Lactalis Verona - Piattaforma",
-					notes:         "Carico ADR: documenti in cabina. Scarico con sponda idraulica.",
+					product: "Latte UHT parzialmente scremato", kg: 22000,
+					loadInDays: 3, loadPlace: "Parmalat Collecchio - Magazzino 2, Via Oreste Grassi 26, 43044 Collecchio, IT",
+					deliveryInDays: 6, deliveryPlace: "Lactalis Verona - Piattaforma, Via Torricelli 8, 37135 Verona, IT",
 				}},
 		}},
 		{code: "MAIL", source: models.InboundOrderSourceMail, partie: []inboundParty{
@@ -862,13 +853,26 @@ func Seed(db *gorm.DB) error {
 					o.TemplateID = &party.tpl.ID
 					o.Product, o.Kg = e.product, e.kg
 					o.LoadPlace, o.DeliveryPlace = e.loadPlace, e.deliveryPlace
-					o.Rate, o.Notes = e.rate, e.notes
+					// Nolo e note restano vuoti: il layout OneTobeONE non
+					// ha una zona per nessuno dei due, ed e' esattamente cio'
+					// che un draft da PDF lascia da completare all'operatore.
+					o.Rate, o.Notes = "", ""
+
+					// Le date non sono ISO come nel resto del seed: questo
+					// layout scrive il carico come finestra su due giorni e
+					// la consegna come istante, entrambi con fuso
+					// ("22/07/26 15:00 - 23/07/26 04:00 CEST"). E' la forma
+					// che faceva fallire l'import quando load_date era
+					// varchar(20), quindi riprodurla qui significa che ogni
+					// seed la esercita invece di lasciarla scoperta.
 					o.LoadDate, o.DeliveryDate = "", ""
 					if e.loadInDays > 0 {
-						o.LoadDate = today.AddDate(0, 0, e.loadInDays).Format("2006-01-02")
+						da := today.AddDate(0, 0, e.loadInDays)
+						o.LoadDate = fmt.Sprintf("%s 15:00 - %s 04:00 CEST",
+							da.Format("02/01/06"), da.AddDate(0, 0, 1).Format("02/01/06"))
 					}
 					if e.deliveryInDays > 0 {
-						o.DeliveryDate = today.AddDate(0, 0, e.deliveryInDays).Format("2006-01-02")
+						o.DeliveryDate = today.AddDate(0, 0, e.deliveryInDays).Format("02/01/06") + " 08:00 CEST"
 					}
 					if e.client != "" {
 						o.Client = e.client

@@ -103,8 +103,12 @@ func TestSeedInboundChannelPayloads(t *testing.T) {
 	for _, tpl := range templates {
 		tplIDs[tpl.ID.String()] = true
 	}
-	if len(templates) < 3 {
-		t.Fatalf("template seminati: %d, attesi almeno 3 (uno per cliente del canale pdf)", len(templates))
+	// Un solo template, il layout OneTobeONE. Non e' una semplificazione del
+	// seed ma la forma reale del canale — una piattaforma smista gli ordini
+	// di shipper diversi con un unico layout — quindi il test la fissa
+	// esattamente invece di accettare "almeno N".
+	if len(templates) != 1 {
+		t.Fatalf("template seminati: %d, atteso 1 (il layout OneTobeONE)", len(templates))
 	}
 	tplUsed := map[string]int{}
 
@@ -237,7 +241,7 @@ func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
 		if o.SenderEmail == "" {
 			t.Errorf("%s: draft pdf senza mittente", o.Ref)
 		}
-		// kg: la zona c'e' su tutti e tre i template.
+		// kg: la zona c'e' sul layout OneTobeONE.
 		if tpl.targets["kg"] && o.Kg == 0 {
 			t.Errorf("%s: il template mappa i kg ma il draft e' a 0", o.Ref)
 		}
@@ -247,29 +251,6 @@ func TestSeedPdfDraftsFollowTemplateZones(t *testing.T) {
 	}
 	if checked == 0 {
 		t.Fatal("nessun draft dal canale pdf")
-	}
-}
-
-// TestSeedPdfNotesJoinZones: il template Parmalat mappa "notes" su due zone
-// (istruzioni di carico e di scarico) e il draft porta il testo di entrambe.
-func TestSeedPdfNotesJoinZones(t *testing.T) {
-	db := seededDB(t)
-
-	var tpl models.PdfTemplate
-	if err := db.Where("name LIKE ?", "Ordine di trasporto%").First(&tpl).Error; err != nil {
-		t.Fatalf("template a due zone note: %v", err)
-	}
-	var rows []models.InboundOrder
-	if err := db.Where("template_id = ?", tpl.ID).Find(&rows).Error; err != nil {
-		t.Fatalf("lettura draft: %v", err)
-	}
-	if len(rows) == 0 {
-		t.Fatal("nessun draft per il template a due zone note")
-	}
-	for _, o := range rows {
-		if !strings.Contains(o.Notes, "documenti in cabina.") || !strings.Contains(o.Notes, "sponda idraulica.") {
-			t.Errorf("%s: le due zone note non risultano unite: %q", o.Ref, o.Notes)
-		}
 	}
 }
 

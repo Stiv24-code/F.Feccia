@@ -32,6 +32,24 @@ func parseForeignKeyError(msg string) string {
 	return "Cannot complete the operation: the record is referenced by other data"
 }
 
+// parseTooLongError turns Postgres' 22001 into something an operator can act
+// on. Sending a value longer than its column is a client error, not a server
+// failure: before this mapping existed it fell through to the generic 500
+// ("Please contact support"), which is what an import of a real PDF order hit
+// when the extracted load date came out as a window with a timezone —
+// 36 characters into what was then a varchar(20).
+//
+// The message keeps the declared size, which is the one detail that makes the
+// error self-explanatory, but never the offending value: it is caller-supplied
+// content and would end up echoed in logs and UI alike.
+func parseTooLongError(msg string) string {
+	re := regexp.MustCompile(`character varying\((\d+)\)`)
+	if m := re.FindStringSubmatch(msg); len(m) == 2 {
+		return "A value exceeds the maximum length allowed for its field (" + m[1] + " characters)"
+	}
+	return "A value exceeds the maximum length allowed for its field"
+}
+
 // HandleDatabaseError maps database errors to appropriate HTTP responses.
 func HandleDatabaseError(c *fiber.Ctx, err error) error {
 	if err == nil {
@@ -69,6 +87,8 @@ func HandleDatabaseError(c *fiber.Ctx, err error) error {
 			return ErrorResponse(c, 400, "A required field cannot be empty")
 		case "23514": // check_violation
 			return ErrorResponse(c, 400, "Data does not satisfy the required constraints")
+		case "22001": // string_data_right_truncation
+			return ErrorResponse(c, 400, parseTooLongError(pgErr.Message))
 		}
 	}
 
@@ -94,6 +114,11 @@ func HandleDatabaseError(c *fiber.Ctx, err error) error {
 	if strings.Contains(errStr, "SQLSTATE 23514") ||
 		strings.Contains(errStr, "violates check constraint") {
 		return ErrorResponse(c, 400, "Data does not satisfy the required constraints")
+	}
+
+	if strings.Contains(errStr, "SQLSTATE 22001") ||
+		strings.Contains(errStr, "value too long for type") {
+		return ErrorResponse(c, 400, parseTooLongError(errStr))
 	}
 
 	// 5. Generic database error

@@ -44,17 +44,33 @@ const (
 // unique index inbound_orders_ref_client_key created in
 // pkg/database.Migrate — AutoMigrate cannot express expression indexes.
 type InboundOrder struct {
-	ID            uuid.UUID          `gorm:"type:uuid;primaryKey" json:"id"`
-	Client        string             `gorm:"type:varchar(200);not null" json:"client" validate:"required"`
-	SenderEmail   string             `gorm:"type:varchar(200);not null;default:''" json:"sender_email"`
-	Ref           string             `gorm:"type:varchar(100);not null;default:''" json:"ref"`
-	Product       string             `gorm:"type:varchar(200);not null;default:''" json:"product"`
-	Kg            int                `gorm:"not null;default:0" json:"kg"`
-	LoadDate      string             `gorm:"type:varchar(20)" json:"load_date"`
-	LoadPlace     string             `gorm:"type:varchar(200)" json:"load_place"`
-	DeliveryDate  string             `gorm:"type:varchar(20)" json:"delivery_date"`
-	DeliveryPlace string             `gorm:"type:varchar(200)" json:"delivery_place"`
-	Rate          string             `gorm:"type:varchar(50)" json:"rate"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	Client      string    `gorm:"type:varchar(200);not null" json:"client" validate:"required"`
+	SenderEmail string    `gorm:"type:varchar(200);not null;default:''" json:"sender_email"`
+	Ref         string    `gorm:"type:varchar(100);not null;default:''" json:"ref"`
+	// Product/LoadPlace/DeliveryPlace/Rate sono text e non varchar(N): sono
+	// testo estratto da un documento arbitrario, senza un limite naturale da
+	// dichiarare, e in Postgres text e varchar(N) hanno identica
+	// rappresentazione — il limite non fa risparmiare spazio, produce solo un
+	// 22001 su un ordine legittimo. Restano varchar i campi con un vincolo
+	// vero: Ref e Client, che compongono l'indice unico di dedup (una btree
+	// ha un tetto alla dimensione della riga indicizzata, quindi li' il
+	// limite protegge invece di inciampare), e SenderEmail, che un indirizzo
+	// RFC-valido non supera comunque.
+	Product string `gorm:"type:text;not null;default:''" json:"product"`
+	Kg      int    `gorm:"not null;default:0" json:"kg"`
+	// LoadDate/DeliveryDate sono testo libero come il resto del draft, non
+	// date normalizzate: quello che l'estrazione tira fuori da un PDF reale
+	// e' spesso una finestra con fuso ("22/07/26 15:00 - 23/07/26 04:00
+	// CEST", 36 caratteri). I varchar(20) originali erano dimensionati su un
+	// "2026-08-10" e facevano fallire l'insert con 22001 sul primo ordine
+	// vero — vedi il caso Bunge Loders. Restano stringhe, non date: e'
+	// Convert a decidere che farne quando nasce l'ordine.
+	LoadDate      string             `gorm:"type:varchar(100)" json:"load_date"`
+	LoadPlace     string             `gorm:"type:text" json:"load_place"`
+	DeliveryDate  string             `gorm:"type:varchar(100)" json:"delivery_date"`
+	DeliveryPlace string             `gorm:"type:text" json:"delivery_place"`
+	Rate          string             `gorm:"type:text" json:"rate"`
 	Notes         string             `gorm:"type:text" json:"notes"`
 	Portal        bool               `gorm:"not null;default:false" json:"portal"`
 	Status        InboundOrderStatus `gorm:"type:varchar(20);not null;default:pending;index" json:"status"`
