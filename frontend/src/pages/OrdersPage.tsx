@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getOrders, createOrder, deleteOrder, downloadOrderCmrPdf, getReturnSuggestions, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
+import { getOrders, createOrder, deleteOrder, unassignOrder, downloadOrderCmrPdf, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useGetCustomersQuery } from '@/store/api/appApi';
-import type { DtoOrderRequest, DtoOrderResponse, DtoDestinationResponse, DtoTransportCategoryResponse, DtoOrderReturnSuggestionsResponse } from '@/api/data-contracts';
+import type { DtoOrderRequest, DtoOrderResponse, DtoDestinationResponse, DtoTransportCategoryResponse } from '@/api/data-contracts';
 import { formatEuro } from '@/lib/format';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +21,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import SearchableSelect from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { Plus, Search, Download, Loader2, Eye, Trash2, FileText, ArrowLeftRight } from 'lucide-react';
+import { Plus, Search, Download, Loader2, Eye, Pencil, RotateCcw, Trash2, FileText, MoreVertical } from 'lucide-react';
 
 const emptyForm: DtoOrderRequest = {
   cliente_id: '',
@@ -44,11 +45,6 @@ export default function OrdersPage() {
   const [tipologiaFilter, setTipologiaFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Ritorni (#32): dialog separato con candidati di ritorno per il riempimento
-  // viaggi a vuoto. Score e motivi calcolati lato backend.
-  const [returnsOpen, setReturnsOpen] = useState(false);
-  const [returnsLoading, setReturnsLoading] = useState(false);
-  const [returnsData, setReturnsData] = useState<DtoOrderReturnSuggestionsResponse | null>(null);
 
   // Lookup data — serve l'elenco completo, non una pagina.
   const { data: customersPage } = useGetCustomersQuery({ limit: 500 });
@@ -75,22 +71,6 @@ export default function OrdersPage() {
         setCategories(cat.data);
       });
   }, []);
-
-  const openReturns = async (order: DtoOrderResponse) => {
-    if (!order.id) return;
-    setReturnsOpen(true);
-    setReturnsLoading(true);
-    setReturnsData(null);
-    try {
-      const r = await getReturnSuggestions(order.id, { max_days_gap: 2, limit: 20 });
-      setReturnsData(r.data);
-    } catch (e) {
-      toast.error(getApiErrorMessage(e) || 'Errore caricamento ritorni');
-      setReturnsOpen(false);
-    } finally {
-      setReturnsLoading(false);
-    }
-  };
 
   const handleExport = async () => {
     try {
@@ -121,6 +101,12 @@ export default function OrdersPage() {
     if (!id) return;
     if (!window.confirm('Eliminare questo ordine?')) return;
     try { await deleteOrder(id); toast.success('Eliminato'); fetchOrders(); } catch (e) { toast.error(getApiErrorMessage(e) || 'Errore'); }
+  };
+
+  const handleUnassign = async (id?: string, progressivo?: string) => {
+    if (!id) return;
+    if (!window.confirm(`Riportare l'ordine ${progressivo} a "da pianificare"? Mezzo, autista/vettore e percorso assegnati verranno azzerati.`)) return;
+    try { await unassignOrder(id); toast.success('Ordine riportato a da pianificare'); fetchOrders(); } catch (e) { toast.error(getApiErrorMessage(e) || 'Errore'); }
   };
 
   const setCustomer = (id: string) => {
@@ -233,17 +219,7 @@ export default function OrdersPage() {
                     </div>
                   </TableCell>
                   <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}><Eye className="h-3 w-3" /></Button>
-                      {o.data_consegna && o.destinazione_scarico?.nome && (
-                        <Button
-                          variant="ghost" size="icon" className="h-7 w-7"
-                          title="Suggerimenti ritorni" aria-label="Suggerimenti ordini di ritorno"
-                          onClick={() => openReturns(o)}
-                        >
-                          <ArrowLeftRight className="h-3 w-3" />
-                        </Button>
-                      )}
+                    <div className="flex items-center justify-end gap-1">
                       {o.tipologia === 'internazionale' && (
                         <Button
                           variant="ghost" size="icon" className="h-7 w-7"
@@ -268,7 +244,33 @@ export default function OrdersPage() {
                           <FileText className="h-3 w-3" />
                         </Button>
                       )}
-                      {o.stato === 'PIANIFICABILE' && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(o.id)}><Trash2 className="h-3 w-3" /></Button>}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Altre azioni">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}>
+                            <Eye className="h-3.5 w-3.5" /> Vedi dettaglio
+                          </DropdownMenuItem>
+                          {o.stato === 'PIANIFICABILE' && (
+                            <DropdownMenuItem onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: false } })}>
+                              <Pencil className="h-3.5 w-3.5" /> Modifica
+                            </DropdownMenuItem>
+                          )}
+                          {o.stato === 'PIANIFICATO' && !o.viaggio_id && (
+                            <DropdownMenuItem onClick={() => handleUnassign(o.id, o.progressivo)}>
+                              <RotateCcw className="h-3.5 w-3.5" /> Riporta a Da pianificare
+                            </DropdownMenuItem>
+                          )}
+                          {o.stato === 'PIANIFICABILE' && (
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(o.id)}>
+                              <Trash2 className="h-3.5 w-3.5" /> Elimina
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -378,66 +380,6 @@ export default function OrdersPage() {
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Ritorni (#32) */}
-      <Dialog open={returnsOpen} onOpenChange={setReturnsOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Suggerimenti ordini di ritorno</DialogTitle>
-          </DialogHeader>
-          {returnsLoading ? (
-            <div className="py-12 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-          ) : returnsData ? (
-            <div className="space-y-3 text-sm">
-              <div className="rounded-lg border bg-muted/40 p-3">
-                <p className="text-xs text-muted-foreground mb-1">Ordine di andata</p>
-                <p className="font-medium">{returnsData.source_order?.cliente?.ragione_sociale} — {returnsData.source_order?.progressivo}</p>
-                <p className="text-xs text-muted-foreground">
-                  Scarico a <span className="font-medium">{returnsData.source_order?.destinazione_scarico?.nome}</span> il {returnsData.source_order?.data_consegna || '—'}
-                </p>
-              </div>
-              {!returnsData.count ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  Nessun ordine di ritorno disponibile in questo periodo.<br />
-                  <span className="text-xs">Cerco PIANIFICABILE che partono da {returnsData.source_order?.destinazione_scarico?.nome} entro 2 giorni dallo scarico.</span>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[420px] overflow-y-auto">
-                  {(returnsData.candidates || []).map((c) => (
-                    <div key={c.order?.id} className="rounded-lg border p-3 hover:bg-muted/30">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={(c.score || 0) >= 60 ? 'default' : 'outline'} className="text-[10px] tabular-nums">{c.score}</Badge>
-                            <span className="font-mono text-xs">{c.order?.progressivo}</span>
-                            <span className="text-xs text-muted-foreground truncate">{c.order?.cliente?.ragione_sociale}</span>
-                          </div>
-                          <p className="text-xs mt-1 truncate">
-                            <span className="text-muted-foreground">Da</span> {c.order?.destinazione_carico?.nome}
-                            <span className="text-muted-foreground"> a </span> {c.order?.destinazione_scarico?.nome}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Ritiro {c.order?.data_ritiro} · € {formatEuro(c.order?.tariffa || 0)} · {c.order?.tipologia}
-                          </p>
-                          <ul className="text-[11px] text-muted-foreground mt-1 list-disc list-inside">
-                            {(c.reasons || []).map((r, i) => <li key={i}>{r}</li>)}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground pt-2 border-t">
-                Assegna lo stesso mezzo/autista a entrambi gli ordini dal Planner per pianificarli come un unico viaggio di andata e ritorno.
-              </p>
-            </div>
-          ) : null}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnsOpen(false)}>Chiudi</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
