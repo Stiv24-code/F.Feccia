@@ -21,7 +21,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import SearchableSelect from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { Plus, Search, Download, Loader2, Eye, Pencil, RotateCcw, Trash2, FileText, MoreVertical } from 'lucide-react';
+import { Plus, Search, Download, Loader2, Eye, Pencil, RotateCcw, Trash2, FileText, MoreVertical, Truck, CalendarPlus } from 'lucide-react';
 
 const emptyForm: DtoOrderRequest = {
   cliente_id: '',
@@ -242,6 +242,23 @@ export default function OrdersPage() {
                           }}
                         >
                           <FileText className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {o.viaggio_id ? (
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          title="Apri il viaggio" aria-label="Apri il viaggio"
+                          onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}
+                        >
+                          <Truck className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : o.stato === 'PIANIFICABILE' && (
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          title="Pianifica questo ordine" aria-label="Pianifica questo ordine"
+                          onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: false } })}
+                        >
+                          <CalendarPlus className="h-3.5 w-3.5" />
                         </Button>
                       )}
                       <DropdownMenu>
