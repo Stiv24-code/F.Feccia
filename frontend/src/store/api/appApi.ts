@@ -34,6 +34,7 @@ import type {
   DtoCustomerResponse,
   DtoCustomerDashboardResponse,
   DtoDashboardStatsResponse,
+  DtoNavCountsResponse,
   DtoDestinationRequest,
   DtoDestinationResponse,
   DtoDriverRequest,
@@ -77,6 +78,12 @@ export const appApi = createApi({
     }),
     getCustomerDashboard: builder.query<DtoCustomerDashboardResponse, string>({
       queryFn: (customerId) => toQueryResult(apiClient.v1DashboardCustomerDetail(customerId)),
+      providesTags: ['Dashboard'],
+    }),
+    // Badge del sidebar (In arrivo / Registro ordini) — leggera (due
+    // COUNT(*)), pensata per un pollingInterval lato hook (vedi AppShell.js).
+    getNavCounts: builder.query<DtoNavCountsResponse, void>({
+      queryFn: () => toQueryResult(apiClient.v1DashboardNavCountsList()),
       providesTags: ['Dashboard'],
     }),
 
@@ -391,6 +398,7 @@ export const appApi = createApi({
 export const {
   useGetDashboardStatsQuery,
   useGetRecentOrdersQuery,
+  useGetNavCountsQuery,
   useGetCustomerDashboardQuery,
   useGetCustomersQuery,
   useCreateCustomerMutation,

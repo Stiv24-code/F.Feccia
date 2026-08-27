@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { applyTheme } from '@/lib/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleTheme as toggleThemeAction } from '@/store/themeSlice';
+import { useGetNavCountsQuery } from '@/store/api/appApi';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -63,12 +64,30 @@ const filterByRole = (items, role) => {
     );
 };
 
+// Badge di conteggio per voce di navigazione — chiave = path della voce.
+// Leggero (due COUNT(*) lato backend, vedi dashboard/nav-counts): polling
+// ogni 60s per gli aggiornamenti fatti fuori da questa scheda (altro
+// operatore, mail-scraper in background), più un refetch quando la scheda
+// torna in focus/rete per gli aggiornamenti fatti qui.
+const useNavBadges = () => {
+  const { data } = useGetNavCountsQuery(undefined, {
+    pollingInterval: 60_000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+  return {
+    '/ordini-in-ingresso': data?.inbound_pending,
+    '/ordini': data?.ordini_da_pianificare,
+  };
+};
+
 const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [openGroups, setOpenGroups] = useState({ 'Anagrafiche': true });
   const visibleNavItems = filterByRole(navItems, user?.role);
+  const navBadges = useNavBadges();
 
   const toggleGroup = (label) => {
     setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
@@ -166,7 +185,9 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                   </button>
                   {showChildren && (
                     <div className={collapsed ? '' : 'ml-4 pl-3 border-l'} style={collapsed ? undefined : { borderColor: 'var(--sidebar-border)' }}>
-                      {item.children.map((child) => (
+                      {item.children.map((child) => {
+                        const badge = navBadges[child.path];
+                        return (
                         <button
                           key={child.path}
                           data-testid={`sidebar-nav-item-${child.path.replace(/\//g, '-').slice(1)}`}
@@ -178,9 +199,22 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
                             : { color: 'var(--sidebar-muted)', borderColor: collapsed ? undefined : 'transparent' }}
                         >
                           <child.icon className="h-3.5 w-3.5 shrink-0" />
-                          {!collapsed && <span>{child.label}</span>}
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 text-left">{child.label}</span>
+                              {badge != null && (
+                                <span
+                                  className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0"
+                                  style={{ background: 'var(--sidebar-accent)', color: '#fff' }}
+                                >
+                                  {badge}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

@@ -221,6 +221,7 @@ type Dashboard interface {
 	Stats(ctx context.Context) (*dto.DashboardStatsResponse, error)
 	CustomerDashboard(ctx context.Context, customerID uuid.UUID) (*dto.CustomerDashboardResponse, error)
 	RecentOrders(ctx context.Context) ([]dto.OrderResponse, error)
+	NavCounts(ctx context.Context) (*dto.NavCountsResponse, error)
 }
 
 type Map interface {

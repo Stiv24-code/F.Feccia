@@ -987,6 +987,16 @@ type DashboardStatsResponse struct {
 	MonthlyTrend      []MonthlyOrderTrend `json:"monthly_trend"`
 }
 
+// NavCountsResponse feeds the sidebar nav badges (In arrivo / Registro
+// ordini) — two plain COUNT(*) queries, deliberately excluded from
+// DashboardStatsResponse (which also aggregates invoices/customers/fleet and
+// a monthly trend) so the sidebar can poll it every few seconds without the
+// weight of the full stats query.
+type NavCountsResponse struct {
+	InboundPending      int64 `json:"inbound_pending"`
+	OrdiniDaPianificare int64 `json:"ordini_da_pianificare"`
+}
+
 type CustomerDashboardSummary struct {
 	ID             uuid.UUID `json:"id"`
 	RagioneSociale string    `json:"ragione_sociale"`

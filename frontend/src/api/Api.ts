@@ -66,6 +66,7 @@ import {
   DtoMotriceListResponse,
   DtoMotriceRequest,
   DtoMotriceResponse,
+  DtoNavCountsResponse,
   DtoOKResult,
   DtoOrderAssignRequest,
   DtoOrderRequest,
@@ -1048,6 +1049,23 @@ export class Api<SecurityDataType = unknown> {
   ) =>
     this.http.request<DtoCustomerDashboardResponse, Record<string, string>>({
       path: `/api/v1/dashboard/customer/${customerId}`,
+      method: "GET",
+      secure: true,
+      format: "json",
+      ...params,
+    });
+  /**
+   * No description
+   *
+   * @tags Dashboard
+   * @name V1DashboardNavCountsList
+   * @summary Sidebar nav badge counts (In arrivo / Registro ordini)
+   * @request GET:/api/v1/dashboard/nav-counts
+   * @secure
+   */
+  v1DashboardNavCountsList = (params: RequestParams = {}) =>
+    this.http.request<DtoNavCountsResponse, any>({
+      path: `/api/v1/dashboard/nav-counts`,
       method: "GET",
       secure: true,
       format: "json",

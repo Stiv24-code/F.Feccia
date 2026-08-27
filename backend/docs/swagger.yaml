@@ -1509,6 +1509,13 @@ definitions:
       updated_at:
         type: string
     type: object
+  dto.NavCountsResponse:
+    properties:
+      inbound_pending:
+        type: integer
+      ordini_da_pianificare:
+        type: integer
+    type: object
   dto.OKResult:
     properties:
       ok:
@@ -3960,6 +3967,20 @@ paths:
       security:
       - BearerAuth: []
       summary: Per-customer commercial dashboard
+      tags:
+      - Dashboard
+  /api/v1/dashboard/nav-counts:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.NavCountsResponse'
+      security:
+      - BearerAuth: []
+      summary: Sidebar nav badge counts (In arrivo / Registro ordini)
       tags:
       - Dashboard
   /api/v1/dashboard/recent-orders:

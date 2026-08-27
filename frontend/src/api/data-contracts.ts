@@ -857,6 +857,11 @@ export interface DtoMotriceResponse {
   updated_at?: string;
 }
 
+export interface DtoNavCountsResponse {
+  inbound_pending?: number;
+  ordini_da_pianificare?: number;
+}
+
 export interface DtoOKResult {
   ok?: boolean;
 }

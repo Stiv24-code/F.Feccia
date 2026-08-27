@@ -30,6 +30,20 @@ func (h *DashboardHandler) Stats(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, 200, result)
 }
 
+// @Summary Sidebar nav badge counts (In arrivo / Registro ordini)
+// @Tags Dashboard
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} dto.NavCountsResponse
+// @Router /api/v1/dashboard/nav-counts [get]
+func (h *DashboardHandler) NavCounts(c *fiber.Ctx) error {
+	result, err := h.Service.NavCounts(utils.RequestContext(c))
+	if err != nil {
+		return utils.HandleDatabaseError(c, err)
+	}
+	return utils.SuccessResponse(c, 200, result)
+}
+
 // @Summary Per-customer commercial dashboard
 // @Tags Dashboard
 // @Security BearerAuth

@@ -2037,6 +2037,30 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dashboard/nav-counts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Sidebar nav badge counts (In arrivo / Registro ordini)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.NavCountsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/recent-orders": {
             "get": {
                 "security": [
@@ -9073,6 +9097,17 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.NavCountsResponse": {
+            "type": "object",
+            "properties": {
+                "inbound_pending": {
+                    "type": "integer"
+                },
+                "ordini_da_pianificare": {
+                    "type": "integer"
                 }
             }
         },

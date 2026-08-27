@@ -2191,6 +2191,21 @@ func (mr *MockDashboardMockRecorder) CustomerDashboard(ctx, customerID interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomerDashboard", reflect.TypeOf((*MockDashboard)(nil).CustomerDashboard), ctx, customerID)
 }
 
+// NavCounts mocks base method.
+func (m *MockDashboard) NavCounts(ctx context.Context) (*dto.NavCountsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NavCounts", ctx)
+	ret0, _ := ret[0].(*dto.NavCountsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NavCounts indicates an expected call of NavCounts.
+func (mr *MockDashboardMockRecorder) NavCounts(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NavCounts", reflect.TypeOf((*MockDashboard)(nil).NavCounts), ctx)
+}
+
 // RecentOrders mocks base method.
 func (m *MockDashboard) RecentOrders(ctx context.Context) ([]dto.OrderResponse, error) {
 	m.ctrl.T.Helper()

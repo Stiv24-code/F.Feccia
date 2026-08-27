@@ -67,6 +67,22 @@ func (s *DashboardService) Stats(ctx context.Context) (*dto.DashboardStatsRespon
 	}, nil
 }
 
+// NavCounts mirrors GET /dashboard/nav-counts — the two counts behind the
+// sidebar nav badges (In arrivo / Registro ordini). Deliberately just two
+// COUNT(*) queries, no joins/preloads, so it stays cheap on a poll interval.
+func (s *DashboardService) NavCounts(ctx context.Context) (*dto.NavCountsResponse, error) {
+	db := s.db.WithContext(ctx)
+
+	var inboundPending, daPianificare int64
+	db.Model(&models.InboundOrder{}).Where("status = ?", models.InboundOrderStatusPending).Count(&inboundPending)
+	db.Model(&models.Order{}).Where("stato = ?", "PIANIFICABILE").Count(&daPianificare)
+
+	return &dto.NavCountsResponse{
+		InboundPending:      inboundPending,
+		OrdiniDaPianificare: daPianificare,
+	}, nil
+}
+
 // CustomerDashboard mirrors GET /dashboard/customer/{id}: KPIs, monthly
 // trend (most recent 12 months, ascending), top-5 destinations and
 // tipologia/categoria distribution — all scoped to one customer's orders.

@@ -12,4 +12,5 @@ func registerDashboardRoutes(authAll fiber.Router, handlers *app_handlers.Handle
 	authAll.Get("/dashboard/stats", handlers.Dashboard.Stats)
 	authAll.Get("/dashboard/customer/:customer_id", handlers.Dashboard.CustomerDashboard)
 	authAll.Get("/dashboard/recent-orders", handlers.Dashboard.RecentOrders)
+	authAll.Get("/dashboard/nav-counts", handlers.Dashboard.NavCounts)
 }
