@@ -36,6 +36,12 @@ const defaultGraphClientID = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
 
 const graphScope = "https://graph.microsoft.com/Mail.ReadWrite offline_access"
 
+// graphHTTPClient bounds every Graph/login.microsoftonline.com call — plain
+// http.DefaultClient (and the http.PostForm/http.Get helpers, which use it
+// under the hood) has no timeout at all, so a stalled response would hang
+// the scrape indefinitely.
+var graphHTTPClient = &http.Client{Timeout: 30 * time.Second}
+
 type graphTokens struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
@@ -150,7 +156,7 @@ func openBrowser(u string) {
 }
 
 func (s *MailScraperService) exchangeCode(code, verifier string) error {
-	resp, err := http.PostForm(s.loginURL("token"), url.Values{
+	resp, err := graphHTTPClient.PostForm(s.loginURL("token"), url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_id":     {s.clientID()},
 		"code":          {code},
@@ -191,7 +197,7 @@ func randomURLSafe(n int) string {
 // LoginDevice runs the device-code flow and stores the tokens — for hosts
 // where opening a browser is impossible and Conditional Access allows it.
 func (s *MailScraperService) LoginDevice() error {
-	resp, err := http.PostForm(s.loginURL("devicecode"), url.Values{
+	resp, err := graphHTTPClient.PostForm(s.loginURL("devicecode"), url.Values{
 		"client_id": {s.clientID()},
 		"scope":     {graphScope},
 	})
@@ -227,7 +233,7 @@ func (s *MailScraperService) LoginDevice() error {
 	deadline := time.Now().Add(time.Duration(dc.ExpiresIn) * time.Second)
 	for time.Now().Before(deadline) {
 		time.Sleep(interval)
-		resp, err := http.PostForm(s.loginURL("token"), url.Values{
+		resp, err := graphHTTPClient.PostForm(s.loginURL("token"), url.Values{
 			"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
 			"client_id":   {s.clientID()},
 			"device_code": {dc.DeviceCode},
@@ -285,7 +291,7 @@ func (s *MailScraperService) graphAppToken() (string, error) {
 	if s.appTok.val != "" && time.Until(s.appTok.exp) > 2*time.Minute {
 		return s.appTok.val, nil
 	}
-	resp, err := http.PostForm(s.loginURL("token"), url.Values{
+	resp, err := graphHTTPClient.PostForm(s.loginURL("token"), url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {s.clientID()},
 		"client_secret": {s.cfg.GraphClientSecret},
@@ -345,7 +351,7 @@ func (s *MailScraperService) graphAccessToken() (string, error) {
 	if time.Until(t.ExpiresAt) > 2*time.Minute {
 		return t.AccessToken, nil
 	}
-	resp, err := http.PostForm(s.loginURL("token"), url.Values{
+	resp, err := graphHTTPClient.PostForm(s.loginURL("token"), url.Values{
 		"grant_type":    {"refresh_token"},
 		"client_id":     {s.clientID()},
 		"refresh_token": {t.RefreshToken},
@@ -402,7 +408,7 @@ func (s *MailScraperService) scrapeGraph(ctx context.Context) (added, scanned in
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Prefer", `outlook.body-content-type="text"`)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := graphHTTPClient.Do(req)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -455,7 +461,7 @@ func (s *MailScraperService) markRead(ctx context.Context, base, token, id strin
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := graphHTTPClient.Do(req)
 	if err != nil {
 		slog.Warn("scrape: impossibile marcare come letta", "error", err)
 		return
