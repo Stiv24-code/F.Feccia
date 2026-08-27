@@ -246,7 +246,7 @@ export default function OrdersPage() {
                       )}
                       {o.viaggio_id ? (
                         <Button
-                          variant="ghost" size="icon" className="h-7 w-7"
+                          variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10"
                           title="Apri il viaggio" aria-label="Apri il viaggio"
                           onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}
                         >
@@ -254,7 +254,7 @@ export default function OrdersPage() {
                         </Button>
                       ) : o.stato === 'PIANIFICABILE' && (
                         <Button
-                          variant="ghost" size="icon" className="h-7 w-7"
+                          variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10"
                           title="Pianifica questo ordine" aria-label="Pianifica questo ordine"
                           onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: false } })}
                         >
