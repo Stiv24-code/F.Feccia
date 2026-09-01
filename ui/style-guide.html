@@ -378,7 +378,7 @@ function setFont(name) {
 var GLASS_TOKENS = {
   '--acc': '#3565af', '--acc-2': '#27508f', '--acc-3': '#8fb3e2',
   '--acc-soft': '#edf3fb', '--acc-bg': '#e2edf9', '--acc-bd': '#b9d0ec',
-  '--side': '#0d1b33', '--navy': '#182742', '--navy-2': '#22375a', '--navy-tx': '#93a7c4', '--navy-tx2': '#c9d7ea',
+  '--side': '#0d1b33', '--side-hover': '#14243d', '--navy': '#182742', '--navy-2': '#22375a', '--navy-tx': '#93a7c4', '--navy-tx2': '#c9d7ea',
   '--tx-2': '#34435f', '--tx-3': '#556482', '--tx-4': '#57657f', '--tx-5': '#66748e',
   '--bd-1': '#a8b8d0', '--bd-2': '#bccbdf', '--bd-3': '#d2dcea',
   '--bg': '#e9f0f8', '--hover': '#f1f5fb', '--hover-acc': '#ecf3fb', '--chip-bg': '#edf2f9', '--seg-bg': '#e1e9f4',
@@ -400,22 +400,28 @@ function buildGlass() {
   // i motori normalizzano gli attributi style (rgb(...), spazi): ogni aggancio va scritto in entrambe le forme
   var CARD = '.tms-app [style*="box-shadow:0 1px 2px rgba(28,37,52,.07)"],.tms-app [style*="box-shadow: rgba(28, 37, 52, 0.07)"],.tms-app [style*="box-shadow:0 1px 3px rgba(28,37,52,.08)"],.tms-app [style*="box-shadow: rgba(28, 37, 52, 0.08)"]';
   var BCARD = '.tms-app [style*="background:#fff"][style*="border:1px solid var(--bd-2)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-2)"]';
-  var HEAD = '.tms-app [style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]';
+  // testata pagina (min-height 57) e riga tab (stessa firma MA senza min-height)
+  var HEAD57 = '.tms-app [style*="min-height:57px"][style*="background:#fff"],.tms-app [style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]';
+  var TABROW = '.tms-app [style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"]:not([style*="min-height"]),.tms-app [style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]:not([style*="min-height"])';
   var ROWS = '.tms-app [style*="border-bottom:1px solid #e9ecf1"],.tms-app [style*="border-bottom: 1px solid rgb(233, 236, 241)"],.tms-app [style*="border-bottom:1px solid var(--bd-3)"],.tms-app [style*="border-bottom: 1px solid var(--bd-3)"]';
   var THEAD = '.tms-app [style*="background:#f8f9fb"],.tms-app [style*="background: rgb(248, 249, 251)"]';
   var COLS = '.tms-app [style*="background:var(--chip-bg)"],.tms-app [style*="background: var(--chip-bg)"]';
   var FIELDS = '.tms-app input[style*="background:#fff"],.tms-app input[style*="background: rgb(255, 255, 255)"],.tms-app select[style*="background-color:#fff"],.tms-app select[style*="background-color: rgb(255, 255, 255)"],.tms-app [style*="background:#fff"][style*="border:1px solid var(--bd-1)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-1)"]';
-  var SIDE = '.tms-app [style*="background:var(--side)"],.tms-app [style*="background: var(--side)"]';
-  var DSIDE = '.tms-app.tms-dark [style*="background:var(--side)"],.tms-app.tms-dark [style*="background: var(--side)"]';
-  var DSIDE_TXT = function(a, b) {
-    return '.tms-app.tms-dark [style*="background:var(--side)"] [style*="' + a + '"],' +
-           '.tms-app.tms-dark [style*="background: var(--side)"] [style*="' + b + '"],' +
-           '.tms-app.tms-dark [style*="background:var(--side)"] [style*="' + b + '"],' +
-           '.tms-app.tms-dark [style*="background: var(--side)"] [style*="' + a + '"]';
-  };
+  var SBAR = '.tms-app [style*="background:var(--side)"][style*="transition:width"],.tms-app [style*="background: var(--side)"][style*="transition: width"]';
+  var CRUSC = '.tms-app [style*="background:var(--side)"]:not([style*="transition:width"]):not([style*="transition: width"]),.tms-app [style*="background: var(--side)"]:not([style*="transition:width"]):not([style*="transition: width"])';
   // card di planner (ombra .06) e mappa (bordo sinistro colorato): vetro SENZA toccare i bordi semantici
   var PCARD = '.tms-app [style*="background:#fff"][style*="box-shadow:0 1px 2px rgba(28,37,52,.06)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="box-shadow: rgba(28, 37, 52, 0.06)"],.tms-app [style*="background:#fff"][style*="border-left:4px solid"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="border-left: 4px solid"]';
+  // calendario del planner: il contenitore che ha dentro la griglia dei 7 giorni
+  var PLANNER = '.tms-app div[style*="border-radius:var(--r-14)"]:has(> div[style*="repeat(7,1fr)"]),.tms-app div[style*="border-radius: var(--r-14)"]:has(> div[style*="repeat(7, 1fr)"])';
   var blur = function(px) { return 'backdrop-filter:blur(' + px + 'px) saturate(1.6);-webkit-backdrop-filter:blur(' + px + 'px) saturate(1.6);'; };
+  // testata full-bleed: il titolo non deve finire sotto la sidebar flottante → padding condizionale allo stato
+  var padRule = function(w, pad) {
+    var sides = ['[style*="transition:width"][style*="width:' + w + 'px"]', '[style*="transition: width"][style*="width: ' + w + 'px"]'];
+    var heads = ['[style*="min-height:57px"][style*="background:#fff"]', '[style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]'];
+    var sels = [];
+    sides.forEach(function(ss) { heads.forEach(function(hp) { sels.push('.tms-app:has(> div' + ss + ') ' + hp); }); });
+    return sels.join(',') + '{padding-left:' + pad + 'px!important}';
+  };
 
   // varianti di sfondo (i colori restano quelli del logo SBG)
   var blobs = function(a1, a2, a3) {
@@ -459,65 +465,257 @@ function buildGlass() {
   }
   return [
     bg,
-    /* card con ombra soffice → vetro pieno (dashboard, liste, planner, mappa) */
-    CARD + '{background:rgba(255,255,255,' + L(.64, .26) + ')!important;' + blur(Li(12, 26)),
-    '  border:1px solid rgba(255,255,255,.8)!important;',
-    '  box-shadow:0 16px 44px rgba(30,60,120,.14), inset 0 1px 0 rgba(255,255,255,.9)!important}',
-    /* card bordate bianche → vetro leggero */
-    BCARD + '{background:rgba(255,255,255,' + L(.68, .3) + ')!important;' + blur(Li(10, 20)),
-    '  border:1px solid rgba(255,255,255,.75)!important}',
-    /* barre in alto (testata pagina + riga tab) → vetro sospeso */
-    HEAD + '{background:rgba(255,255,255,' + L(.6, .2) + ')!important;' + blur(Li(14, 30)),
-    '  border-bottom:1px solid rgba(255,255,255,.6)!important}',
+    /* v15: GERARCHIA PER OPACITÀ, NIENTE BORDI BIANCHI (reference dribbble Francesco).
+       Contenitori = velo tenue; card interne = più chiare e piene; ombre soffuse e larghe. */
+    /* card con ombra soffice → velo contenitore, senza bordo né inset */
+    CARD + '{background:rgba(255,255,255,' + L(.52, .36) + ')!important;' + blur(Li(12, 20)),
+    '  border-color:transparent!important;',
+    '  box-shadow:0 18px 44px rgba(30,60,120,.10)!important}',
+    /* card bordate bianche → vetro chiaro interno, senza bordo */
+    BCARD + '{background:rgba(255,255,255,' + L(.72, .56) + ')!important;' + blur(Li(8, 14)),
+    '  border-color:transparent!important;box-shadow:0 8px 22px rgba(30,60,120,.08)!important}',
+    /* TESTATA a tutta larghezza: fissa, passa dietro la sidebar flottante, il contenuto le scorre dietro */
+    HEAD57 + '{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:4!important;',
+    '  pointer-events:auto;box-sizing:border-box;height:58px;',
+    '  background:transparent!important;',
+    '  border-bottom-color:transparent!important;transition:padding-left .18s}',
+    /* LASTRA UNICA della zona alta: un solo vetro continuo alto quanto serve alla pagina
+       (tre barre con blur separati creavano bande — feedback Francesco) */
+    '.tms-app{--tms-zona:58px}',
+    ['[style*="min-height:57px"][style*="background:#fff"]', '[style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]'].map(function(hp) { return '.tms-app ' + hp + '::before'; }).join(',') + '{content:"";position:absolute;top:0;left:0;right:0;height:var(--tms-zona);z-index:-1;',
+    '  background:rgba(255,255,255,' + L(.38, .12) + ');' + blur(Li(18, 30)) + '}',
+    padRule(190, 240),
+    padRule(58, 108),
+    /* la colonna compensa la testata uscita dal flusso; niente più pannello gemello (v12 superata) */
+    '.tms-app > div[style*="min-width:0"]:not([style*="transition"]),.tms-app > div[style*="min-width: 0px"]:not([style*="transition"]){padding-top:58px!important}',
+    /* il contenuto scorre DIETRO il vetro della testata (solo dove lo scroller la segue direttamente) */
+    (function() { // NB: niente split(',') su HEAD57 — rgb(255, 255, 255) contiene virgole
+      var heads = ['[style*="min-height:57px"][style*="background:#fff"]', '[style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]'];
+      var ovs = ['[style*="overflow:auto"]', '[style*="overflow: auto"]'];
+      var sels = [];
+      heads.forEach(function(hp) { ovs.forEach(function(ov) { sels.push('.tms-app ' + hp + ' + div' + ov); }); });
+      return sels.join(',') + '{margin-top:-58px!important;padding-top:74px!important}';
+    })(),
+    /* ZONA ALTA di Ordini/Anagrafiche (tab + toolbar + filtri): vetro FISSO full-bleed come la
+       testata (WebKit non sfoca i sibling con position:relative — il fixed sì, già validato),
+       il contenuto scorre DIETRO e si intravede (richiesta Francesco). Top/padding misurati. */
+    (function() {
+      var TABP = ['[style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"]:not([style*="min-height"])',
+                  '[style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]:not([style*="min-height"])'];
+      var P14 = ['[style*="padding:14px 20px 12px"]', '[style*="padding: 14px 20px 12px"]'];
+      var P012 = ['[style*="padding:0 20px 12px"]', '[style*="padding: 0px 20px 12px"]'];
+      var OV = ['[style*="overflow:auto"]', '[style*="overflow: auto"]'];
+      var P418 = ['[style*="padding:4px 20px 18px"]', '[style*="padding: 4px 20px 18px"]'];
+      var P416 = ['[style*="padding:4px 20px 16px"]', '[style*="padding: 4px 20px 16px"]'];
+      var P18 = ['[style*="padding:18px 20px"]', '[style*="padding: 18px 20px"]'];
+      var P018 = ['[style*="padding:0 20px 18px"]', '[style*="padding: 0px 20px 18px"]'];
+      var MH0 = ['[style*="min-height:0"]:not([style*="overflow"])', '[style*="min-height: 0px"]:not([style*="overflow"])'];
+      var and = function(A, B) { var r = []; A.forEach(function(a) { B.forEach(function(b) { r.push(a + b); }); }); return r; };
+      var chain = function(parts) { // prodotto cartesiano → '.tms-app div<a> + div<b> + ...'
+        var sels = [''];
+        parts.forEach(function(p, i) {
+          var next = [];
+          sels.forEach(function(s) { p.forEach(function(f) { next.push(s + (i ? ' + div' : '.tms-app div') + f); }); });
+          sels = next;
+        });
+        return sels;
+      };
+      var BAR2 = chain([TABP, [':not([style*="overflow"]):not([style*="min-height"])']]); // toolbar (2ª barra)
+      var BAR3 = chain([TABP, [''], P012]);                                               // filtri registro (3ª)
+      var glass = 'background:transparent!important;' +
+                  'left:0!important;right:0!important;z-index:4!important;box-sizing:border-box!important;' +
+                  'border-bottom-color:transparent!important;transition:padding-left .18s;';
+      // padding-left condizionale allo stato sidebar per TUTTE le barre fisse della zona
+      var allBars = chain([TABP]).concat(BAR2).concat(BAR3);
+      var sidePad = function(w, pad) {
+        var sides = ['[style*="transition:width"][style*="width:' + w + 'px"]', '[style*="transition: width"][style*="width: ' + w + 'px"]'];
+        var sels = [];
+        sides.forEach(function(ss) { allBars.forEach(function(bs) { sels.push(bs.replace('.tms-app ', '.tms-app:has(> div' + ss + ') ')); }); });
+        return sels.join(',') + '{padding-left:' + pad + 'px!important}';
+      };
+      var zona = function(hasSel, h) { return '.tms-app:has(' + hasSel + '){--tms-zona:' + h + 'px}'; };
+      return [
+        /* altezza della lastra unica per contesto: solo testata / +tab / +toolbar / +filtri */
+        TABP.map(function(t) { return zona('div' + t, 98); }).join('\n'),
+        TABP.map(function(t) { return zona('div' + t + ' + div:not([style*="overflow"]):not([style*="min-height"])', 157); }).join('\n'),
+        TABP.map(function(t) { return P012.map(function(p) { return zona('div' + t + ' + div:not([style*="overflow"]):not([style*="min-height"]) + div' + p, 147); }).join('\n'); }).join('\n'),
+        chain([TABP]).join(',') + '{position:fixed!important;top:58px!important;' + glass + 'gap:0!important}',
+        /* voci tab → pillole di vetro (come la pill attiva della sidebar): l'attiva piena, le altre a velo */
+        (function() {
+          var ACT = ['[style*="border-bottom:2px solid var(--acc)"]', '[style*="border-bottom: 2px solid var(--acc)"]'];
+          var OFF = ['[style*="border-bottom:2px solid transparent"]', '[style*="border-bottom: 2px solid transparent"]'];
+          var mk = function(items) {
+            var sels = [];
+            TABP.forEach(function(t) { items.forEach(function(it) { sels.push('.tms-app div' + t + ' > span' + it); }); });
+            return sels.join(',');
+          };
+          var mkPos = function(pos) {
+            var sels = [];
+            TABP.forEach(function(t) { sels.push('.tms-app div' + t + ' > span:' + pos); });
+            return sels.join(',');
+          };
+          var mkActPos = function(pos) {
+            var sels = [];
+            TABP.forEach(function(t) { ACT.forEach(function(it) { sels.push('.tms-app div' + t + ' > span' + it + ':' + pos); }); });
+            return sels.join(',');
+          };
+          return [
+            /* capsula unica: celle scure contigue, stondate solo agli estremi del gruppo */
+            mk(ACT.concat(OFF)) + '{border-bottom-color:transparent!important;border-radius:0!important;padding:7px 16px!important;position:relative;transition:background .25s ease}',
+            mkPos('first-of-type') + '{border-radius:999px 0 0 999px!important}',
+            mkPos('last-of-type') + '{border-radius:0 999px 999px 0!important}',
+            mk(OFF) + '{background:rgba(30,60,110,.08)!important}',
+            /* la voce attiva è la pillola bianca DENTRO la capsula: piena, sopra le celle vicine */
+            mk(ACT) + '{background:rgba(255,255,255,.95)!important;border-radius:999px!important;z-index:1;margin:0 -10px;box-shadow:0 1px 6px rgba(30,60,120,.2)!important}',
+            mkActPos('first-of-type') + '{margin-left:0}',
+            mkActPos('last-of-type') + '{margin-right:0}'
+          ].join('\n');
+        })(),
+        BAR2.join(',') + '{position:fixed!important;top:98px!important;' + glass + '}',
+        BAR3.join(',') + '{position:fixed!important;top:102px!important;' + glass + '}',
+        /* REGISTRO: la toolbar (Export CSV, tutta a destra via margin-left:auto) sale sulla riga delle tab
+           → zona più bassa (richiesta Francesco); pointer-events:none sulla barra, attivi sul contenuto */
+        (function() {
+          var sels = [], selsKid = [];
+          TABP.forEach(function(t) { P012.forEach(function(p) {
+            var s = '.tms-app div' + t + ' + div:not([style*="overflow"]):not([style*="min-height"]):has(+ div' + p + ')';
+            sels.push(s); selsKid.push(s + ' > *');
+          }); });
+          return sels.join(',') + '{top:58px!important;padding-top:0!important;padding-bottom:0!important;height:40px!important;align-items:center!important;pointer-events:none}\n' +
+                 selsKid.join(',') + '{pointer-events:auto}';
+        })(),
+        sidePad(190, 240),
+        sidePad(58, 108),
+        /* contenuti: partono sotto la zona ma il loro box sale a filo testata → scorrono dietro il vetro */
+        chain([P14, P012, and(OV, P418)]).join(',') + '{padding-top:107px!important}',  /* registro lista */
+        chain([P14, P012, P416]).join(',') + '{padding-top:107px!important}',           /* registro kanban */
+        chain([TABP, P14, and(OV, P418)]).join(',') + '{padding-top:117px!important}',   /* in arrivo (ancorata alla tab: il planner ha la stessa coppia P14+scroller) */
+        chain([TABP, and(OV, P18)]).join(',') + '{padding-top:58px!important}',    /* template pdf */
+        chain([TABP, P14, and(OV, P018)]).join(',') + '{padding-top:116px!important}',    /* anagrafiche clienti */
+        chain([TABP, MH0]).join(',') + '{padding-top:54px!important}'              /* anagrafiche mezzi/autisti */
+      ].join('\n');
+    })(),
     /* tabelle: intestazioni e righe traslucide dentro il vetro */
-    THEAD + '{background:rgba(255,255,255,' + L(.35, .12) + ')!important}',
+    THEAD + '{background:rgba(255,255,255,' + L(.3, .12) + ')!important}',
     ROWS + '{background:transparent!important}',
+    /* hover righe/card: nel canvas è .tms-row:hover/.tms-card:hover (0,2,0) — le regole vetro (0,3,0)
+       lo battevano: ripristino a specificità superiore, DOPO le regole di superficie */
+    '.tms-app .tms-row:hover{background:rgba(53,101,175,.09)!important}',
+    '.tms-app .tms-card:hover{background:rgba(53,101,175,.12)!important}',
     /* colonne kanban e superfici neutre → velo leggero senza blur */
-    COLS + '{background:rgba(255,255,255,' + L(.3, .1) + ')!important}',
-    /* card planner/mappa: vetro leggero, bordo colorato intatto */
-    PCARD + '{background:rgba(230,241,254,' + L(.62, .24) + ')!important;' + blur(Li(10, 20)) + '}',
+    COLS + '{background:rgba(255,255,255,' + L(.28, .12) + ')!important}',
+    /* card planner/mappa: PIENE (planner meno glassato), bordo colorato intatto */
+    PCARD + '{background:rgba(250,253,255,' + L(.92, .84) + ')!important;' + blur(Li(6, 10)),
+    '  box-shadow:0 6px 18px rgba(30,60,120,.10)!important}',
     /* input e select: trasparenza leggera senza blur (leggeri per il rendering) */
-    FIELDS + '{background-color:rgba(255,255,255,' + L(.8, .55) + ')!important}',
+    FIELDS + '{background-color:rgba(255,255,255,' + L(.8, .6) + ')!important}',
     /* divider: decisi in chiaro (token), e in SCURO sorgenti scure che il filtro ribalta in chiare */
     '.tms-app.tms-dark{--bd-1:rgba(14,26,48,.55);--bd-2:rgba(14,26,48,.4);--bd-3:rgba(14,26,48,.28)}',
     '.tms-app.tms-dark [style*="border-bottom:1px solid #e9ecf1"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(233, 236, 241)"],.tms-app.tms-dark [style*="border-bottom:1px solid #f2f4f7"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(242, 244, 247)"]{border-bottom-color:rgba(14,26,48,.38)!important}',
     '.tms-app [style*="border-bottom:1px solid #e9ecf1"],.tms-app [style*="border-bottom: 1px solid rgb(233, 236, 241)"]{border-bottom-color:rgba(96,116,148,.32)!important}',
     '.tms-app [style*="border-bottom:1px solid #f2f4f7"],.tms-app [style*="border-bottom: 1px solid rgb(242, 244, 247)"]{border-bottom-color:rgba(96,116,148,.24)!important}',
-    /* bordi dei vetri in scuro: sorgente blu notte → il filtro li rende chiari e i pannelli ritrovano il contorno */
-    '.tms-app.tms-dark [style*="box-shadow:0 1px 2px rgba(28,37,52,.07)"],.tms-app.tms-dark [style*="box-shadow: rgba(28, 37, 52, 0.07)"],.tms-app.tms-dark [style*="box-shadow:0 1px 3px rgba(28,37,52,.08)"],.tms-app.tms-dark [style*="box-shadow: rgba(28, 37, 52, 0.08)"]{border-color:rgba(12,26,48,.4)!important}',
-    '.tms-app.tms-dark [style*="background:#fff"][style*="border:1px solid var(--bd-2)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-2)"]{border-color:rgba(12,26,48,.35)!important}',
-    '.tms-app.tms-dark [style*="background:#fff"][style*="box-shadow:0 1px 2px rgba(28,37,52,.06)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="box-shadow: rgba(28, 37, 52, 0.06)"],.tms-app.tms-dark [style*="background:#fff"][style*="border-left:4px solid"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border-left: 4px solid"]{border-top-color:rgba(12,26,48,.32)!important;border-right-color:rgba(12,26,48,.32)!important;border-bottom-color:rgba(12,26,48,.32)!important}',
-    /* testate pagina in scuro: il filo sotto l'header deve invertirsi in chiaro */
-    '.tms-app.tms-dark [style*="background:#fff"][style*="border-bottom:1px solid var(--bd-2)"],.tms-app.tms-dark [style*="background: rgb(255, 255, 255)"][style*="border-bottom: 1px solid var(--bd-2)"]{border-bottom-color:rgba(12,26,48,.5)!important}',
-    /* menù, calendari, picker (partenza/lavaggio/autista) e modali: VETRO GHIACCIATO quasi opaco,
-       si devono staccare dal vetro sottostante (dopo FIELDS per vincere a parità di specificità) */
+    /* menù riga e modali: VETRO leggibile — blur profondo, si intravede il contenuto sotto */
     '.tms-app [style*="position:absolute"][style*="box-shadow:0 6px 20px rgba(28,37,52,.16)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.16) 0px 6px 20px"],' +
     '.tms-app [style*="position:absolute"][style*="box-shadow:0 6px 20px rgba(28,37,52,.14)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.14) 0px 6px 20px"],' +
-    '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.16)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.16) 0px 8px 24px"],' +
-    '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.14)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.14) 0px 8px 24px"],' +
     '.tms-app [style*="background:#fff"][style*="box-shadow:0 18px 50px rgba(15,23,42,.35)"],.tms-app [style*="background: rgb(255, 255, 255)"][style*="rgba(15, 23, 42, 0.35) 0px 18px 50px"]{',
-    '  background:rgba(250,252,255,.96)!important;',
-    '  backdrop-filter:blur(36px) saturate(1.3);-webkit-backdrop-filter:blur(36px) saturate(1.3);',
-    '  box-shadow:0 18px 44px rgba(30,60,120,.24)!important}',
-    /* sidebar in vetro scuro SBG */
-    SIDE + '{background:rgba(9,20,42,' + L(.9, .68) + ')!important;' + blur(Li(14, 26)) + '}',
-    /* modalità scura: il filtro invert ribalta tutto — superficie E testi della sidebar partono dai colori opposti
-       (sorgenti calcolate con lightFromDark, così il filtro li riporta esattamente dove vogliamo) */
-    DSIDE + '{background:rgba(226,242,255,' + L(.94, .82) + ')!important;' + blur(Li(14, 26)) + '}',
-    DSIDE_TXT('color:#fff', 'color: rgb(255, 255, 255)') + '{color:#000!important}',
-    DSIDE_TXT('color:var(--navy-tx)', 'color: var(--navy-tx)') + '{color:' + lightFromDark('#a9bcd8') + '!important}',
-    DSIDE_TXT('color:var(--navy-tx2)', 'color: var(--navy-tx2)') + '{color:' + lightFromDark('#d4e0f0') + '!important}',
-    /* pagina Mappa: mappa a tutta larghezza, chips e pannello viaggi sovrapposti in vetro */
-    '.tms-app [style*="grid-template-columns:1.9fr 1fr"],.tms-app [style*="grid-template-columns: 1.9fr 1fr"]{display:block!important;position:relative!important;padding:0!important;overflow:hidden}',
+    '  background:rgba(248,251,255,.82)!important;',
+    '  backdrop-filter:blur(44px) saturate(1.5);-webkit-backdrop-filter:blur(44px) saturate(1.5);',
+    '  border-color:transparent!important;',
+    '  box-shadow:0 24px 60px rgba(20,45,90,.30)!important}',
+    /* picker grandi della pianificazione (autista/motrice/garage/lavaggio/calendari): vetro ARIOSO
+       come la testata sulla mappa — si intravede il form sotto (richiesta Francesco) */
+    '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.16)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.16) 0px 8px 24px"],' +
+    '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.14)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.14) 0px 8px 24px"]{',
+    '  background:rgba(250,253,255,.62)!important;',
+    '  backdrop-filter:blur(40px) saturate(1.8);-webkit-backdrop-filter:blur(40px) saturate(1.8);',
+    '  border-color:rgba(255,255,255,.55)!important;',
+    '  box-shadow:0 24px 60px rgba(20,45,90,.28)!important}',
+    /* le VOCI dei picker: card bianche quasi piene (il testo sotto non traspare più dentro le voci,
+       il vetro arioso resta visibile fra una voce e l'altra — «come il garage») */
+    '.tms-app [style*="z-index:60"] [style*="cursor"][style*="border:1px solid var(--bd-1)"]:not([style*="var(--acc-soft)"]),.tms-app [style*="z-index: 60"] [style*="cursor"][style*="border: 1px solid var(--bd-1)"]:not([style*="var(--acc-soft)"]){background:rgba(255,255,255,.85)!important}',
+    /* voci non disponibili: l'opacity inline faceva trasparire il testo sotto — spente per desaturazione */
+    '.tms-app [style*="z-index:60"] [style*="cursor"][style*="opacity"],.tms-app [style*="z-index: 60"] [style*="cursor"][style*="opacity"]{opacity:1!important;filter:grayscale(.5) contrast(.88)}',
+    /* B5: il blur delle card crea stacking context → la card col popup aperto deve alzarsi,
+       altrimenti la card successiva (es. Ordini nel viaggio) copre il picker (bug Francesco) */
+    (function() {
+      var POPS = ['[style*="box-shadow:0 6px 20px rgba(28,37,52"]', '[style*="rgba(28, 37, 52, 0.16) 0px 6px 20px"]', '[style*="rgba(28, 37, 52, 0.14) 0px 6px 20px"]',
+                  '[style*="box-shadow:0 8px 24px rgba(28,37,52"]', '[style*="rgba(28, 37, 52, 0.16) 0px 8px 24px"]', '[style*="rgba(28, 37, 52, 0.14) 0px 8px 24px"]'];
+      var CARDS = ['[style*="box-shadow:0 1px 2px rgba(28,37,52,.07)"]', '[style*="box-shadow: rgba(28, 37, 52, 0.07)"]',
+                   '[style*="box-shadow:0 1px 3px rgba(28,37,52,.08)"]', '[style*="box-shadow: rgba(28, 37, 52, 0.08)"]',
+                   '[style*="background:#fff"][style*="border:1px solid var(--bd-2)"]', '[style*="background: rgb(255, 255, 255)"][style*="border: 1px solid var(--bd-2)"]'];
+      var sels = [];
+      CARDS.forEach(function(c) { sels.push('.tms-app ' + c + ':has(' + POPS.join(',') + ')'); });
+      return sels.join(',') + '{position:relative;z-index:20!important}';
+    })(),
+    /* B2: righe delle liste dashboard fino al bordo della card (hover non più «tagliato») */
+    '.tms-app [style*="border-bottom:1px solid #f2f4f7"][style*="cursor"],.tms-app [style*="border-bottom: 1px solid rgb(242, 244, 247)"][style*="cursor"]{margin:0 -18px!important;padding-left:18px!important;padding-right:18px!important}',
+    /* sidebar in vetro CHIARO flottante: senza bordo, resta l'ombra; in scura si inverte da sola */
+    SBAR + '{position:relative;z-index:5;background:rgba(242,248,255,' + L(.66, .42) + ')!important;' + blur(Li(16, 28)),
+    '  --navy-tx:#4d5e7b;--navy-tx2:#33435f;--navy-2:rgba(30,60,110,.16);--acc-3:#2f5da6;',
+    '  margin:12px 0 12px 12px!important;border-radius:18px!important;',
+    '  border-color:transparent!important;box-shadow:0 14px 40px rgba(30,60,120,.14)!important}',
+    /* testi bianchi della sidebar → navy (esclusi logo FF su accento e avatar) */
+    SBAR.split(',').map(function(sel) {
+      return sel + ' [style*="color:#fff"]:not([style*="background:var(--acc)"]):not([style*="background: var(--acc)"]):not([style*="background:#3a4a63"]):not([style*="background: rgb(58, 74, 99)"]),' +
+             sel + ' [style*="color: rgb(255, 255, 255)"]:not([style*="background:var(--acc)"]):not([style*="background: var(--acc)"]):not([style*="background:#3a4a63"]):not([style*="background: rgb(58, 74, 99)"])';
+    }).join(',') + '{color:var(--navy)!important}',
+    /* pill della voce attiva */
+    SBAR.split(',').map(function(sel) {
+      return sel + ' [style*="background:rgba(255,255,255,.12)"],' + sel + ' [style*="background: rgba(255, 255, 255, 0.12)"]';
+    }).join(',') + '{background:rgba(255,255,255,.8)!important;box-shadow:0 2px 10px rgba(30,60,120,.12)!important}',
+    /* separatori interni della sidebar */
+    SBAR.split(',').map(function(sel) {
+      return sel + ' [style*="rgba(255,255,255,.13)"],' + sel + ' [style*="rgba(255, 255, 255, 0.13)"]';
+    }).join(',') + '{border-left-color:rgba(30,60,110,.2)!important}',
+    SBAR.split(',').map(function(sel) {
+      return sel + ' [style*="rgba(255,255,255,.09)"],' + sel + ' [style*="rgba(255, 255, 255, 0.09)"]';
+    }).join(',') + '{border-bottom-color:rgba(30,60,110,.15)!important}',
+    /* cruscotto cliente: pannello SCURO con gradiente SBG, senza bordo */
+    CRUSC + '{background:',
+    '  radial-gradient(360px 260px at 88% -12%, rgba(72,160,56,.3), transparent 62%),',
+    '  radial-gradient(420px 320px at -15% 112%, rgba(72,112,184,.4), transparent 62%),',
+    '  linear-gradient(150deg,#0e1b33 0%,#152a50 58%,#0e3054 100%)!important;',
+    '  border-color:transparent!important;box-shadow:0 16px 44px rgba(10,25,60,.35)!important}',
+    /* in scura il cruscotto resta scuro: contro-inversione locale (stesso trucco dei documenti PDF) */
+    '.tms-app.tms-dark ' + CRUSC.split(',').map(function(sel) { return sel.replace('.tms-app ', ''); }).join(',.tms-app.tms-dark ') + '{filter:invert(1.064) hue-rotate(180deg)}',
+    /* PLANNER pieno: calendario più solido delle card, giorno odierno in accento */
+    PLANNER + '{background:rgba(255,255,255,' + L(.8, .68) + ')!important;' + blur(Li(10, 16)),
+    '  display:flex!important;flex-direction:column!important;flex:1 0 auto!important}',
+    /* lo scroller del planner (testata+toolbar davanti: in arrivo ha la tab, non matcha) diventa colonna flex */
+    (function() {
+      var H57P = ['[style*="min-height:57px"][style*="background:#fff"]', '[style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]'];
+      var P14 = ['[style*="padding:14px 20px 12px"]', '[style*="padding: 14px 20px 12px"]'];
+      var OVP = ['[style*="overflow:auto"][style*="padding:4px 20px 18px"]', '[style*="overflow: auto"][style*="padding: 4px 20px 18px"]'];
+      var sels = [];
+      H57P.forEach(function(h) { P14.forEach(function(p) { OVP.forEach(function(o) {
+        sels.push('.tms-app div' + h + ' + div' + p + ' + div' + o);
+        sels.push('.tms-app div' + h + ' ~ div' + p + ' + div' + o);
+      }); }); });
+      return sels.join(',') + '{display:flex!important;flex-direction:column!important}';
+    })(),
+    /* il corpo del calendario si estende dentro la colonna */
+    '.tms-app div[style*="repeat(7,1fr)"][style*="min-height:320px"],.tms-app div[style*="repeat(7, 1fr)"][style*="min-height: 320px"]{flex:1 1 auto}',
+    '.tms-app div[style*="repeat(7,1fr)"][style*="background:#f8f9fb"],.tms-app div[style*="repeat(7, 1fr)"][style*="background: rgb(248, 249, 251)"]{background:rgba(255,255,255,' + L(.42, .3) + ')!important}',
+    '.tms-app span[style*="background:#f0f5fd"],.tms-app span[style*="background: rgb(240, 245, 253)"]{background:var(--acc)!important;color:#fff!important}',
+    '.tms-app div[style*="repeat(7,1fr)"] > div[style*="background:#e8f0fc"],.tms-app div[style*="repeat(7, 1fr)"] > div[style*="background: rgb(232, 240, 252)"]{background:rgba(53,101,175,.10)!important}',
+    /* pagina Mappa: la cartina è il FONDALE di tutto lo schermo (sotto sidebar e testata in vetro) */
+    '.tms-app > div[style*="flex-direction:column"]:has(iframe[title="Mappa flotta"]),.tms-app > div[style*="flex-direction: column"]:has(iframe[title="Mappa flotta"]){',
+    '  background:transparent!important;border:none!important;box-shadow:none!important;overflow:visible!important;position:relative;z-index:2;pointer-events:none}',
+    '.tms-app [style*="grid-template-columns:1.9fr 1fr"],.tms-app [style*="grid-template-columns: 1.9fr 1fr"]{display:block!important;position:relative!important;padding:0!important;overflow:visible!important;pointer-events:none}',
     '.tms-app div:has(> iframe[title="Mappa flotta"]){display:contents!important}',
-    '.tms-app iframe[title="Mappa flotta"]{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border:none!important;border-radius:0!important}',
-    '.tms-app div:has(> iframe[title="Mappa flotta"]) > div:first-child{position:absolute!important;top:14px!important;left:20px!important;right:440px!important;z-index:12!important;background:rgba(255,255,255,' + L(.55, .35) + ');' + blur(Li(10, 18)),
-    '  border:1px solid rgba(255,255,255,.7);border-radius:99px;padding:7px 12px!important}',
+    '.tms-app iframe[title="Mappa flotta"]{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;z-index:-1!important;border:none!important;border-radius:0!important;pointer-events:auto!important}',
+    /* sulla mappa i vetri restano leggibili ma la cartina si intravede (meno lattei della v14) */
+    '.tms-app:has(iframe[title="Mappa flotta"]) [style*="background:var(--side)"][style*="transition:width"],.tms-app:has(iframe[title="Mappa flotta"]) [style*="background: var(--side)"][style*="transition: width"]{background:rgba(244,249,255,.74)!important}',
+    '.tms-app:has(iframe[title="Mappa flotta"]) [style*="min-height:57px"][style*="background:#fff"]::before,.tms-app:has(iframe[title="Mappa flotta"]) [style*="min-height: 57px"][style*="background: rgb(255, 255, 255)"]::before{background:rgba(255,255,255,.45)!important}',
+    /* barra filtri: interattiva, stessa larghezza del pannello viaggi, appoggiata sopra di esso */
+    '.tms-app div:has(> iframe[title="Mappa flotta"]) > div:first-child{position:absolute!important;top:12px!important;right:18px!important;left:auto!important;width:400px!important;box-sizing:border-box!important;flex-wrap:wrap;z-index:12!important;pointer-events:auto;background:rgba(255,255,255,' + L(.68, .5) + ');' + blur(Li(14, 24)),
+    '  border:1px solid rgba(255,255,255,.5);border-radius:14px;padding:8px 12px!important}',
     '.tms-app.tms-dark div:has(> iframe[title="Mappa flotta"]) > div:first-child{border-color:rgba(12,26,48,.5)!important}',
     '.tms-app.tms-dark [style*="grid-template-columns:1.9fr 1fr"] > div:last-child,.tms-app.tms-dark [style*="grid-template-columns: 1.9fr 1fr"] > div:last-child{border-color:rgba(12,26,48,.45)!important}',
-    '.tms-app [style*="grid-template-columns:1.9fr 1fr"] > div:last-child,.tms-app [style*="grid-template-columns: 1.9fr 1fr"] > div:last-child{position:absolute!important;top:66px!important;right:18px!important;bottom:16px!important;width:400px!important;z-index:11!important;',
-    '  background:rgba(255,255,255,' + L(.5, .26) + ')!important;' + blur(Li(14, 26)),
-    '  border:1px solid rgba(255,255,255,.75)!important;border-radius:16px!important;box-shadow:0 18px 48px rgba(30,60,120,.18)!important}'
+    /* pannello viaggi: sotto la barra filtri, interattivo */
+    '.tms-app [style*="grid-template-columns:1.9fr 1fr"] > div:last-child,.tms-app [style*="grid-template-columns: 1.9fr 1fr"] > div:last-child{position:absolute!important;top:72px!important;right:18px!important;bottom:16px!important;width:400px!important;z-index:11!important;pointer-events:auto;',
+    '  background:rgba(255,255,255,' + L(.66, .5) + ')!important;' + blur(Li(18, 30)),
+    '  border:1px solid rgba(255,255,255,.5)!important;border-radius:16px!important;box-shadow:0 18px 48px rgba(30,60,120,.18)!important}'
   ].join('\n');
 }
 function setGlassBg(v) {
