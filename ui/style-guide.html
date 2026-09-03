@@ -600,7 +600,10 @@ function buildGlass() {
     ROWS + '{background:transparent!important}',
     /* R3 (provino scelto da Francesco): via le linee tra le righe, un filo d'aria in più,
        e zebra percettibile per non perdere la riga sulle 9 colonne */
-    '.tms-app .tms-row{border-bottom-color:transparent!important;padding-top:3px!important;padding-bottom:3px!important}',
+    '.tms-app .tms-row{border-bottom-color:transparent!important}',
+    /* l'aria in più va solo alle righe che NON hanno già un padding verticale proprio:
+       Template PDF lo mette sulla riga (non sulle celle) e verrebbe schiacciata */
+    '.tms-app .tms-row:not([style*="padding:9px 16px"]):not([style*="padding: 9px 16px"]){padding-top:3px!important;padding-bottom:3px!important}',
     '.tms-app .tms-row[style*="background:#f8f9fb"],.tms-app .tms-row[style*="background: rgb(248, 249, 251)"]{background:rgba(255,255,255,' + L(.42, .3) + ')!important}',
     /* hover righe/card: nel canvas è .tms-row:hover/.tms-card:hover (0,2,0) — le regole vetro (0,3,0)
        lo battevano: ripristino a specificità superiore, DOPO le regole di superficie */
@@ -667,8 +670,10 @@ function buildGlass() {
       CARDS.forEach(function(c) { sels.push('.tms-app ' + c + ':has(' + POPS.join(',') + ')'); });
       return sels.join(',') + '{position:relative;z-index:20!important}';
     })(),
-    /* B2: righe delle liste dashboard fino al bordo della card (hover non più «tagliato») */
-    '.tms-app [style*="border-bottom:1px solid #f2f4f7"][style*="cursor"],.tms-app [style*="border-bottom: 1px solid rgb(242, 244, 247)"][style*="cursor"]{margin:0 -18px!important;padding-left:18px!important;padding-right:18px!important}',
+    /* B2: righe delle liste dashboard fino al bordo della card (hover non più «tagliato»)
+       e senza divisore, come le righe delle tabelle. I separatori di sezione — stesso colore
+       ma non cliccabili — restano: qui il selettore chiede [cursor] proprio per distinguerli */
+    '.tms-app [style*="border-bottom:1px solid #f2f4f7"][style*="cursor"],.tms-app [style*="border-bottom: 1px solid rgb(242, 244, 247)"][style*="cursor"]{margin:0 -18px!important;padding-left:18px!important;padding-right:18px!important;border-bottom-color:transparent!important}',
     /* sidebar in vetro CHIARO flottante: senza bordo, resta l'ombra; in scura si inverte da sola */
     SBAR + '{position:relative;z-index:5;background:rgba(242,248,255,' + L(.66, .42) + ')!important;' + blur(Li(16, 28)),
     '  --navy-tx:#4d5e7b;--navy-tx2:#33435f;--navy-2:rgba(30,60,110,.16);--acc-3:#2f5da6;',
