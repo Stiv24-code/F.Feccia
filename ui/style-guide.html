@@ -598,17 +598,37 @@ function buildGlass() {
     /* tabelle: intestazioni e righe traslucide dentro il vetro */
     THEAD + '{background:rgba(255,255,255,' + L(.3, .12) + ')!important}',
     ROWS + '{background:transparent!important}',
+    /* R3 (provino scelto da Francesco): via le linee tra le righe, un filo d'aria in più,
+       e zebra percettibile per non perdere la riga sulle 9 colonne */
+    '.tms-app .tms-row{border-bottom-color:transparent!important;padding-top:3px!important;padding-bottom:3px!important}',
+    '.tms-app .tms-row[style*="background:#f8f9fb"],.tms-app .tms-row[style*="background: rgb(248, 249, 251)"]{background:rgba(255,255,255,' + L(.42, .3) + ')!important}',
     /* hover righe/card: nel canvas è .tms-row:hover/.tms-card:hover (0,2,0) — le regole vetro (0,3,0)
        lo battevano: ripristino a specificità superiore, DOPO le regole di superficie */
     '.tms-app .tms-row:hover{background:rgba(53,101,175,.09)!important}',
     '.tms-app .tms-card:hover{background:rgba(53,101,175,.12)!important}',
     /* colonne kanban e superfici neutre → velo leggero senza blur */
     COLS + '{background:rgba(255,255,255,' + L(.28, .12) + ')!important}',
+    /* eccezione: le icone azione delle righe hanno un riquadro che DEVE restare visibile
+       (il velo COLS le smaterializzava) — hover più scuro dal markup */
+    '.tms-app [style*="background:var(--chip-bg)"][style*="border-radius:var(--r-5)"],.tms-app [style*="background: var(--chip-bg)"][style*="border-radius: var(--r-5)"],.tms-app [style*="background:var(--chip-bg)"][style*="border-radius:var(--r-6)"],.tms-app [style*="background: var(--chip-bg)"][style*="border-radius: var(--r-6)"]{background:rgba(255,255,255,.6)!important;border-color:rgba(96,116,148,.3)!important}',
+    /* in hover il riquadro si scurisce (serve !important perché la regola sopra batterebbe lo style-hover) */
+    '.tms-app [style*="background:var(--chip-bg)"][style*="border-radius:var(--r-5)"]:hover,.tms-app [style*="background: var(--chip-bg)"][style*="border-radius: var(--r-5)"]:hover,.tms-app [style*="background:var(--chip-bg)"][style*="border-radius:var(--r-6)"]:hover,.tms-app [style*="background: var(--chip-bg)"][style*="border-radius: var(--r-6)"]:hover{background:rgba(96,116,148,.2)!important;border-color:rgba(96,116,148,.5)!important}',
     /* card planner/mappa: PIENE (planner meno glassato), bordo colorato intatto */
     PCARD + '{background:rgba(250,253,255,' + L(.92, .84) + ')!important;' + blur(Li(6, 10)),
     '  box-shadow:0 6px 18px rgba(30,60,120,.10)!important}',
     /* input e select: trasparenza leggera senza blur (leggeri per il rendering) */
     FIELDS + '{background-color:rgba(255,255,255,' + L(.8, .6) + ')!important}',
+    /* campi-trigger dei picker (partenza/lavaggio/autista/motrice): vetro, non piatti — via il
+       tratteggiato dal canvas, qui il materiale. Le voci DENTRO i popup hanno regola più specifica */
+    '.tms-app [style*="padding:8px 11px"][style*="border-radius:var(--r-8)"][style*="cursor:pointer"],.tms-app [style*="padding: 8px 11px"][style*="border-radius: var(--r-8)"][style*="cursor: pointer"],' +
+    '.tms-app [style*="padding:9px 12px"][style*="border-radius:var(--r-8)"][style*="cursor:pointer"],.tms-app [style*="padding: 9px 12px"][style*="border-radius: var(--r-8)"][style*="cursor: pointer"]{',
+    '  background:rgba(255,255,255,' + L(.62, .46) + ')!important;' + blur(Li(10, 16)),
+    '  border-color:rgba(96,116,148,.34)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)!important}',
+    /* campo-trigger con scelta fatta (acc-soft): velo d'accento invece del pieno chiaro */
+    '.tms-app [style*="background:var(--acc-soft)"][style*="cursor:pointer"],.tms-app [style*="background: var(--acc-soft)"][style*="cursor: pointer"]{background:rgba(53,101,175,.14)!important;border-color:var(--acc)!important}',
+    /* track del toggle «Mezzo proprio / Vettore terzo»: il velo COLS lo rendeva invisibile →
+       track scuro-tenue come la capsula delle tab, così la pillola bianca attiva si stacca */
+    '.tms-app [style*="background:var(--chip-bg)"][style*="border-radius:var(--r-8)"][style*="padding:4px"],.tms-app [style*="background: var(--chip-bg)"][style*="border-radius: var(--r-8)"][style*="padding: 4px"]{background:rgba(30,60,110,.1)!important;box-shadow:inset 0 1px 3px rgba(30,60,110,.1)!important}',
     /* divider: decisi in chiaro (token), e in SCURO sorgenti scure che il filtro ribalta in chiare */
     '.tms-app.tms-dark{--bd-1:rgba(14,26,48,.55);--bd-2:rgba(14,26,48,.4);--bd-3:rgba(14,26,48,.28)}',
     '.tms-app.tms-dark [style*="border-bottom:1px solid #e9ecf1"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(233, 236, 241)"],.tms-app.tms-dark [style*="border-bottom:1px solid #f2f4f7"],.tms-app.tms-dark [style*="border-bottom: 1px solid rgb(242, 244, 247)"]{border-bottom-color:rgba(14,26,48,.38)!important}',
@@ -626,8 +646,8 @@ function buildGlass() {
        come la testata sulla mappa — si intravede il form sotto (richiesta Francesco) */
     '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.16)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.16) 0px 8px 24px"],' +
     '.tms-app [style*="position:absolute"][style*="box-shadow:0 8px 24px rgba(28,37,52,.14)"],.tms-app [style*="position: absolute"][style*="rgba(28, 37, 52, 0.14) 0px 8px 24px"]{',
-    '  background:rgba(250,253,255,.62)!important;',
-    '  backdrop-filter:blur(40px) saturate(1.8);-webkit-backdrop-filter:blur(40px) saturate(1.8);',
+    '  background:rgba(250,250,250,.82)!important;',
+    '  backdrop-filter:blur(52px) saturate(.65);-webkit-backdrop-filter:blur(52px) saturate(.65);',
     '  border-color:rgba(255,255,255,.55)!important;',
     '  box-shadow:0 24px 60px rgba(20,45,90,.28)!important}',
     /* le VOCI dei picker: card bianche quasi piene (il testo sotto non traspare più dentro le voci,
