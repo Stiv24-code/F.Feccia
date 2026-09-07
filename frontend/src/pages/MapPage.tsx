@@ -355,7 +355,7 @@ export default function MapPage() {
                   )}
                   {isSelected && route.wash_station?.lat != null && route.wash_station?.lng != null && (
                     <Marker position={[route.wash_station.lat, route.wash_station.lng]} icon={washIcon}>
-                      <Popup><strong>{route.wash_station.nome}</strong><br />Punto di lavaggio (dopo lo scarico) — {route.progressivo}</Popup>
+                      <Popup><strong>{route.wash_station.nome}</strong><br />Punto di lavaggio (prima del carico) — {route.progressivo}</Popup>
                       <Tooltip direction="top" offset={[0, -16]}>Lavaggio: {route.wash_station.nome}</Tooltip>
                     </Marker>
                   )}

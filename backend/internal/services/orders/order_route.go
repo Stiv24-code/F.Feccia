@@ -72,9 +72,11 @@ func (s *OrderService) resolveWaypoint(ctx context.Context, tipo, refID string) 
 
 // RouteAlternatives proposes up to 3 candidate routes for an order's
 // carico→scarico leg (the only part with genuine route diversity — ORS's
-// alternative_routes only works for a plain 2-coordinate request), each
-// with the fixed garage→carico / scarico→wash_station legs prepended /
-// appended when those points are given. Purely computed — nothing is
+// alternative_routes only works for a plain 2-coordinate request), with the
+// fixed garage→wash_station→carico legs prepended when those points are
+// given: partenza (garage) and lavaggio (wash_station) are both optional,
+// but when present they always come before carico, in that order —
+// partenza → lavaggio → carico → scarico. Purely computed — nothing is
 // written to the DB, the manager picks one before it's persisted (Assign)
 // or a caller edits it further (UpdateRoute).
 func (s *OrderService) RouteAlternatives(ctx context.Context, orderID uuid.UUID, garageID, washStationID string) ([]dto.RouteAlternativeDTO, error) {
@@ -109,12 +111,18 @@ func (s *OrderService) RouteAlternatives(ctx context.Context, orderID uuid.UUID,
 
 	coreAlts := s.geo.GetRoadRouteAlternatives(ctx, caricoWP.Lat, caricoWP.Lng, scaricoWP.Lat, scaricoWP.Lng, 3)
 
-	var garageLeg, washLeg *geo.RouteResult
-	if garageWP != nil {
-		garageLeg = s.geo.GetRoadRoute(ctx, garageWP.Lat, garageWP.Lng, caricoWP.Lat, caricoWP.Lng)
-	}
-	if washWP != nil {
-		washLeg = s.geo.GetRoadRoute(ctx, scaricoWP.Lat, scaricoWP.Lng, washWP.Lat, washWP.Lng)
+	// La tappa che precede il carico è il garage se non c'è lavaggio, il
+	// lavaggio se non c'è garage, o entrambe in sequenza (garage→lavaggio→
+	// carico) se sono presenti tutte e due — partenza e lavaggio sono
+	// entrambi opzionali indipendentemente l'uno dall'altro.
+	var garageToWashLeg, garageToCaricoLeg, washToCaricoLeg *geo.RouteResult
+	if garageWP != nil && washWP != nil {
+		garageToWashLeg = s.geo.GetRoadRoute(ctx, garageWP.Lat, garageWP.Lng, washWP.Lat, washWP.Lng)
+		washToCaricoLeg = s.geo.GetRoadRoute(ctx, washWP.Lat, washWP.Lng, caricoWP.Lat, caricoWP.Lng)
+	} else if garageWP != nil {
+		garageToCaricoLeg = s.geo.GetRoadRoute(ctx, garageWP.Lat, garageWP.Lng, caricoWP.Lat, caricoWP.Lng)
+	} else if washWP != nil {
+		washToCaricoLeg = s.geo.GetRoadRoute(ctx, washWP.Lat, washWP.Lng, caricoWP.Lat, caricoWP.Lng)
 	}
 
 	result := make([]dto.RouteAlternativeDTO, 0, len(coreAlts))
@@ -126,10 +134,22 @@ func (s *OrderService) RouteAlternatives(ctx context.Context, orderID uuid.UUID,
 
 		if garageWP != nil {
 			waypoints = append(waypoints, *garageWP)
-			if garageLeg != nil {
-				points = append(points, garageLeg.Points...)
-				distanceKm += garageLeg.DistanceKm
-				durationHours += garageLeg.DurationHours
+			if leg := garageToWashLeg; leg != nil {
+				points = append(points, leg.Points...)
+				distanceKm += leg.DistanceKm
+				durationHours += leg.DurationHours
+			} else if leg := garageToCaricoLeg; leg != nil {
+				points = append(points, leg.Points...)
+				distanceKm += leg.DistanceKm
+				durationHours += leg.DurationHours
+			}
+		}
+		if washWP != nil {
+			waypoints = append(waypoints, *washWP)
+			if washToCaricoLeg != nil {
+				points = append(points, washToCaricoLeg.Points...)
+				distanceKm += washToCaricoLeg.DistanceKm
+				durationHours += washToCaricoLeg.DurationHours
 			}
 		}
 		waypoints = append(waypoints, caricoWP)
@@ -137,14 +157,6 @@ func (s *OrderService) RouteAlternatives(ctx context.Context, orderID uuid.UUID,
 		distanceKm += core.DistanceKm
 		durationHours += core.DurationHours
 		waypoints = append(waypoints, scaricoWP)
-		if washWP != nil {
-			waypoints = append(waypoints, *washWP)
-			if washLeg != nil {
-				points = append(points, washLeg.Points...)
-				distanceKm += washLeg.DistanceKm
-				durationHours += washLeg.DurationHours
-			}
-		}
 
 		result = append(result, dto.RouteAlternativeDTO{
 			Waypoints:   waypointResponseDTOs(waypoints),

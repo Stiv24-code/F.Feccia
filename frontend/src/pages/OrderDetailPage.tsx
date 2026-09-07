@@ -51,9 +51,9 @@ export default function OrderDetailPage() {
     const consegnaChip = order.ora_consegna_da || order.ora_consegna_a ? `${order.ora_consegna_da ?? ''}${order.ora_consegna_a ? `–${order.ora_consegna_a}` : ''}` : undefined;
     const stops: ItineraryStop[] = [];
     if (order.garage) stops.push({ variant: 'garage', nome: order.garage.nome, lat: order.garage.lat, lng: order.garage.lng });
+    if (order.wash_station) stops.push({ variant: 'wash', nome: order.wash_station.nome, lat: order.wash_station.lat, lng: order.wash_station.lng });
     stops.push({ variant: 'carico', nome: carico?.nome, sub: order.data_ritiro, chip: ritiroChip, lat: carico?.lat, lng: carico?.lng });
     stops.push({ variant: 'scarico', nome: scarico?.nome, sub: order.data_consegna, chip: consegnaChip, lat: scarico?.lat, lng: scarico?.lng });
-    if (order.wash_station) stops.push({ variant: 'wash', nome: order.wash_station.nome, lat: order.wash_station.lat, lng: order.wash_station.lng });
     return stops;
   }, [order, carico, scarico]);
 
