@@ -36,15 +36,17 @@ const StopMarker = ({ variant }: { variant: ItineraryStop['variant'] }) => {
 };
 
 // Ogni tratta ha un'enfasi visiva diversa (replica il mockup "TMS Unificato"):
-// garage→carico è un avvicinamento non fatturato (grigio, tratta secondaria),
 // carico→scarico è il trasporto vero e proprio (blu primary, tratta
-// principale), scarico→lavaggio è un giro accessorio dopo la consegna (teal
-// tratteggiato). Nessuna delle due tratte laterali è sempre presente.
+// principale), qualunque tratta che tocca il lavaggio (garage→lavaggio o
+// lavaggio→carico) è un giro accessorio prima del ritiro (teal tratteggiato),
+// il resto (garage→carico diretto, senza lavaggio) è un avvicinamento non
+// fatturato (grigio, tratta secondaria). Nessuna delle due tappe laterali
+// (garage, lavaggio) è sempre presente.
 const segmentFor = (a: ItineraryStop['variant'], b: ItineraryStop['variant']) => {
   if (a === 'carico' && b === 'scarico') {
     return { flexClass: 'flex-1', lineClassName: 'bg-primary', lineStyle: undefined, labelClassName: 'text-primary' };
   }
-  if (a === 'scarico' && b === 'wash') {
+  if (a === 'wash' || b === 'wash') {
     return { flexClass: 'flex-[0.6]', lineClassName: 'border-t-2 border-dashed', lineStyle: { borderColor: WASH_COLOR }, labelClassName: '', labelStyle: { color: WASH_COLOR } };
   }
   return { flexClass: 'flex-[0.6]', lineClassName: 'bg-border', lineStyle: undefined, labelClassName: 'text-muted-foreground' };
@@ -63,7 +65,7 @@ export interface RouteItineraryProps {
   stops: ItineraryStop[];
 }
 
-// Timeline orizzontale partenza→carico→scarico→lavaggio (le tappe garage/
+// Timeline orizzontale partenza→lavaggio→carico→scarico (le tappe garage/
 // lavaggio sono opzionali — il chiamante passa solo quelle note). Il km di
 // ogni tratta è una distanza in linea d'aria fra le coordinate delle due
 // tappe, non un percorso stradale — coerente con l'uso di haversineKm già

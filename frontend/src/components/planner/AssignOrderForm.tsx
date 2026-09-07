@@ -30,7 +30,7 @@ import { logger } from '@/lib/logger';
 type TransportMode = 'proprio' | 'terzo';
 
 // Trova l'n-esimo waypoint di un certo tipo in una route alternativa — ordine
-// garantito dal backend (garage?, carico, scarico, wash_station?), quindi
+// garantito dal backend (garage?, wash_station?, carico, scarico), quindi
 // idx=1 sul tipo "destinazione" è sempre lo scarico.
 const waypointByTipo = (waypoints: DtoRouteWaypointResponseDTO[] | undefined, tipo: string, idx = 0) => (waypoints || []).filter(w => w.tipo === tipo)[idx];
 
@@ -80,20 +80,21 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
   const garages = garagesPage?.items ?? [];
   const washStations = useMemo(() => washStationsData ?? [], [washStationsData]);
 
-  // Punto di lavaggio: la stazione si usa dopo lo scarico, quindi ordiniamo
-  // per vicinanza (linea d'aria) alla destinazione di scarico e mostriamo
-  // solo le 5 più vicine — con centinaia di stazioni in anagrafica la lista
-  // completa era poco utile per questa scelta. Se lo scarico non ha
-  // coordinate non possiamo ordinare: mostriamo l'elenco intero com'era
-  // prima. La stazione già assegnata (edit di un ordine esistente) resta
-  // sempre visibile anche se non è tra le 5 più vicine.
-  const scarico = order.destinazione_scarico;
+  // Punto di lavaggio: la stazione si usa prima del carico (partenza →
+  // lavaggio → carico → scarico), quindi ordiniamo per vicinanza (linea
+  // d'aria) alla destinazione di carico e mostriamo solo le 5 più vicine —
+  // con centinaia di stazioni in anagrafica la lista completa era poco utile
+  // per questa scelta. Se il carico non ha coordinate non possiamo ordinare:
+  // mostriamo l'elenco intero com'era prima. La stazione già assegnata (edit
+  // di un ordine esistente) resta sempre visibile anche se non è tra le 5
+  // più vicine.
+  const carico = order.destinazione_carico;
   const washStationsWithDist = useMemo(
-    () => washStations.map(w => ({ ...w, distanceKm: haversineKm(scarico, w) })),
-    [washStations, scarico]
+    () => washStations.map(w => ({ ...w, distanceKm: haversineKm(carico, w) })),
+    [washStations, carico]
   );
   const nearestWashStations = useMemo(() => {
-    if (scarico?.lat == null || scarico?.lng == null) return washStationsWithDist;
+    if (carico?.lat == null || carico?.lng == null) return washStationsWithDist;
     const ranked = [...washStationsWithDist].sort((a, b) => {
       if (a.distanceKm == null) return 1;
       if (b.distanceKm == null) return -1;
@@ -102,7 +103,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     const nearest5 = ranked.slice(0, 5);
     const selected = ranked.find(w => w.id === form.wash_station_id);
     return selected && !nearest5.some(w => w.id === selected.id) ? [selected, ...nearest5] : nearest5;
-  }, [washStationsWithDist, scarico, form.wash_station_id]);
+  }, [washStationsWithDist, carico, form.wash_station_id]);
 
   useEffect(() => {
     if (!order) return;
@@ -178,9 +179,9 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     const consegnaChip = order.ora_consegna_da || order.ora_consegna_a ? `${order.ora_consegna_da ?? ''}${order.ora_consegna_a ? `–${order.ora_consegna_a}` : ''}` : undefined;
     const stops: ItineraryStop[] = [];
     if (garageWp) stops.push({ variant: 'garage', nome: garageWp.nome, lat: garageWp.lat, lng: garageWp.lng });
+    if (washWp) stops.push({ variant: 'wash', nome: washWp.nome, lat: washWp.lat, lng: washWp.lng });
     stops.push({ variant: 'carico', nome: carico?.nome, sub: order.data_ritiro, chip: ritiroChip, lat: carico?.lat, lng: carico?.lng });
     stops.push({ variant: 'scarico', nome: scarico?.nome, sub: order.data_consegna, chip: consegnaChip, lat: scarico?.lat, lng: scarico?.lng });
-    if (washWp) stops.push({ variant: 'wash', nome: washWp.nome, lat: washWp.lat, lng: washWp.lng });
     return stops;
   }, [routeAlternatives, selectedRouteIdx, order]);
 
@@ -223,7 +224,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Punto di lavaggio — dopo lo scarico</Label>
+            <Label>Punto di lavaggio — prima del carico</Label>
             <LocationCombobox
               value={form.wash_station_id}
               onChange={setWashStation}
@@ -233,7 +234,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
               icon={Droplets}
               iconBg="#e6f4f2"
               iconColor="#0d9488"
-              getSubtitle={(w) => [w.tipo || w.indirizzo, w.distanceKm != null ? `~${w.distanceKm} km da scarico` : null].filter(Boolean).join(' · ')}
+              getSubtitle={(w) => [w.tipo || w.indirizzo, w.distanceKm != null ? `~${w.distanceKm} km dal carico` : null].filter(Boolean).join(' · ')}
             />
           </div>
         </div>

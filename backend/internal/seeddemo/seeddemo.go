@@ -386,7 +386,7 @@ func Seed(db *gorm.DB) error {
 			order.MotriceID = &m.ID
 			order.AutistaID = &d.ID
 			// Punto di partenza: sempre presente su un ordine assegnato (come nel
-			// form di assegnazione reale). Punto di lavaggio dopo lo scarico:
+			// form di assegnazione reale). Punto di lavaggio (prima del carico):
 			// solo su una parte degli ordini, è opzionale anche a mano.
 			g := pick(garages)
 			order.GarageID = &g.ID
