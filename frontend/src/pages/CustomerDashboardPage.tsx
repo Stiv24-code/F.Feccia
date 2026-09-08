@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useGetCustomerDashboardQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts/types/polar/Pie';
 import {
-  ArrowLeft, ClipboardList, FileText, TrendingUp, MapPin, Layers, Loader2,
+  ArrowLeft, ClipboardList, FileText, TrendingUp, MapPin, Layers, Loader2, Users,
 } from 'lucide-react';
 
 const PIE_COLORS = ['#0EA5A6', '#0B1220', '#FFAA45', '#22C55E', '#3B82F6', '#A855F7'];
@@ -43,6 +43,7 @@ const KPICard = ({ title, value, icon: Icon, description }: KPICardProps) => (
 
 export default function CustomerDashboardPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const query = useGetCustomerDashboardQuery(id as string, { skip: !id });
 
   if (query.isLoading) {
@@ -62,7 +63,7 @@ export default function CustomerDashboardPage() {
       <div className="p-8 text-center">
         <p className="text-destructive mb-4">Errore caricamento cruscotto cliente</p>
         <Button asChild variant="outline">
-          <Link to="/customers"><ArrowLeft className="h-4 w-4 mr-2" /> Torna ai clienti</Link>
+          <Link to="/anagrafiche/clienti"><ArrowLeft className="h-4 w-4 mr-2" /> Torna ai clienti</Link>
         </Button>
       </div>
     );
@@ -77,9 +78,14 @@ export default function CustomerDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div>
-          <Button asChild variant="ghost" size="sm" className="mb-1 h-7 text-xs gap-1">
-            <Link to="/customers"><ArrowLeft className="h-3.5 w-3.5" /> Clienti</Link>
-          </Button>
+          <div className="flex items-center gap-1 mb-1">
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-3.5 w-3.5" /> Indietro
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1">
+              <Link to="/anagrafiche/clienti"><Users className="h-3.5 w-3.5" /> Anagrafica clienti</Link>
+            </Button>
+          </div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             {customer.ragione_sociale}
           </h1>
