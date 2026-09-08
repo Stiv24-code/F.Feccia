@@ -343,6 +343,37 @@ html.glass.dark body {
   z-index: 30;
 }
 
+/* ── La fascia di testa passa DIETRO la sidebar ────────────────────────────
+   Nel mockup la topbar in tema Glass è a tutta larghezza e rientra il proprio
+   contenuto in base allo stato del rail (`padding-left:240px` da espansa,
+   `108px` da compressa): la sidebar è una scheda che galleggia sopra un piano
+   continuo. AppShell.js lo documentava già rimandando a una regola
+   ":has(aside[data-sidebar-rail=...])" che però non era mai stata scritta —
+   così la fascia partiva dal bordo destro della sidebar e si vedeva la
+   giunta: bordo verticale netto e testa della sidebar tranciata contro di
+   esso.
+
+   Solo da lg: sotto quella soglia l'<aside> è `hidden` ma resta nel DOM, e
+   senza il media query :has() lo troverebbe comunque rientrando il contenuto
+   di una sidebar che non c'è. */
+@media (min-width: 1024px) {
+  .glass:has(aside[data-sidebar-rail='expanded']) { --rail-w: 260px; }
+  .glass:has(aside[data-sidebar-rail='collapsed']) { --rail-w: 58px; }
+
+  /* La testa parte dal bordo destro della sidebar: la si tira fino a 0 e si
+     rimette il contenuto al suo posto col padding. */
+  .glass header.bg-card {
+    margin-left: calc(-1 * var(--rail-w));
+    padding-left: calc(var(--rail-w) + 1.5rem);
+  }
+  /* La fascia dei filtri sta dentro <main>, che ha già px-6 annullato dai
+     -mx-6 della classe: va estesa di quei 1.5rem in più. */
+  .glass [data-glass='header'] {
+    margin-left: calc(-1 * var(--rail-w) - 1.5rem);
+    padding-left: calc(var(--rail-w) + 1.5rem);
+  }
+}
+
 /* Sidebar: da rail incollato al bordo a scheda che galleggia — margine su
    tre lati, angoli tondi, nessun bordo, ombra ampia e sfocatura dietro al
    fondo traslucido (valori del mockup: margin 12px, radius 18px,
@@ -352,10 +383,12 @@ html.glass.dark body {
   box-sizing: border-box;
   padding: 12px 0 12px 12px;
   box-shadow: none !important;
-  /* z-index 5 come nel mockup: serve a stare sopra la mappa a tutto schermo
-     della pagina Mappa (che sta a z-index 0 per restare cliccabile). */
+  /* La scheda galleggia sopra tutto il resto: sopra la mappa a tutto schermo
+     della pagina Mappa (z-index 0, per restare cliccabile) e sopra la fascia
+     di testa, che ora le passa dietro a tutta larghezza (vedi il media query
+     più sopra). Prima era 5 — bastava per la mappa, non per la fascia. */
   position: relative;
-  z-index: 5;
+  z-index: 40;
 }
 .glass aside[data-sidebar-rail] [data-sidebar] {
   border-radius: 18px;
