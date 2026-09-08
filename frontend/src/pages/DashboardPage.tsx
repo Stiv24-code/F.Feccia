@@ -432,8 +432,7 @@ export default function DashboardPage() {
                     onClick={() => openTrip(t)}
                     className="w-full flex items-center gap-4 px-4 py-2.5 text-left hover:bg-muted/60"
                   >
-                    <StatusBadge stato={t.stato} />
-                    {live && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 animate-pulse" />}
+                    <StatusBadge stato={t.stato} pulse={live} />
                     <span className="text-sm w-36 shrink-0 truncate">{tripAutista(t)}</span>
                     <span className="text-xs text-muted-foreground w-24 shrink-0 truncate">{tripMezzo(t)}</span>
                     <span className="text-sm flex-1 truncate">{tripTratta(t, orderById)}</span>

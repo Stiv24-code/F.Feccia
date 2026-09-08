@@ -18,13 +18,17 @@ const statusConfig: Record<string, { label: string; className: string; dot: stri
 
 export interface StatusBadgeProps {
   stato?: string;
+  // Punto lampeggiante (replica lo stile "live" del mockup, es. viaggi
+  // IN_CORSO in dashboard) — opt-in, default spento per non far lampeggiare
+  // ogni riga IN_CORSO/VIAGGIO nelle liste normali (Ordini, Planner, ecc.).
+  pulse?: boolean;
 }
 
-export const StatusBadge = ({ stato }: StatusBadgeProps) => {
+export const StatusBadge = ({ stato, pulse }: StatusBadgeProps) => {
   const config = (stato && statusConfig[stato]) || { label: stato, className: '', dot: '#999' };
   return (
     <Badge variant="outline" className={`${config.className} border text-[10px] px-2 py-0.5 font-medium gap-1.5`} data-testid="order-status-badge">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: config.dot }} />
+      <span className={`h-1.5 w-1.5 rounded-full ${pulse ? 'animate-pulse' : ''}`} style={{ backgroundColor: config.dot }} />
       {config.label}
     </Badge>
   );
