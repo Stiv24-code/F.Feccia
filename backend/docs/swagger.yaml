@@ -561,8 +561,20 @@ definitions:
         items:
           $ref: '#/definitions/dto.MonthlyOrderTrend'
         type: array
+      orders_prev_month:
+        type: integer
+      orders_this_month:
+        description: |-
+          OrdersThisMonth/PrevMonth: ordini per data_ritiro nel mese corrente e
+          nel mese precedente (calendario, non "ultimi 30 giorni") — alimentano
+          la card dashboard "Ordini · <mese>" con la variazione % vs mese prima.
+        type: integer
       pianificabili:
         type: integer
+      revenue_prev_month:
+        type: number
+      revenue_this_month:
+        type: number
       total_customers:
         type: integer
       total_drivers:

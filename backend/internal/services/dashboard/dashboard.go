@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -59,11 +60,31 @@ func (s *DashboardService) Stats(ctx context.Context) (*dto.DashboardStatsRespon
 		monthly = []dto.MonthlyOrderTrend{}
 	}
 
+	now := time.Now()
+	thisMonth := now.Format("2006-01")
+	prevMonth := now.AddDate(0, -1, 0).Format("2006-01")
+
+	var ordersThisMonth, ordersPrevMonth int64
+	db.Model(&models.Order{}).Where("SUBSTR(data_ritiro, 1, 7) = ?", thisMonth).Count(&ordersThisMonth)
+	db.Model(&models.Order{}).Where("SUBSTR(data_ritiro, 1, 7) = ?", prevMonth).Count(&ordersPrevMonth)
+
+	var revenueThisMonth, revenuePrevMonth float64
+	if err := db.Model(&models.Invoice{}).Where("stato = ? AND SUBSTR(data_fattura, 1, 7) = ?", "DEFINITIVA", thisMonth).
+		Select("COALESCE(SUM(totale), 0)").Scan(&revenueThisMonth).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Model(&models.Invoice{}).Where("stato = ? AND SUBSTR(data_fattura, 1, 7) = ?", "DEFINITIVA", prevMonth).
+		Select("COALESCE(SUM(totale), 0)").Scan(&revenuePrevMonth).Error; err != nil {
+		return nil, err
+	}
+
 	return &dto.DashboardStatsResponse{
 		TotalOrders: totalOrders, Pianificabili: pianificabili, InViaggio: inViaggio,
 		Chiusi: chiusi, Fatturati: fatturati, TotalCustomers: totalCustomers,
 		TotalMotrici: totalMotrici, TotalSemirimorchi: totalSemirimorchi, TotalDrivers: totalDrivers,
 		TotalRevenue: totalRevenue, MonthlyTrend: monthly,
+		OrdersThisMonth: ordersThisMonth, OrdersPrevMonth: ordersPrevMonth,
+		RevenueThisMonth: revenueThisMonth, RevenuePrevMonth: revenuePrevMonth,
 	}, nil
 }
 

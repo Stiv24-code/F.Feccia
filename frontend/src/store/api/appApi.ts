@@ -86,6 +86,23 @@ export const appApi = createApi({
       queryFn: () => toQueryResult(apiClient.v1DashboardNavCountsList()),
       providesTags: ['Dashboard'],
     }),
+    // Elenco ordini filtrato — usato dalla Dashboard per le code "in viaggio" /
+    // "da pianificare" / andamento ultimi 7 giorni. Stessa route di lib/api.js
+    // getOrders, qui come RTK query per lo stile a hook del resto della pagina.
+    getOrdersList: builder.query<DtoOrderResponse[], { stato?: string; data_da?: string; data_a?: string; limit?: number } | void>({
+      queryFn: (args) => toQueryResult(apiClient.v1OrdersList(args || {})),
+      providesTags: ['Dashboard'],
+    }),
+    // Tutti i viaggi (nessun filtro autista) — usato dalla Dashboard per il
+    // riepilogo flotta e la tabella "Viaggi corsa e pianificati".
+    getTrips: builder.query<DtoTripResponse[], { stato?: string; limit?: number } | void>({
+      queryFn: (args) => toQueryResult(apiClient.v1TripsList(args || {})),
+      providesTags: ['Dashboard'],
+    }),
+    getInboundOrders: builder.query<DtoInboundOrderResponse[], void>({
+      queryFn: () => toQueryResult(apiClient.v1InboundOrdersList()),
+      providesTags: ['Dashboard'],
+    }),
 
     getCustomers: builder.query<PagedResult<DtoCustomerResponse>, PagedListArgs | void>({
       queryFn: (args: PagedListArgs = {}) => toPagedQueryResult(apiClient.v1CustomersList({ search: args.search || undefined, page: args.page, limit: args.limit })),
@@ -399,6 +416,9 @@ export const {
   useGetDashboardStatsQuery,
   useGetRecentOrdersQuery,
   useGetNavCountsQuery,
+  useGetOrdersListQuery,
+  useGetTripsQuery,
+  useGetInboundOrdersQuery,
   useGetCustomerDashboardQuery,
   useGetCustomersQuery,
   useCreateCustomerMutation,

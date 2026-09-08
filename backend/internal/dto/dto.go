@@ -985,6 +985,13 @@ type DashboardStatsResponse struct {
 	TotalDrivers      int64               `json:"total_drivers"`
 	TotalRevenue      float64             `json:"total_revenue"`
 	MonthlyTrend      []MonthlyOrderTrend `json:"monthly_trend"`
+	// OrdersThisMonth/PrevMonth: ordini per data_ritiro nel mese corrente e
+	// nel mese precedente (calendario, non "ultimi 30 giorni") — alimentano
+	// la card dashboard "Ordini · <mese>" con la variazione % vs mese prima.
+	OrdersThisMonth  int64 `json:"orders_this_month"`
+	OrdersPrevMonth  int64 `json:"orders_prev_month"`
+	RevenueThisMonth float64 `json:"revenue_this_month"`
+	RevenuePrevMonth float64 `json:"revenue_prev_month"`
 }
 
 // NavCountsResponse feeds the sidebar nav badges (In arrivo / Registro

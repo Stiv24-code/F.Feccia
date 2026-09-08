@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getOrders, startOrder, closeOrder, discardOrder } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { DtoOrderResponse } from '@/api/data-contracts';
@@ -132,6 +132,7 @@ const STATUS_CHIPS: { key: OrderStatus | null; label: string; className: string 
 // ============================
 export default function PlannerPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState<DtoOrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -139,7 +140,9 @@ export default function PlannerPage() {
 
   const [search, setSearch] = useState('');
   const [driverFilter, setDriverFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
+  // Filtro stato iniziale passato da un'altra pagina (es. Dashboard → "Da
+  // pianificare"/"Registro →" apre già la coda filtrata) via location.state.
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(() => (location.state as { statusFilter?: OrderStatus } | null)?.statusFilter ?? null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [dateOpen, setDateOpen] = useState(false);

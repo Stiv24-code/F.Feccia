@@ -318,7 +318,16 @@ export interface DtoDashboardStatsResponse {
   fatturati?: number;
   in_viaggio?: number;
   monthly_trend?: DtoMonthlyOrderTrend[];
+  orders_prev_month?: number;
+  /**
+   * OrdersThisMonth/PrevMonth: ordini per data_ritiro nel mese corrente e
+   * nel mese precedente (calendario, non "ultimi 30 giorni") — alimentano
+   * la card dashboard "Ordini · <mese>" con la variazione % vs mese prima.
+   */
+  orders_this_month?: number;
   pianificabili?: number;
+  revenue_prev_month?: number;
+  revenue_this_month?: number;
   total_customers?: number;
   total_drivers?: number;
   total_motrici?: number;

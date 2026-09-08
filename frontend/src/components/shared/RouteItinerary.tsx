@@ -37,16 +37,16 @@ const StopMarker = ({ variant }: { variant: ItineraryStop['variant'] }) => {
 
 // Ogni tratta ha un'enfasi visiva diversa (replica il mockup "TMS Unificato"):
 // carico→scarico è il trasporto vero e proprio (blu primary, tratta
-// principale), qualunque tratta che tocca il lavaggio (garage→lavaggio o
-// lavaggio→carico) è un giro accessorio prima del ritiro (teal tratteggiato),
-// il resto (garage→carico diretto, senza lavaggio) è un avvicinamento non
-// fatturato (grigio, tratta secondaria). Nessuna delle due tappe laterali
-// (garage, lavaggio) è sempre presente.
+// principale), lavaggio→carico è un giro accessorio prima del ritiro (teal
+// tratteggiato), il resto — garage→carico diretto (senza lavaggio) e
+// garage→lavaggio — è un avvicinamento non fatturato (grigio, tratta
+// secondaria, stesso stile). Nessuna delle due tappe laterali (garage,
+// lavaggio) è sempre presente.
 const segmentFor = (a: ItineraryStop['variant'], b: ItineraryStop['variant']) => {
   if (a === 'carico' && b === 'scarico') {
     return { flexClass: 'flex-1', lineClassName: 'bg-primary', lineStyle: undefined, labelClassName: 'text-primary' };
   }
-  if (a === 'wash' || b === 'wash') {
+  if (a === 'wash') {
     return { flexClass: 'flex-[0.6]', lineClassName: 'border-t-2 border-dashed', lineStyle: { borderColor: WASH_COLOR }, labelClassName: '', labelStyle: { color: WASH_COLOR } };
   }
   return { flexClass: 'flex-[0.6]', lineClassName: 'bg-border', lineStyle: undefined, labelClassName: 'text-muted-foreground' };

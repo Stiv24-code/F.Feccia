@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
@@ -93,6 +94,37 @@ func TestDashboardService_Stats_CountsAndRevenue(t *testing.T) {
 	}
 	if len(stats.MonthlyTrend) != 2 {
 		t.Fatalf("expected 2 monthly groups (2026-01, 2026-02), got %+v", stats.MonthlyTrend)
+	}
+}
+
+func TestDashboardService_Stats_ThisAndPrevMonth(t *testing.T) {
+	ctx := context.Background()
+	db := newTestDB(t)
+	svc := NewDashboardService(db)
+
+	now := time.Now()
+	thisMonth := now.Format("2006-01") + "-10"
+	prevMonth := now.AddDate(0, -1, 0).Format("2006-01") + "-10"
+
+	clienteID := uuid.New()
+	seedOrder(t, db, clienteID, "VIAGGIO", thisMonth, "", "nazionale", "", 100)
+	seedOrder(t, db, clienteID, "VIAGGIO", thisMonth, "", "nazionale", "", 100)
+	seedOrder(t, db, clienteID, "CHIUSO", prevMonth, "", "nazionale", "", 100)
+
+	db.Create(&models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "DEFINITIVA", Totale: 500, DataFattura: thisMonth, CostiAccessori: []byte("[]")})
+	db.Create(&models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "DEFINITIVA", Totale: 300, DataFattura: prevMonth, CostiAccessori: []byte("[]")})
+	// PROFORMA non deve contare nel fatturato del mese corrente.
+	db.Create(&models.Invoice{ID: uuid.New(), ClienteID: clienteID, Stato: "PROFORMA", Totale: 999, DataFattura: thisMonth, CostiAccessori: []byte("[]")})
+
+	stats, err := svc.Stats(ctx)
+	if err != nil {
+		t.Fatalf("Stats returned error: %v", err)
+	}
+	if stats.OrdersThisMonth != 2 || stats.OrdersPrevMonth != 1 {
+		t.Fatalf("expected 2 orders this month and 1 last month, got this=%d prev=%d", stats.OrdersThisMonth, stats.OrdersPrevMonth)
+	}
+	if stats.RevenueThisMonth != 500 || stats.RevenuePrevMonth != 300 {
+		t.Fatalf("expected revenue this=500 prev=300 (DEFINITIVA only), got this=%v prev=%v", stats.RevenueThisMonth, stats.RevenuePrevMonth)
 	}
 }
 

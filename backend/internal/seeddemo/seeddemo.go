@@ -353,10 +353,12 @@ func Seed(db *gorm.DB) error {
 		}
 		prod := pick(products)
 		stato := pick(statiDist)
-		// Spread: da ~3 settimane fa a ~7 settimane nel futuro, centrato su
-		// oggi, così la settimana corrente del calendario Planner è sempre
-		// popolata fin dal primo avvio.
-		ritiro := today.AddDate(0, 0, randRange(-20, 45))
+		// Spread: da ~9 settimane fa a ~7 settimane nel futuro, centrato su
+		// oggi, così la settimana corrente del calendario Planner resta
+		// sempre popolata fin dal primo avvio, e il grafico dashboard
+		// "Andamento ordini" (8 settimane a ritroso) non si ritrova con le
+		// prime barre a zero per mancanza di storico.
+		ritiro := today.AddDate(0, 0, randRange(-60, 45))
 		consegna := ritiro.AddDate(0, 0, randRange(1, 3))
 
 		rifOrdineCliente := ""
@@ -528,6 +530,61 @@ func Seed(db *gorm.DB) error {
 	}
 	fmt.Printf("✓ %d viaggi\n", len(trips))
 
+	// ───────────────────── VIAGGI PIANIFICATI (non ancora avviati) ─────────────────────
+	// Un ordine PIANIFICATO ha già motrice/autista assegnati (vedi sopra) ma,
+	// a differenza di VIAGGIO, finora non riceveva un Trip vero e proprio —
+	// la dashboard/mappa non aveva quindi mai un viaggio in stato PIANIFICATO
+	// da mostrare. Stesso schema di raggruppamento del blocco VIAGGI sopra,
+	// solo con Stato "PIANIFICATO" (non ancora avviato via TripService.Start).
+	var pianificatoOrders []models.Order
+	for _, o := range orders {
+		if o.Stato == "PIANIFICATO" {
+			pianificatoOrders = append(pianificatoOrders, o)
+		}
+	}
+
+	var plannedTrips []models.Trip
+	plannedTripCount := min(10, len(pianificatoOrders))
+	for j := 0; j < plannedTripCount; j++ {
+		tripOrds := sliceClamp(pianificatoOrders, j*2, j*2+randRange(1, 3))
+		if len(tripOrds) == 0 {
+			continue
+		}
+		m := pick(motrici)
+		d := pick(drivers)
+		trailer := pick(trailers)
+		ordiniIds := make([]string, len(tripOrds))
+		for i, o := range tripOrds {
+			ordiniIds[i] = o.ID.String()
+		}
+		ordiniIdsJSON, err := json.Marshal(ordiniIds)
+		if err != nil {
+			return fmt.Errorf("trip pianificato ordini_ids: %w", err)
+		}
+
+		trip := models.Trip{
+			ID: uuid.New(), OrdiniIds: ordiniIdsJSON,
+			MotriceID: &m.ID, SemirimorchioID: &trailer.ID,
+			AutistaID: &d.ID,
+			GarageID:  &garages[0].ID,
+			KmTotali:  float64(randRange(300, 2500)), CostoStimato: float64(randRange(800, 4000)),
+			Stato: "PIANIFICATO", DataPartenza: tripOrds[0].DataRitiro, DataArrivo: tripOrds[0].DataConsegna,
+		}
+		plannedTrips = append(plannedTrips, trip)
+
+		for _, o := range tripOrds {
+			db.Model(&models.Order{}).Where("id = ?", o.ID).Updates(map[string]interface{}{
+				"viaggio_id": trip.ID, "motrice_id": m.ID, "autista_id": d.ID,
+			})
+		}
+	}
+	if len(plannedTrips) > 0 {
+		if err := db.Create(&plannedTrips).Error; err != nil {
+			return fmt.Errorf("viaggi pianificati: %w", err)
+		}
+	}
+	fmt.Printf("✓ %d viaggi pianificati\n", len(plannedTrips))
+
 	// ─────────────────────────── FATTURE ───────────────────────────
 	// "Fatturato" non è un valore di Stato dell'ordine: un ordine CHIUSO che
 	// è stato fatturato resta CHIUSO, e porta semplicemente un fattura_id
@@ -561,11 +618,16 @@ func Seed(db *gorm.DB) error {
 			continue
 		}
 		righe, totale := buildInvoiceLines(invOrders, destByID, prodByID)
+		// Ancorate a "oggi" (non a un anno fisso): DEFINITIVA copre un fattura
+		// già emessa 5-90 giorni fa, così mese corrente e mese precedente
+		// hanno entrambi un po' di fatturato reale (vedi dashboard "Fatturato
+		// · <mese>", che somma solo DEFINITIVA per data_fattura).
+		fattDate := today.AddDate(0, 0, -randRange(5, 90))
 		inv := models.Invoice{
-			ID: uuid.New(), Numero: fmt.Sprintf("O/F-25/%04d", k+1),
+			ID: uuid.New(), Numero: fmt.Sprintf("O/F-%s/%04d", fattDate.Format("06"), k+1),
 			ClienteID:           invOrders[0].ClienteID,
-			DataFattura:         fmt.Sprintf("2025-%02d-%02d", randRange(7, 11), randRange(1, 28)),
-			DataScadenza:        fmt.Sprintf("2025-%02d-%02d", randRange(9, 12), randRange(1, 28)),
+			DataFattura:         fattDate.Format("2006-01-02"),
+			DataScadenza:        fattDate.AddDate(0, 0, 30).Format("2006-01-02"),
 			CondizioniPagamento: "BB 30gg DF FM", Righe: righe, CostiAccessori: []byte("[]"),
 			TotaleImponibile: totale, Totale: totale, Stato: "DEFINITIVA", Tipo: "ordine",
 		}
@@ -582,10 +644,13 @@ func Seed(db *gorm.DB) error {
 			continue
 		}
 		righe, totale := buildInvoiceLines(invOrders, destByID, prodByID)
+		// PROFORMA = bozza non ancora finalizzata: più recente della
+		// DEFINITIVA sopra, entro l'ultimo mese circa.
+		fattDate := today.AddDate(0, 0, -randRange(0, 30))
 		invoices = append(invoices, models.Invoice{
-			ID: uuid.New(), Numero: fmt.Sprintf("O/F-25/%04d", k+5),
+			ID: uuid.New(), Numero: fmt.Sprintf("O/F-%s/%04d", fattDate.Format("06"), k+5),
 			ClienteID:   invOrders[0].ClienteID,
-			DataFattura: fmt.Sprintf("2025-%02d-%02d", randRange(9, 12), randRange(1, 28)),
+			DataFattura: fattDate.Format("2006-01-02"),
 			Righe:       righe, CostiAccessori: []byte("[]"),
 			TotaleImponibile: totale, Totale: totale, Stato: "PROFORMA", Tipo: "ordine",
 		})
