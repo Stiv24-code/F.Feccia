@@ -185,12 +185,31 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
     return stops;
   }, [routeAlternatives, selectedRouteIdx, order]);
 
-  // "Assegna Viaggio" richiede: chi effettua il trasporto (autista se mezzo
-  // proprio, vettore se terzo) E un percorso calcolato/selezionato — nessuno
-  // dei due è opzionale per assegnare davvero l'ordine.
-  const hasTransport = transportMode === 'proprio' ? !!form.autista_id : !!form.vettore_id;
+  // "Assegna Viaggio" richiede: chi effettua il trasporto E un percorso
+  // calcolato/selezionato — nessuno dei due è opzionale per assegnare davvero
+  // l'ordine.
+  //
+  // Le due modalità si escludono e vanno compilate per intero: mezzo proprio
+  // vuol dire motrice + semirimorchio + autista tutti e tre (una motrice senza
+  // autista non parte, quindi il parziale lascerebbe un ordine PIANIFICATO ma
+  // non eseguibile), vettore terzo vuol dire il solo vettore. Stessa regola
+  // applicata lato server in OrderService.Assign/validateAssignTransport — qui
+  // serve solo a non far partire una richiesta già destinata al 400.
+  const missingProprio = useMemo(() => {
+    const mancanti: string[] = [];
+    if (!form.motrice_id) mancanti.push('motrice');
+    if (!form.semirimorchio_id) mancanti.push('rimorchio');
+    if (!form.autista_id) mancanti.push('autista');
+    return mancanti;
+  }, [form.motrice_id, form.semirimorchio_id, form.autista_id]);
+
+  const hasTransport = transportMode === 'proprio' ? missingProprio.length === 0 : !!form.vettore_id;
   const hasRoute = !routeLoading && !!routeAlternatives[selectedRouteIdx];
   const canSubmit = hasTransport && hasRoute;
+
+  const transportHint = transportMode === 'proprio'
+    ? `Mezzo proprio: seleziona ${missingProprio.join(', ')} per assegnare.`
+    : 'Seleziona un vettore per assegnare.';
 
   const handleAssign = async () => {
     setSaving(true);
@@ -304,12 +323,17 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
             <TabsTrigger value="terzo">Vettore terzo</TabsTrigger>
           </TabsList>
         </Tabs>
+        <p className="text-xs text-muted-foreground mt-2">
+          {transportMode === 'proprio'
+            ? 'Servono tutti e tre: motrice, rimorchio e autista.'
+            : 'Il trasporto è affidato a un vettore esterno: i campi del mezzo proprio restano vuoti.'}
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           {transportMode === 'proprio' ? (
             <>
               <div className="space-y-1.5">
-                <Label>Autista{disponibilitaLabel && <span className="text-muted-foreground font-normal"> · disponibilità {disponibilitaLabel}</span>}</Label>
+                <Label>Autista <span className="text-destructive">*</span>{disponibilitaLabel && <span className="text-muted-foreground font-normal"> · disponibilità {disponibilitaLabel}</span>}</Label>
                 <SearchableSelect
                   value={form.autista_id}
                   onValueChange={setDriver}
@@ -332,7 +356,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Motrice</Label>
+                <Label>Motrice <span className="text-destructive">*</span></Label>
                 <SearchableSelect
                   value={form.motrice_id}
                   onValueChange={(v) => setForm(f => ({ ...f, motrice_id: v }))}
@@ -351,7 +375,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Rimorchio</Label>
+                <Label>Rimorchio <span className="text-destructive">*</span></Label>
                 <SearchableSelect
                   value={form.semirimorchio_id}
                   onValueChange={(v) => setForm(f => ({ ...f, semirimorchio_id: v }))}
@@ -372,7 +396,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
             </>
           ) : (
             <div className="space-y-1.5">
-              <Label>Vettore</Label>
+              <Label>Vettore <span className="text-destructive">*</span></Label>
               <SearchableSelect
                 value={form.vettore_id}
                 onValueChange={setVettore}
@@ -390,9 +414,7 @@ export default function AssignOrderForm({ order, onAssigned, onCancel }: AssignO
       <div className="flex items-center justify-end gap-2">
         {!canSubmit && (
           <span className="text-xs text-muted-foreground mr-auto">
-            {!hasTransport
-              ? (transportMode === 'proprio' ? 'Seleziona un autista per assegnare.' : 'Seleziona un vettore per assegnare.')
-              : 'Serve un percorso valido per assegnare.'}
+            {!hasTransport ? transportHint : 'Serve un percorso valido per assegnare.'}
           </span>
         )}
         {onCancel && <Button variant="outline" onClick={onCancel}>Annulla</Button>}

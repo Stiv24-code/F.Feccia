@@ -311,6 +311,51 @@ func (s *OrderService) Update(ctx context.Context, id uuid.UUID, req dto.OrderRe
 	return &resp, nil
 }
 
+// validateAssignTransport applica la regola "Chi effettua il trasporto?" del
+// form di assegnazione: esattamente UNA delle due modalità, e completa.
+//
+//   - mezzo proprio → motrice + semirimorchio + autista tutti valorizzati,
+//     vettore vuoto;
+//   - vettore terzo → vettore valorizzato, i tre campi del mezzo proprio vuoti.
+//
+// Prima Assign accettava qualunque combinazione, comprese quelle che lasciano
+// un ordine PIANIFICATO ma non eseguibile: mezzo proprio parziale (una motrice
+// senza autista non parte), oppure vettore terzo e mezzo proprio insieme, che
+// rende ambiguo chi sta effettuando il viaggio. La regola vive qui e non solo
+// nel form perché il form è aggirabile chiamando l'endpoint direttamente.
+func validateAssignTransport(req dto.OrderAssignRequest) error {
+	proprio := []struct {
+		nome   string
+		valore string
+	}{
+		{"motrice", req.MotriceID},
+		{"semirimorchio", req.SemirimorchioID},
+		{"autista", req.AutistaID},
+	}
+	var mancanti []string
+	valorizzati := 0
+	for _, campo := range proprio {
+		if campo.valore == "" {
+			mancanti = append(mancanti, campo.nome)
+		} else {
+			valorizzati++
+		}
+	}
+
+	switch {
+	case req.VettoreID != "" && valorizzati > 0:
+		return utils.NewAPIError(400, "Scegli una sola modalità di trasporto: vettore terzo oppure mezzo proprio, non entrambe")
+	case req.VettoreID != "":
+		return nil
+	case valorizzati == 0:
+		return utils.NewAPIError(400, "Indica chi effettua il trasporto: un vettore terzo, oppure mezzo proprio con motrice, semirimorchio e autista")
+	case len(mancanti) > 0:
+		return utils.NewAPIError(400, fmt.Sprintf("Mezzo proprio incompleto: manca %s", strings.Join(mancanti, ", ")))
+	default:
+		return nil
+	}
+}
+
 // Assign mirrors PATCH /orders/{id}/assign: only valid from PIANIFICABILE,
 // moves to PIANIFICATO (driver/vehicle attached, but not yet departed —
 // the same target state used when orders are grouped into a Trip, see
@@ -322,6 +367,9 @@ func (s *OrderService) Assign(ctx context.Context, id uuid.UUID, req dto.OrderAs
 	}
 	if order.Stato != models.OrderStatoPianificabile {
 		return nil, utils.NewAPIError(400, fmt.Sprintf("L'ordine in stato %s non può essere assegnato", order.Stato))
+	}
+	if err := validateAssignTransport(req); err != nil {
+		return nil, err
 	}
 
 	garageID, err := utils.ParseOptionalUUID(req.GarageID)

@@ -54,6 +54,39 @@ func seedProduct(t *testing.T, db *gorm.DB, codice string) uuid.UUID {
 	return p.ID
 }
 
+// assignProprio è una richiesta di assegnazione valida in modalità "mezzo
+// proprio": motrice, semirimorchio e autista sono obbligatori INSIEME (vedi
+// validateAssignTransport), quindi i test che vogliono soltanto portare un
+// ordine in PIANIFICATO passano da qui invece di mandare una richiesta vuota.
+// Semina risorse reali, non UUID casuali, perché una parte dei test gira con
+// le foreign key attive (newTestDBWithForeignKeys).
+func assignProprio(t *testing.T, db *gorm.DB) dto.OrderAssignRequest {
+	t.Helper()
+	suffix := uuid.New().String()[:8]
+	motrice := models.Motrice{ID: uuid.New(), Targa: "M" + suffix, Active: true}
+	semirimorchio := models.Semirimorchio{ID: uuid.New(), Targa: "S" + suffix, Active: true}
+	autista := models.Driver{ID: uuid.New(), Nome: "Mario", Cognome: "Rossi", Active: true}
+	for _, record := range []any{&motrice, &semirimorchio, &autista} {
+		if err := db.Create(record).Error; err != nil {
+			t.Fatalf("failed to seed transport resource: %v", err)
+		}
+	}
+	return dto.OrderAssignRequest{
+		MotriceID:       motrice.ID.String(),
+		SemirimorchioID: semirimorchio.ID.String(),
+		AutistaID:       autista.ID.String(),
+	}
+}
+
+func seedCarrier(t *testing.T, db *gorm.DB) uuid.UUID {
+	t.Helper()
+	c := models.Carrier{ID: uuid.New(), RagioneSociale: "Trasporti Terzi S.r.l.", Active: true}
+	if err := db.Create(&c).Error; err != nil {
+		t.Fatalf("failed to seed carrier: %v", err)
+	}
+	return c.ID
+}
+
 // baseRequest seeds a generic customer/destinations/product and returns an
 // OrderRequest referencing their real ids — the write-side DTO only carries
 // ids now, the server resolves names via Preload.
@@ -222,7 +255,7 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	_, err = svc.Close(ctx, order.ID)
 	assertAPIError(t, err, 400)
 
-	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{MotriceID: uuid.New().String(), AutistaID: uuid.New().String()})
+	assigned, err := svc.Assign(ctx, order.ID, assignProprio(t, db))
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
@@ -231,7 +264,7 @@ func TestOrderService_AssignStartCloseDelete_StateMachine(t *testing.T) {
 	}
 
 	// Assign again must fail (no longer PIANIFICABILE).
-	_, err = svc.Assign(ctx, order.ID, dto.OrderAssignRequest{})
+	_, err = svc.Assign(ctx, order.ID, assignProprio(t, db))
 	assertAPIError(t, err, 400)
 
 	// Close before start must fail (still PIANIFICATO, not VIAGGIO).
@@ -276,7 +309,7 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, order.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 	// Simulate the order having been grouped into a Trip meanwhile.
@@ -286,6 +319,78 @@ func TestOrderService_Start_RejectsOrdersOnATrip(t *testing.T) {
 
 	_, err = svc.Start(ctx, order.ID)
 	assertAPIError(t, err, 400)
+}
+
+// Regola "Chi effettua il trasporto?": una sola modalità, e completa.
+func TestOrderService_Assign_TransportModeRules(t *testing.T) {
+	// Le richieste sono costruite dentro il sottotest: quelle valide devono
+	// referenziare risorse realmente seminate in quel DB.
+	cases := []struct {
+		nome   string
+		req    func(t *testing.T, db *gorm.DB) dto.OrderAssignRequest
+		valida bool
+	}{
+		{"mezzo proprio completo", assignProprio, true},
+		{"vettore terzo da solo", func(t *testing.T, db *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{VettoreID: seedCarrier(t, db).String()}
+		}, true},
+		{"niente di indicato", func(*testing.T, *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{}
+		}, false},
+		{"solo motrice", func(*testing.T, *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{MotriceID: uuid.New().String()}
+		}, false},
+		{"solo autista", func(*testing.T, *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{AutistaID: uuid.New().String()}
+		}, false},
+		{"mezzo proprio senza semirimorchio", func(*testing.T, *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{MotriceID: uuid.New().String(), AutistaID: uuid.New().String()}
+		}, false},
+		{"vettore terzo insieme a mezzo proprio", func(t *testing.T, db *gorm.DB) dto.OrderAssignRequest {
+			req := assignProprio(t, db)
+			req.VettoreID = seedCarrier(t, db).String()
+			return req
+		}, false},
+		{"vettore terzo con un solo campo del mezzo proprio", func(t *testing.T, db *gorm.DB) dto.OrderAssignRequest {
+			return dto.OrderAssignRequest{
+				VettoreID: seedCarrier(t, db).String(),
+				AutistaID: uuid.New().String(),
+			}
+		}, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.nome, func(t *testing.T) {
+			ctx := context.Background()
+			db := newTestDB(t)
+			svc := NewOrderService(db, "", "")
+
+			order, err := svc.Create(ctx, baseRequest(t, db))
+			if err != nil {
+				t.Fatalf("Create returned error: %v", err)
+			}
+
+			assigned, err := svc.Assign(ctx, order.ID, c.req(t, db))
+			if c.valida {
+				if err != nil {
+					t.Fatalf("expected assign to succeed, got error: %v", err)
+				}
+				if assigned.Stato != "PIANIFICATO" {
+					t.Fatalf("expected stato PIANIFICATO, got %q", assigned.Stato)
+				}
+				return
+			}
+			assertAPIError(t, err, 400)
+			// L'ordine rifiutato non deve essere stato modificato.
+			reloaded, err := svc.GetByID(ctx, order.ID)
+			if err != nil {
+				t.Fatalf("GetByID returned error: %v", err)
+			}
+			if reloaded.Stato != "PIANIFICABILE" {
+				t.Fatalf("expected the rejected order to stay PIANIFICABILE, got %q", reloaded.Stato)
+			}
+		})
+	}
 }
 
 func TestOrderService_Unassign_ClearsAssignmentAndRevertsState(t *testing.T) {
@@ -303,7 +408,9 @@ func TestOrderService_Unassign_ClearsAssignmentAndRevertsState(t *testing.T) {
 	assertAPIError(t, err, 400)
 
 	autistaID := uuid.New()
-	assigned, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{MotriceID: uuid.New().String(), AutistaID: autistaID.String()})
+	assignReq := assignProprio(t, db)
+	assignReq.AutistaID = autistaID.String()
+	assigned, err := svc.Assign(ctx, order.ID, assignReq)
 	if err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
@@ -353,7 +460,7 @@ func TestOrderService_Unassign_DeletesRouteAfterClearingReference(t *testing.T) 
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, order.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 
@@ -390,7 +497,7 @@ func TestOrderService_Unassign_RejectsOrdersOnATrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, order.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, order.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 	if err := svc.db.Model(&models.Order{}).Where("id = ?", order.ID).Update("viaggio_id", uuid.New()).Error; err != nil {
@@ -424,7 +531,7 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, b.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, b.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 	discardedB, err := svc.Discard(ctx, b.ID)
@@ -444,7 +551,7 @@ func TestOrderService_Discard_ValidTransitionsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, c.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, c.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 	if _, err := svc.Start(ctx, c.ID); err != nil {
@@ -492,7 +599,7 @@ func TestOrderService_List_FiltersByStatoAndSearch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
-	if _, err := svc.Assign(ctx, created.ID, dto.OrderAssignRequest{}); err != nil {
+	if _, err := svc.Assign(ctx, created.ID, assignProprio(t, db)); err != nil {
 		t.Fatalf("Assign returned error: %v", err)
 	}
 
