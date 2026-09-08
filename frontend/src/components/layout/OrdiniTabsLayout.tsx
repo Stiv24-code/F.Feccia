@@ -38,6 +38,9 @@ export default function OrdiniTabsLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="space-y-4">
+      {/* La forma "a pillole" del tema Glass arriva dal CSS (.glass
+          [role="tablist"] in index.css), non da qui: così basta la classe
+          .glass sul root per cambiare tutto il tema. */}
       <div className="flex items-center gap-1 border-b" role="tablist" aria-label="Sezioni Ordini">
         {TABS.map((tab) => {
           const active = location.pathname === tab.path;

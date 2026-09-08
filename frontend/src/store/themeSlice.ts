@@ -1,13 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { getInitialTheme } from '@/lib/theme';
+import { getInitialTheme, getInitialGlass } from '@/lib/theme';
 
 export type Theme = 'light' | 'dark';
 
 export interface ThemeState {
   theme: Theme;
+  // "Glass" (tema SBG del mockup "TMS Unificato"): indipendente da
+  // light/dark, si compone con entrambi — non un terzo valore esclusivo di
+  // Theme, vedi lib/theme.js applyTheme().
+  glass: boolean;
 }
 
-const initialState: ThemeState = { theme: getInitialTheme() };
+const initialState: ThemeState = { theme: getInitialTheme(), glass: getInitialGlass() };
 
 // Stato del tema centralizzato nello store — prima viveva come useState
 // locale in AppShell (unico consumer) e ogni altro componente che aveva
@@ -27,8 +31,14 @@ const themeSlice = createSlice({
     toggleTheme: (state) => {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
     },
+    setGlass: (state, action: { payload: boolean }) => {
+      state.glass = action.payload;
+    },
+    toggleGlass: (state) => {
+      state.glass = !state.glass;
+    },
   },
 });
 
-export const { setTheme, toggleTheme } = themeSlice.actions;
+export const { setTheme, toggleTheme, setGlass, toggleGlass } = themeSlice.actions;
 export default themeSlice.reducer;

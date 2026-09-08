@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { applyTheme } from '@/lib/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { toggleTheme as toggleThemeAction } from '@/store/themeSlice';
+import { toggleTheme as toggleThemeAction, toggleGlass as toggleGlassAction } from '@/store/themeSlice';
 import { useGetNavCountsQuery } from '@/store/api/appApi';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
   Package, Warehouse, ClipboardList, CalendarRange, FileText,
   ListOrdered, Menu, LogOut, ChevronDown, ChevronRight, Map,
   Globe, Landmark, BookOpen, UserCog, Droplets, Sun, Moon, Inbox,
-  PanelLeftClose, PanelLeftOpen
+  PanelLeftClose, PanelLeftOpen, Sparkles
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'tms-sidebar-collapsed';
@@ -81,7 +81,7 @@ const useNavBadges = () => {
   };
 };
 
-const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCollapsed }) => {
+const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, toggleGlass, onToggleCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -114,8 +114,10 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
     if (onNavigate) onNavigate();
   };
 
+  // data-sidebar: hook di stile per il tema Glass (sfocatura dietro al fondo
+  // traslucido) — vedi ".glass [data-sidebar]" in index.css.
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--sidebar-bg)' }}>
+    <div data-sidebar className="flex flex-col h-full" style={{ background: 'var(--sidebar-bg)' }}>
       {/* Logo */}
       <div className={`flex items-center gap-3 h-14 shrink-0 ${collapsed ? 'px-2 justify-center' : 'px-4'}`} style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style={{ background: 'var(--sidebar-accent)', color: '#fff' }}>
@@ -237,7 +239,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
       </ScrollArea>
 
       {/* Theme toggle */}
-      <div className="px-2 pt-1 pb-2 shrink-0">
+      <div className="px-2 pt-1 pb-2 shrink-0 flex flex-col gap-0.5">
         <button
           onClick={toggleTheme}
           data-testid="theme-toggle-button"
@@ -248,6 +250,19 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
         >
           {theme === 'dark' ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
           {!collapsed && <span>{theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}</span>}
+        </button>
+        {/* Tema "Glass" (SBG) — indipendente da light/dark, in prova, uso interno */}
+        <button
+          onClick={toggleGlass}
+          data-testid="glass-toggle-button"
+          aria-pressed={glass}
+          aria-label={glass ? 'Disattiva tema Glass' : 'Attiva tema Glass'}
+          title="Tema Glass (in prova · uso interno)"
+          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${glass ? 'font-semibold' : ''}`}
+          style={{ color: glass ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
+        >
+          <Sparkles className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Glass{glass ? ' ✓' : ''}</span>}
         </button>
       </div>
 
@@ -283,15 +298,17 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, onToggleCol
 const AppShell = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useAppSelector((s) => s.theme.theme);
+  const glass = useAppSelector((s) => s.theme.glass);
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(() => {
     try { return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'; } catch { return false; }
   });
   const location = useLocation();
 
-  useEffect(() => { applyTheme(theme); }, [theme]);
+  useEffect(() => { applyTheme(theme, glass); }, [theme, glass]);
 
   const toggleTheme = () => dispatch(toggleThemeAction());
+  const toggleGlass = () => dispatch(toggleGlassAction());
   const toggleCollapsed = () => setCollapsed(c => {
     const next = !c;
     try { window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0'); } catch { /* ignore */ }
@@ -325,23 +342,29 @@ const AppShell = ({ children }) => {
       <CommandPalette />
 
       {/* Desktop Sidebar */}
+      {/* data-sidebar-rail: nel tema Glass la topbar è fissa a tutta
+          larghezza e rientra il proprio contenuto in base a questo stato —
+          vedi ".glass:has(aside[data-sidebar-rail=...])" in index.css. */}
       <aside
+        data-sidebar-rail={collapsed ? 'collapsed' : 'expanded'}
         className={`hidden lg:block shrink-0 h-full transition-[width] duration-200 ${collapsed ? 'w-[58px]' : 'w-[260px]'}`}
         style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.15)' }}
       >
-        <SidebarContent collapsed={collapsed} theme={theme} toggleTheme={toggleTheme} onToggleCollapsed={toggleCollapsed} />
+        <SidebarContent collapsed={collapsed} theme={theme} toggleTheme={toggleTheme} glass={glass} toggleGlass={toggleGlass} onToggleCollapsed={toggleCollapsed} />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="p-0 w-[280px]" style={{ background: 'var(--sidebar-bg)' }}>
-          <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} theme={theme} toggleTheme={toggleTheme} />
+          <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} theme={theme} toggleTheme={toggleTheme} glass={glass} toggleGlass={toggleGlass} />
         </SheetContent>
       </Sheet>
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* Topbar */}
+        {/* Topbar — nel tema Glass diventa un pannello sfocato/traslucido
+            senza bordo: tutto da CSS (".glass .bg-card" e ".glass header" in
+            index.css), qui nessuna condizione. */}
         <header className="h-14 shrink-0 flex items-center gap-3 px-4 lg:px-6 border-b bg-card">
           <Button
             variant="ghost"

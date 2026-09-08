@@ -90,6 +90,282 @@
     --sidebar-border: rgba(28,37,52,0.15);
     --sidebar-active-bg: rgba(28,37,52,0.08);
   }
+
+  /* ── Tema "Glass" (SBG, #tema nel mockup "TMS Unificato") ──────────────
+     Indipendente da light/dark (si applica come classe .glass separata,
+     vedi lib/theme.js) — non ridisegna le tinte, il mockup stesso usa un blu
+     molto vicino al nostro --primary di :root: qui cambiano soprattutto
+     superficie (traslucida + sfocata, vedi ".glass .bg-card" più sotto) e
+     sfondo pagina (gradiente, vedi "html.glass body" più sotto), non la
+     palette. Etichettato "in prova · uso interno" anche nel mockup stesso:
+     sperimentale, non per utenti finali. */
+  /* Valori portati 1:1 dalla palette --acc/--bg/--navy/--bd-N/--tx-N del
+     mockup (conversione hex to HSL), non più un'approssimazione dei token
+     light — --background in particolare era troppo saturo (45% invece del
+     ~7% reale): nel mockup il colore vero sta nel gradiente sopra body
+     (vedi "html.glass body" più sotto), non nel token base.
+
+     :not(.dark) è obbligatorio: questo blocco viene DOPO .dark e ha la
+     stessa specificità, quindi senza il :not() sovrascriverebbe l'intera
+     palette scura e "Glass + tema scuro" tornerebbe chiaro. */
+  .glass:not(.dark) {
+    --background: 212 45% 96%;
+    --foreground: 219 47% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 219 47% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 219 47% 18%;
+    --muted: 216 45% 97%;
+    --muted-foreground: 219 19% 42%;
+    --border: 214 32% 81%;
+    --input: 214 32% 78%;
+    --ring: 216 54% 45%;
+    --primary: 216 54% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 45% 97%;
+    --secondary-foreground: 219 47% 18%;
+    --accent: 213 55% 91%;
+    --accent-foreground: 219 47% 18%;
+
+    /* Sidebar Glass chiara: nel mockup diventa vetro CHIARO con testo navy
+       (rgba(242,248,255,.42), --navy-tx2 #33435f per il testo, --navy-tx
+       #4d5e7b per il muted, highlight attivo bianco all'80%). */
+    --sidebar-bg: rgba(242, 248, 255, 0.42);
+    --sidebar-bg-2: rgba(232, 241, 252, 0.5);
+    --sidebar-text: #33435F;
+    --sidebar-active-text: #182742;
+    --sidebar-muted: #4D5E7B;
+    --sidebar-border: rgba(30, 60, 110, 0.15);
+    --sidebar-accent: #2F5DA6;
+    --sidebar-active-bg: rgba(255, 255, 255, 0.8);
+  }
+  /* Glass sopra dark: la palette scura di .dark resta intatta (vedi il
+     :not(.dark) sopra), qui solo i ritocchi che il vetro richiede — bordi
+     più leggibili sul gradiente e sidebar traslucida (stesso principio del
+     mockup, .tms-glass.tms-dark). */
+  .glass.dark {
+    --border: 217 25% 32%;
+    --input: 217 25% 32%;
+    /* Glass + scuro: sidebar navy traslucida con testo chiaro (nel mockup
+       questo è il risultato del suo invert() globale sul vetro chiaro; qui
+       la palette scura è reale, quindi va scritta). */
+    --sidebar-bg: rgba(13, 27, 51, 0.55);
+    --sidebar-bg-2: rgba(15, 26, 46, 0.5);
+    --sidebar-text: #E7EEF9;
+    --sidebar-active-text: #FFFFFF;
+    --sidebar-muted: #9FB2CE;
+    --sidebar-border: rgba(255, 255, 255, 0.14);
+    --sidebar-accent: #3565AF;
+    --sidebar-active-bg: rgba(255, 255, 255, 0.14);
+  }
+}
+
+/* Sfondo pagina a gradiente — stessi 5 radial-gradient + linear-gradient di
+   base del mockup ("TMS Unificato" #tema), valori rgba/hex letterali (non
+   convertiti in token: qui contano gli stop esatti, non la palette).
+   background-attachment fixed così il gradiente non scorre insieme al
+   contenuto delle pagine con overflow interno. */
+html.glass:not(.dark) body {
+  background-image:
+    radial-gradient(620px 480px at 12% 8%, rgba(53,101,175,0.5), transparent 58%),
+    radial-gradient(560px 460px at 88% 12%, rgba(143,179,226,0.7), transparent 60%),
+    radial-gradient(640px 520px at 82% 88%, rgba(72,160,56,0.34), transparent 58%),
+    radial-gradient(600px 500px at 12% 92%, rgba(40,88,160,0.48), transparent 60%),
+    radial-gradient(480px 380px at 50% 45%, rgba(255,255,255,0.75), transparent 72%),
+    linear-gradient(160deg, #eaf1fa 0%, #d9e6f5 100%);
+  background-attachment: fixed;
+}
+
+/* Glass + tema scuro: stessa composizione di radiali, tinte scure (il
+   mockup qui si affida al suo filtro invert() globale, che noi non usiamo
+   avendo una palette dark reale — quindi il gradiente va scritto). */
+html.glass.dark body {
+  background-image:
+    radial-gradient(620px 480px at 12% 8%, rgba(53,101,175,0.34), transparent 60%),
+    radial-gradient(560px 460px at 88% 12%, rgba(78,120,180,0.28), transparent 62%),
+    radial-gradient(640px 520px at 82% 88%, rgba(40,120,80,0.20), transparent 60%),
+    radial-gradient(600px 500px at 12% 92%, rgba(30,60,120,0.34), transparent 62%),
+    linear-gradient(160deg, #101d33 0%, #0a1526 100%);
+  background-attachment: fixed;
+}
+
+/* Superfici "vetro": qualunque Card/Popover/Select (bg-card/bg-popover, già
+   applicate dai primitivi shadcn — non li tocchiamo) diventa traslucida e
+   sfocata automaticamente ovunque nell'app quando il tema Glass è attivo,
+   senza dover toccare ogni pagina che usa <Card>. */
+.glass .bg-card,
+.glass .bg-popover {
+  background-color: hsl(var(--card) / 0.6) !important;
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  /* Nel mockup il vetro non ha hairline sui pannelli: il bordo va via e al
+     suo posto c'è un'ombra ampia e morbida. */
+  border-color: transparent !important;
+  box-shadow: 0 18px 44px hsl(220 60% 30% / 0.1);
+}
+
+/* Divisori interni (righe di tabelle/liste, intestazioni di sezione): nel
+   mockup quasi scompaiono — slate semi-trasparente invece del grigio pieno
+   di --border. */
+.glass .border-b,
+.glass .border-t,
+.glass .border-l,
+.glass .border-r,
+.glass .divide-y > * + *,
+.glass .divide-x > * + * {
+  border-color: hsl(215 22% 48% / 0.24);
+}
+
+/* Tabelle (Anagrafiche, Ordini, ...): nel mockup le righe non hanno proprio
+   divisori — spariscono del tutto, e la fascia di intestazione diventa un
+   velo appena percettibile invece del grigio pieno. */
+.glass table tr {
+  border-color: transparent !important;
+}
+/* Fascia di intestazione: nel mockup è un velo sopra la card — bianco (più
+   chiaro della card) nel tema chiaro, scuro nel tema scuro (dove l'invert()
+   del mockup la fa diventare la striscia navy che si vede in Anagrafiche). */
+.glass:not(.dark) thead,
+.glass:not(.dark) table thead tr {
+  background-color: hsl(0 0% 100% / 0.45) !important;
+}
+.glass.dark thead,
+.glass.dark table thead tr {
+  background-color: hsl(220 55% 7% / 0.45) !important;
+}
+
+/* Elementi interattivi (input, select, bottoni outline: tutti .border-input
+   nei primitivi shadcn): il bordo resta ma diventa vetro — slate
+   semi-trasparente + spigolo chiaro in alto, come nel mockup. */
+.glass .border-input {
+  border-color: hsl(215 22% 48% / 0.34) !important;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.7);
+}
+.glass.dark .border-input {
+  border-color: hsl(215 30% 70% / 0.3) !important;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.12);
+}
+
+/* ── Glass: forme, non solo colori ────────────────────────────────────────
+   Tutto guidato dalla sola classe .glass sul root (come nel mockup): niente
+   condizioni in JSX, così basta togliere/mettere la classe per cambiare
+   l'intero tema — inclusa la forma di tab/sidebar/mappa. */
+
+/* Topbar: nel tema Glass non esiste come barra — si dissolve. Niente fondo,
+   niente bordo, niente ombra: resta solo il titolo che "galleggia" sopra il
+   contenuto, come nel mockup. Il selettore include .bg-card per battere in
+   specificità la regola generica ".glass .bg-card" sopra, che altrimenti
+   rimetterebbe fondo e sfocatura. */
+.glass header.bg-card {
+  background-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent !important;
+  box-shadow: none;
+  /* z-index: il titolo non deve finire sotto la mappa a tutto schermo della
+     pagina Mappa (che sta a z-index 0 per restare interattiva). */
+  position: relative;
+  z-index: 5;
+}
+
+/* Sidebar: da rail incollato al bordo a scheda che galleggia — margine su
+   tre lati, angoli tondi, nessun bordo, ombra ampia e sfocatura dietro al
+   fondo traslucido (valori del mockup: margin 12px, radius 18px,
+   blur(28px), shadow 0 14px 40px). Il rail esterno perde la sua ombra
+   inline (da qui l'!important) e fa da cornice trasparente. */
+.glass aside[data-sidebar-rail] {
+  box-sizing: border-box;
+  padding: 12px 0 12px 12px;
+  box-shadow: none !important;
+  /* z-index 5 come nel mockup: serve a stare sopra la mappa a tutto schermo
+     della pagina Mappa (che sta a z-index 0 per restare cliccabile). */
+  position: relative;
+  z-index: 5;
+}
+.glass aside[data-sidebar-rail] [data-sidebar] {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 14px 40px hsl(220 60% 30% / 0.16);
+}
+.glass [data-sidebar] {
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+
+/* Tab (Ordini / Anagrafiche): da sottolineatura a "pillole" in un segmented
+   control fluttuante — gli hook sono i role ARIA già presenti nel markup. */
+.glass [role="tablist"] {
+  display: inline-flex;
+  border-bottom-color: transparent !important;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  background: hsl(var(--foreground) / 0.06);
+  max-width: 100%;
+}
+.glass [role="tab"] {
+  border-radius: 9999px;
+  border-bottom-color: transparent !important;
+  padding: 0.375rem 1rem;
+}
+.glass [role="tab"][aria-selected="true"] {
+  background-color: hsl(var(--card) / 0.95);
+  box-shadow: 0 1px 6px hsl(220 50% 25% / 0.2);
+}
+
+/* Mappa Viaggi: la mappa diventa il fondo a tutto schermo, toolbar e
+   pannello viaggi restano in flusso e "galleggiano" sopra (replica
+   l'effetto command center del mockup). */
+/* La mappa è il fondo a tutto schermo, ma resta INTERATTIVA: z-index 0 (non
+   negativo, altrimenti finisce sotto il contenuto in flusso e non riceve più
+   click/rotellina) e nessun trattamento vetro sopra i tile — sidebar, topbar
+   e pannelli le passano sopra con z-index maggiore (come nel mockup, che dà
+   z-index:5 alla sidebar). Il selettore include .bg-card per battere la
+   regola generica delle superfici di vetro. */
+.glass [data-map-canvas].bg-card {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  border-radius: 0;
+  border: 0;
+  background-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  pointer-events: auto;
+}
+.glass [data-map-shell] {
+  height: auto;
+}
+/* Toolbar: isola di vetro compatta in alto a destra (nel mockup è un
+   gruppetto di chip a pillola, non una barra a tutta larghezza). */
+.glass [data-map-toolbar] {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 20;
+  width: auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.375rem 0.625rem;
+  background-color: hsl(var(--card) / 0.62);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 8px 24px hsl(220 60% 30% / 0.14);
+}
+/* Pannello "Viaggi sulla mappa": scheda di vetro che galleggia a destra,
+   sotto la toolbar, alta fin quasi al fondo finestra. */
+.glass [data-map-aside] {
+  position: fixed;
+  top: 4.25rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  height: auto;
+  margin-left: 0;
+  border-radius: 18px;
 }
 
 @layer base {

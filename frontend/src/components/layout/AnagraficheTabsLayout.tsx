@@ -31,6 +31,8 @@ export default function AnagraficheTabsLayout({ children }: { children: ReactNod
 
   return (
     <div className="space-y-4">
+      {/* La forma "a pillole" del tema Glass arriva dal CSS (.glass
+          [role="tablist"] in index.css), non da qui. */}
       <div className="flex items-center gap-1 border-b overflow-x-auto" role="tablist" aria-label="Sezioni Anagrafiche">
         {tabs.map((tab) => {
           const active = location.pathname === tab.path;

@@ -147,8 +147,10 @@ export default function MapPage() {
 
   return (
     <div className="space-y-3" data-testid="map-page">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      {/* Toolbar — in tema Glass diventa un pannello di vetro fluttuante
+          sopra la mappa a tutto schermo (vedi ".glass [data-map-toolbar]"
+          in index.css: forma e vetro arrivano da lì, non da qui). */}
+      <div data-map-toolbar className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className="status-viaggio border text-xs font-medium">{data.stats?.in_viaggio || 0} in viaggio</Badge>
           <Badge className="status-pianificabile border text-xs font-medium">{data.stats?.pianificabili || 0} da pianificare</Badge>
@@ -184,10 +186,17 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Layout: mappa + pannello laterale */}
-      <div className="flex gap-3 h-[calc(100vh-200px)]">
+      {/* Layout: mappa + pannello laterale. Nel tema Glass la mappa esce dal
+          flusso (fixed, a tutto schermo, dietro a tutto) e il pannello
+          laterale viene spinto a destra come vetro fluttuante — tutto da CSS
+          (".glass [data-map-canvas]/[data-map-shell]/[data-map-aside]"). */}
+      <div data-map-shell className="flex gap-3 h-[calc(100vh-200px)]">
         {/* Mappa */}
-        <Card className="flex-1 rounded-xl overflow-hidden shadow-sm relative" data-testid="map-container">
+        <Card
+          data-map-canvas
+          className="flex-1 rounded-xl overflow-hidden shadow-sm relative"
+          data-testid="map-container"
+        >
           <MapContainer
             center={[47.0, 9.0]}
             zoom={5}
@@ -390,8 +399,14 @@ export default function MapPage() {
           </MapContainer>
         </Card>
 
-        {/* Pannello laterale */}
-        <Card className="w-80 shrink-0 rounded-xl shadow-sm overflow-hidden flex flex-col" data-testid="map-sidebar">
+        {/* Pannello laterale — in Glass resta l'unico figlio in flusso (la
+            mappa è fixed): il CSS lo spinge a destra e gli dà un'altezza
+            esplicita, così la lista viaggi resta scrollabile al suo interno. */}
+        <Card
+          data-map-aside
+          className="w-80 shrink-0 rounded-xl shadow-sm overflow-hidden flex flex-col"
+          data-testid="map-sidebar"
+        >
           <div className="px-4 py-3 border-b bg-muted/30">
             <h3 className="text-sm font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               Viaggi attivi ({inViaggio.length})
