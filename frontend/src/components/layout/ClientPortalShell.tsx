@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { HeaderSlotProvider } from '@/components/layout/PageHeaderActions';
 import { Button } from '@/components/ui/button';
 import { Truck, LogOut, Package, Building2 } from 'lucide-react';
 
@@ -21,6 +22,10 @@ export interface ClientPortalShellProps {
 
 export default function ClientPortalShell({ children }: ClientPortalShellProps) {
   const { user, logout } = useAuth();
+  // Anche il portale ha la sua lastra di testa con la CTA (vedi
+  // PageHeaderActions.tsx): senza questo slot le pagine del portale
+  // dichiarerebbero l'azione primaria e non la vedrebbero renderizzata.
+  const [headerSlot, setHeaderSlot] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -30,7 +35,7 @@ export default function ClientPortalShell({ children }: ClientPortalShellProps) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#2A6FDB' }}>
               <Truck className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-sm hidden sm:inline" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <span className="font-display font-bold text-sm hidden sm:inline">
               TMS · F.lli Feccia — Portale Cliente
             </span>
           </div>
@@ -53,6 +58,7 @@ export default function ClientPortalShell({ children }: ClientPortalShellProps) 
           </nav>
 
           <div className="flex items-center gap-3 shrink-0">
+            <div ref={setHeaderSlot} className="flex items-center gap-2" data-testid="page-header-actions" />
             {user?.name && <span className="text-sm text-muted-foreground hidden md:inline">{user.name}</span>}
             <Button variant="outline" size="sm" onClick={logout} data-testid="client-portal-logout-button" className="gap-1.5">
               <LogOut className="h-3.5 w-3.5" /> Esci
@@ -62,7 +68,9 @@ export default function ClientPortalShell({ children }: ClientPortalShellProps) 
       </header>
 
       <main id="main-content" className="flex-1 p-4 md:p-6 max-w-6xl w-full mx-auto">
-        {children}
+        {/* Il portale non ha un innesto "meta": nessuna delle sue pagine ha
+            una data accanto al titolo. */}
+        <HeaderSlotProvider meta={null} actions={headerSlot}>{children}</HeaderSlotProvider>
       </main>
     </div>
   );

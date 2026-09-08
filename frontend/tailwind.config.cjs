@@ -7,6 +7,16 @@ module.exports = {
   ],
   theme: {
   	extend: {
+  		// Le tre famiglie del TMS (design_guidelines.md → design_tokens.fonts).
+  		// Vanno dichiarate qui, non solo in index.css: senza `sans` il preflight
+  		// di Tailwind mette `ui-sans-serif, system-ui` su <html> e ogni utility
+  		// `font-sans` lo ripropaga, quindi il font di sistema vinceva su metà
+  		// UI pur avendo Space Grotesk / IBM Plex regolarmente caricati.
+  		fontFamily: {
+  			sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+  			display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+  			mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

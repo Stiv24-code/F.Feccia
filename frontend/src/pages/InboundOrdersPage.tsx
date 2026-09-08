@@ -5,6 +5,9 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import type { DtoInboundConfigResponse, DtoInboundOrderResponse } from '@/api/data-contracts';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
+import { SlabToolbar } from '@/components/layout/PageSlab';
+import { RowActionButton } from '@/components/shared/RowActionButton';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -221,6 +224,16 @@ export default function InboundOrdersPage() {
         </Badge>
       )}
 
+      {/* L'azione primaria sta sulla lastra di testa (vedi
+          PageHeaderActions.tsx), non in coda alla barra dei filtri. */}
+      <PageHeaderActions>
+        <Button size="sm" className="gap-1.5 text-xs" onClick={() => setImportOpen(true)}>
+          <FileText className="h-3.5 w-3.5" /> Carica da PDF
+        </Button>
+      </PageHeaderActions>
+
+      {/* Filtri dentro la lastra, insieme alle tab (vedi PageSlab.tsx). */}
+      <SlabToolbar>
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[220px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -265,10 +278,8 @@ export default function InboundOrdersPage() {
           {scraping ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Scansiona casella
         </Button>
-        <Button size="sm" className="gap-1.5 text-xs" onClick={() => setImportOpen(true)}>
-          <FileText className="h-3.5 w-3.5" /> Carica da PDF
-        </Button>
       </div>
+      </SlabToolbar>
 
       <Card className="rounded-xl border shadow-sm">
         <div className="overflow-x-auto">
@@ -341,48 +352,43 @@ export default function InboundOrdersPage() {
                       <div className="flex items-center justify-end gap-1">
                         {o.order_id && <ConvertedLink orderID={o.order_id} />}
                         {convertible && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-7 w-7 text-primary hover:bg-primary/10"
-                            title="Converti in ordine" disabled={busy === o.id}
+                          <RowActionButton
+                            className="text-primary"
+                            title="Converti in ordine" aria-label="Converti in ordine" disabled={busy === o.id}
                             onClick={() => setConvertTarget(o)}
                           >
                             <ArrowRightLeft className="h-3.5 w-3.5" />
-                          </Button>
+                          </RowActionButton>
                         )}
                         {o.status === 'accepted' && (
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7"
-                            title="Riporta in attesa" disabled={busy === o.id}
+                          <RowActionButton
+                            title="Riporta in attesa" aria-label="Riporta in attesa" disabled={busy === o.id}
                             onClick={() => doAction(o, 'reset')}
                           >
                             <RotateCcw className="h-3.5 w-3.5" />
-                          </Button>
+                          </RowActionButton>
                         )}
                         {actionable && (
                           <>
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-7 w-7 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
-                              title="Accetta" disabled={busy === o.id}
+                            <RowActionButton
+                              className="text-emerald-600 dark:text-emerald-400"
+                              title="Accetta" aria-label="Accetta" disabled={busy === o.id}
                               onClick={() => doAction(o, 'accept')}
                             >
                               <Check className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                              title="Non accettare / Modifica" disabled={busy === o.id}
+                            </RowActionButton>
+                            <RowActionButton
+                              className="text-destructive"
+                              title="Non accettare / Modifica" aria-label="Non accettare o modifica" disabled={busy === o.id}
                               onClick={() => doAction(o, 'modify')}
                             >
                               <X className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost" size="icon" className="h-7 w-7"
-                              title="Dettaglio" onClick={() => setSelected(o)}
+                            </RowActionButton>
+                            <RowActionButton
+                              title="Dettaglio" aria-label="Dettaglio" onClick={() => setSelected(o)}
                             >
                               <Pencil className="h-3.5 w-3.5" />
-                            </Button>
+                            </RowActionButton>
                           </>
                         )}
                       </div>

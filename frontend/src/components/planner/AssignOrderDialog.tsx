@@ -23,7 +23,7 @@ export default function AssignOrderDialog({ open, onOpenChange, order, onAssigne
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Assegna Ordine {order?.progressivo}</DialogTitle>
+          <DialogTitle className="font-display">Assegna Ordine {order?.progressivo}</DialogTitle>
         </DialogHeader>
         <div className="p-3 rounded-lg bg-muted/50 text-sm">
           <p><strong>{order?.destinazione_carico?.nome}</strong> → <strong>{order?.destinazione_scarico?.nome}</strong></p>

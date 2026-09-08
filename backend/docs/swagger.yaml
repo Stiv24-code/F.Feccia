@@ -1366,7 +1366,14 @@ definitions:
       autista:
         $ref: '#/definitions/dto.DriverResponse'
       carico:
-        $ref: '#/definitions/dto.MapPoint'
+        allOf:
+        - $ref: '#/definitions/dto.MapNamedPoint'
+        description: |-
+          Carico/Scarico sono punti CON nome: il pannello viaggi della mappa
+          mostra la tratta ("Alba (CN) → Bologna"), non solo i marker. Il nome
+          arriva già da geo.NamedPoint dentro buildMapRoute e prima veniva
+          scartato, per cui il frontend non aveva modo di comporre la tratta.
+          CurrentPosition e RoadPoints restano MapPoint: un nome non avrebbe senso.
       cliente:
         $ref: '#/definitions/dto.CustomerResponse'
       current_position:
@@ -1398,7 +1405,7 @@ definitions:
           $ref: '#/definitions/dto.MapPoint'
         type: array
       scarico:
-        $ref: '#/definitions/dto.MapPoint'
+        $ref: '#/definitions/dto.MapNamedPoint'
       stato:
         type: string
       tariffa:

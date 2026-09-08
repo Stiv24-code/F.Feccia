@@ -197,7 +197,7 @@ export default function ClientOrdersPage() {
 
       <Dialog open={!!detailOrder} onOpenChange={(open) => !open && setDetailOrder(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio Ordine</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Dettaglio Ordine</DialogTitle></DialogHeader>
           {detailOrder && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Progressivo:</span><span className="font-mono font-medium">{detailOrder.progressivo}</span></div>
@@ -217,7 +217,7 @@ export default function ClientOrdersPage() {
 
       <Dialog open={!!detailPending} onOpenChange={(open) => !open && setDetailPending(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio Richiesta</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Dettaglio Richiesta</DialogTitle></DialogHeader>
           {detailPending && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Riferimento:</span><span className="font-mono font-medium">{detailPending.ref || '—'}</span></div>

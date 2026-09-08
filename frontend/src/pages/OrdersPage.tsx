@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOrders, createOrder, deleteOrder, unassignOrder, downloadOrderCmrPdf, getDestinations, getProducts, getTransportCategories, exportOrdersExcel, lookupTariff } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useGetCustomersQuery } from '@/store/api/appApi';
 import type { DtoOrderRequest, DtoOrderResponse, DtoDestinationResponse, DtoTransportCategoryResponse } from '@/api/data-contracts';
-import { formatEuro } from '@/lib/format';
+import { formatEuro, formatDayMonth, formatTimeWindow } from '@/lib/format';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
+import { SlabToolbar } from '@/components/layout/PageSlab';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +20,9 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TypeBadge } from '@/components/shared/TypeBadge';
+import { RowActionButton } from '@/components/shared/RowActionButton';
+import { StatusFilterChips, ORDER_STATUSES, type OrderStatus } from '@/components/shared/StatusFilterChips';
 import SearchableSelect from '@/components/shared/SearchableSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
@@ -41,7 +46,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<DtoOrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statoFilter, setStatoFilter] = useState('');
+  // Stato filtrato lato client (non più server-side): i chip contatore devono
+  // sapere quanti ordini ci sono in OGNI stato, quindi la fetch non può già
+  // arrivare filtrata per stato. Ricerca e tipologia restano server-side.
+  const [statoFilter, setStatoFilter] = useState<OrderStatus | null>(null);
   const [tipologiaFilter, setTipologiaFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,13 +64,26 @@ export default function OrdersPage() {
 
   const fetchOrders = useCallback(() => {
     setLoading(true);
-    getOrders({ stato: statoFilter === 'all' ? '' : statoFilter, search, tipologia: tipologiaFilter === 'all' ? '' : tipologiaFilter })
+    getOrders({ search, tipologia: tipologiaFilter === 'all' ? '' : tipologiaFilter })
       .then((r: { data: DtoOrderResponse[] }) => setOrders(r.data))
       .catch((err: unknown) => logger.error('Errore caricamento ordini:', err))
       .finally(() => setLoading(false));
-  }, [statoFilter, search, tipologiaFilter]);
+  }, [search, tipologiaFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  // Conteggi per i chip e lista visibile: derivati dallo stesso array, così i
+  // numeri sui chip e le righe in tabella non possono discordare.
+  const chipCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: orders.length };
+    ORDER_STATUSES.forEach((s) => { counts[s] = orders.filter((o) => o.stato === s).length; });
+    return counts;
+  }, [orders]);
+
+  const visibleOrders = useMemo(
+    () => (statoFilter ? orders.filter((o) => o.stato === statoFilter) : orders),
+    [orders, statoFilter],
+  );
 
   useEffect(() => {
     Promise.all([getDestinations(), getProducts(), getTransportCategories()])
@@ -138,68 +159,67 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-3" data-testid="orders-page">
-      {/* Filters */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between" data-testid="filter-bar">
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input data-testid="orders-search-input" placeholder="Cerca ordini..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm w-64" />
+      {/* L'azione primaria della pagina vive sulla lastra di testa, non in
+          mezzo ai filtri (vedi PageHeaderActions.tsx). */}
+      <PageHeaderActions>
+        <Button size="sm" onClick={openNew} className="text-xs gap-1.5" data-testid="orders-new-button">
+          <Plus className="h-3.5 w-3.5" /> Nuovo Ordine
+        </Button>
+      </PageHeaderActions>
+
+      {/* Filtri — dentro la stessa lastra delle tab (vedi PageSlab.tsx). */}
+      <SlabToolbar>
+        <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between" data-testid="filter-bar">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input data-testid="orders-search-input" placeholder="Cerca ordini..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm w-64" />
+            </div>
+            <Select value={tipologiaFilter} onValueChange={setTipologiaFilter}>
+              <SelectTrigger className="h-9 w-40 text-sm"><SelectValue placeholder="Tipologia" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutte</SelectItem>
+                <SelectItem value="import">Import</SelectItem>
+                <SelectItem value="export">Export</SelectItem>
+                <SelectItem value="nazionale">Nazionale</SelectItem>
+                <SelectItem value="solo_estero">Solo Estero</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={handleExport} className="text-xs gap-1.5 h-9" data-testid="orders-export-button">
+              <Download className="h-3.5 w-3.5" /> Esporta Excel
+            </Button>
           </div>
-          <Select value={statoFilter} onValueChange={setStatoFilter}>
-            <SelectTrigger className="h-9 w-44 text-sm"><SelectValue placeholder="Tutti gli stati" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti gli stati</SelectItem>
-              <SelectItem value="PIANIFICABILE">Da pianificare</SelectItem>
-              <SelectItem value="PIANIFICATO">Pianificato</SelectItem>
-              <SelectItem value="VIAGGIO">In viaggio</SelectItem>
-              <SelectItem value="CHIUSO">Consegnato</SelectItem>
-              <SelectItem value="SCARTATO">Scartato</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={tipologiaFilter} onValueChange={setTipologiaFilter}>
-            <SelectTrigger className="h-9 w-40 text-sm"><SelectValue placeholder="Tipologia" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutte</SelectItem>
-              <SelectItem value="import">Import</SelectItem>
-              <SelectItem value="export">Export</SelectItem>
-              <SelectItem value="nazionale">Nazionale</SelectItem>
-              <SelectItem value="solo_estero">Solo Estero</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Chip contatore al posto della select "Tutti gli stati": si vede
+              quanti ordini ci sono in ogni stato senza aprire il menù. */}
+          <StatusFilterChips value={statoFilter} onChange={setStatoFilter} counts={chipCounts} testIdPrefix="orders" />
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport} className="text-xs gap-1.5" data-testid="orders-export-button">
-            <Download className="h-3.5 w-3.5" /> Esporta Excel
-          </Button>
-          <Button size="sm" onClick={openNew} className="text-xs gap-1.5" data-testid="orders-new-button">
-            <Plus className="h-3.5 w-3.5" /> Nuovo Ordine
-          </Button>
-        </div>
-      </div>
+      </SlabToolbar>
 
       {/* Table */}
       <Card className="rounded-xl border shadow-sm" data-testid="orders-table">
         <div className="overflow-x-auto">
           <Table className="text-xs md:text-sm">
             <TableHeader>
+              {/* Carico e Scarico erano due colonne strette: su quasi ogni
+                  riga producevano "BELGOMILK SCHOT…". Una colonna sola con la
+                  tratta "Alba → Bologna" ha lo stesso contenuto e ci sta. */}
               <TableRow>
                 <TableHead className="py-2 text-xs">Prog.</TableHead>
                 <TableHead className="py-2 text-xs">Cliente</TableHead>
-                <TableHead className="py-2 text-xs">Carico</TableHead>
-                <TableHead className="py-2 text-xs">Scarico</TableHead>
-                <TableHead className="py-2 text-xs">Data Ritiro</TableHead>
+                <TableHead className="py-2 text-xs">Tratta</TableHead>
+                <TableHead className="py-2 text-xs">Ritiro</TableHead>
                 <TableHead className="py-2 text-xs text-right">Tariffa</TableHead>
                 <TableHead className="py-2 text-xs">Tipo</TableHead>
                 <TableHead className="py-2 text-xs">Stato</TableHead>
-                <TableHead className="py-2 text-xs w-20"></TableHead>
+                <TableHead className="py-2 text-xs w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={`skel-row-${i}`}>{Array.from({ length: 9 }).map((_, j) => <TableCell key={`skel-col-${j}`} className="py-2"><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
-              )) : orders.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nessun ordine trovato</TableCell></TableRow>
-              ) : orders.map(o => (
+                <TableRow key={`skel-row-${i}`}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={`skel-col-${j}`} className="py-2"><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+              )) : visibleOrders.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nessun ordine trovato</TableCell></TableRow>
+              ) : visibleOrders.map(o => (
                 <TableRow
                   key={o.id}
                   className="hover:bg-muted/60 cursor-pointer"
@@ -207,11 +227,19 @@ export default function OrdersPage() {
                 >
                   <TableCell className="py-2 font-mono font-medium">{o.progressivo}</TableCell>
                   <TableCell className="py-2 max-w-[150px] truncate">{o.cliente?.ragione_sociale}</TableCell>
-                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_carico?.nome}</TableCell>
-                  <TableCell className="py-2 max-w-[120px] truncate">{o.destinazione_scarico?.nome}</TableCell>
-                  <TableCell className="py-2 whitespace-nowrap">{o.data_ritiro}</TableCell>
+                  <TableCell className="py-2 max-w-[260px] truncate">
+                    {o.destinazione_carico?.nome || '?'} → {o.destinazione_scarico?.nome || '?'}
+                  </TableCell>
+                  <TableCell className="py-2 whitespace-nowrap">
+                    <span className="tabular-nums">{formatDayMonth(o.data_ritiro)}</span>
+                    {formatTimeWindow(o.ora_ritiro_da, o.ora_ritiro_a) && (
+                      <span className="ml-1.5 text-[11px] text-muted-foreground tabular-nums">
+                        {formatTimeWindow(o.ora_ritiro_da, o.ora_ritiro_a)}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="py-2 text-right tabular-nums">€ {formatEuro(o.tariffa || 0)}</TableCell>
-                  <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{o.tipologia}</Badge></TableCell>
+                  <TableCell className="py-2"><TypeBadge tipologia={o.tipologia} /></TableCell>
                   <TableCell className="py-2">
                     <div className="flex flex-col items-start gap-1">
                       <StatusBadge stato={o.stato} />
@@ -221,8 +249,7 @@ export default function OrdersPage() {
                   <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {o.tipologia === 'internazionale' && (
-                        <Button
-                          variant="ghost" size="icon" className="h-7 w-7"
+                        <RowActionButton
                           title="Scarica CMR" aria-label="Scarica CMR"
                           onClick={async () => {
                             if (!o.id) return;
@@ -242,30 +269,30 @@ export default function OrdersPage() {
                           }}
                         >
                           <FileText className="h-3 w-3" />
-                        </Button>
+                        </RowActionButton>
                       )}
                       {o.viaggio_id ? (
-                        <Button
-                          variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10"
+                        <RowActionButton
+                          className="text-primary"
                           title="Apri il viaggio" aria-label="Apri il viaggio"
                           onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}
                         >
                           <Truck className="h-3.5 w-3.5" />
-                        </Button>
+                        </RowActionButton>
                       ) : o.stato === 'PIANIFICABILE' && (
-                        <Button
-                          variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10"
+                        <RowActionButton
+                          className="text-primary"
                           title="Pianifica questo ordine" aria-label="Pianifica questo ordine"
                           onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: false } })}
                         >
                           <CalendarPlus className="h-3.5 w-3.5" />
-                        </Button>
+                        </RowActionButton>
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Altre azioni">
+                          <RowActionButton aria-label="Altre azioni">
                             <MoreVertical className="h-4 w-4" />
-                          </Button>
+                          </RowActionButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => navigate(`/planner/ordini/${o.id}`, { state: { from: '/ordini', fromLabel: 'Ordini', readOnly: true } })}>
@@ -300,7 +327,7 @@ export default function OrdersPage() {
       {/* New Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Nuovo Ordine</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Nuovo Ordine</DialogTitle></DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">

@@ -9,6 +9,7 @@ import {
 import type { DtoAuthUserResponse } from '@/api/data-contracts';
 import { getMutationErrorMessage } from '@/store/api/rtkQueryHelpers';
 import { Card } from '@/components/ui/card';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PasswordInput from '@/components/shared/PasswordInput';
@@ -117,17 +118,14 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-3" data-testid="users-page">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Utenti
-          </h1>
-          <p className="text-xs text-muted-foreground">Gestisci utenti e il loro ruolo.</p>
-        </div>
+      {/* CTA sulla lastra di testa, come in ogni altra pagina. */}
+      <PageHeaderActions>
         <Button size="sm" onClick={() => setCreateOpen(true)} className="text-xs gap-1.5">
           <Plus className="h-3.5 w-3.5" /> Nuovo utente
         </Button>
-      </div>
+      </PageHeaderActions>
+
+      <p className="text-xs text-muted-foreground">Gestisci utenti e il loro ruolo.</p>
 
       <div>
         <h2 className="text-sm font-semibold mb-2">Staff</h2>

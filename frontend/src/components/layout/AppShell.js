@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { HeaderSlotProvider } from '@/components/layout/PageHeaderActions';
 import { applyTheme } from '@/lib/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleTheme as toggleThemeAction, toggleGlass as toggleGlassAction } from '@/store/themeSlice';
@@ -124,7 +125,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
           FF
         </div>
         {!collapsed && (
-          <span className="flex-1 min-w-0 text-base font-semibold tracking-tight truncate" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+          <span className="font-display flex-1 min-w-0 text-base font-semibold tracking-tight truncate" style={{ color: 'var(--sidebar-text)' }}>
             TMS <span className="font-normal" style={{ color: 'var(--sidebar-muted)' }}>· F.lli Feccia</span>
           </span>
         )}
@@ -297,6 +298,11 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
 
 const AppShell = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Nodi della fascia dove le pagine portano meta e azione primaria: stato
+  // (non ref) perché il portale deve ri-renderizzare quando il nodo compare,
+  // vedi PageHeaderActions.tsx.
+  const [headerMeta, setHeaderMeta] = useState(null);
+  const [headerActions, setHeaderActions] = useState(null);
   const theme = useAppSelector((s) => s.theme.theme);
   const glass = useAppSelector((s) => s.theme.glass);
   const dispatch = useAppDispatch();
@@ -332,6 +338,7 @@ const AppShell = ({ children }) => {
     if (path.includes('planner')) return 'Planner';
     if (path.includes('mappa')) return 'Mappa Viaggi';
     if (path.includes('fatturazione')) return 'Fatturazione';
+    if (path.includes('utenti')) return 'Utenti';
     return 'F.lli Feccia';
   };
 
@@ -362,10 +369,12 @@ const AppShell = ({ children }) => {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* Topbar — nel tema Glass diventa un pannello sfocato/traslucido
-            senza bordo: tutto da CSS (".glass .bg-card" e ".glass header" in
-            index.css), qui nessuna condizione. */}
-        <header className="h-14 shrink-0 flex items-center gap-3 px-4 lg:px-6 border-b bg-card">
+        {/* Testa di pagina — lastra fissa in cima con titolo, data corrente e
+            l'azione primaria della pagina (portata qui dalle pagine stesse
+            via <PageHeaderActions>, vedi PageHeaderActions.tsx). Vetro e
+            sfocatura arrivano dal CSS (".glass header.bg-card" in
+            index.css), qui nessuna condizione sul tema. */}
+        <header className="h-14 shrink-0 sticky top-0 z-30 flex items-center gap-3 px-4 lg:px-6 border-b bg-card">
           <Button
             variant="ghost"
             size="icon"
@@ -376,23 +385,24 @@ const AppShell = ({ children }) => {
           >
             <Menu className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }} data-testid="page-title">
+          {/* 15px bold: è il valore del prototipo, non un titolo grande. */}
+          <h1 className="text-[15px] font-bold tracking-tight font-display truncate" data-testid="page-title">
             {getTitle()}
           </h1>
-          <div className="ml-auto flex items-center gap-3">
-            <div className="hidden md:flex items-center text-xs text-muted-foreground gap-2">
-              <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">Ctrl</kbd>
-              <span>+</span>
-              <kbd className="px-1.5 py-0.5 rounded border bg-muted font-mono text-[10px]">K</kbd>
-              <span>per cercare</span>
-            </div>
-          </div>
+          {/* Innesti del portale. `meta` sta accanto al titolo e nel design la
+              usa solo la Dashboard (data corrente) — per questo la data non è
+              scritta qui: la metterebbe su ogni pagina, dove il prototipo ha
+              il titolo nudo. `actions` porta l'azione primaria: al suo posto
+              c'era il promemoria "Ctrl+K per cercare", la scorciatoia resta
+              attiva (CommandPalette) ma lo spazio in cima va alla CTA. */}
+          <div ref={setHeaderMeta} className="hidden md:flex items-center gap-2 min-w-0" data-testid="page-header-meta" />
+          <div ref={setHeaderActions} className="ml-auto flex items-center gap-2" data-testid="page-header-actions" />
         </header>
 
         {/* Content */}
         <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
           <div className="px-3 sm:px-4 lg:px-6 py-4">
-            {children}
+            <HeaderSlotProvider meta={headerMeta} actions={headerActions}>{children}</HeaderSlotProvider>
           </div>
         </main>
       </div>

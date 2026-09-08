@@ -783,7 +783,14 @@ export interface DtoMapPoint {
 
 export interface DtoMapRoute {
   autista?: DtoDriverResponse;
-  carico?: DtoMapPoint;
+  /**
+   * Carico/Scarico sono punti CON nome: il pannello viaggi della mappa
+   * mostra la tratta ("Alba (CN) → Bologna"), non solo i marker. Il nome
+   * arriva già da geo.NamedPoint dentro buildMapRoute e prima veniva
+   * scartato, per cui il frontend non aveva modo di comporre la tratta.
+   * CurrentPosition e RoadPoints restano MapPoint: un nome non avrebbe senso.
+   */
+  carico?: DtoMapNamedPoint;
   cliente?: DtoCustomerResponse;
   current_position?: DtoMapPoint;
   data_consegna?: string;
@@ -798,7 +805,7 @@ export interface DtoMapRoute {
   progressivo?: string;
   remaining_km?: number;
   road_points?: DtoMapPoint[];
-  scarico?: DtoMapPoint;
+  scarico?: DtoMapNamedPoint;
   stato?: string;
   tariffa?: number;
   tipologia?: string;

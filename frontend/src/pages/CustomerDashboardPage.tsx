@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useGetCustomerDashboardQuery } from '@/store/api/appApi';
 import { formatEuro } from '@/lib/format';
@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts/types/polar/Pie';
 import {
-  ArrowLeft, ClipboardList, FileText, TrendingUp, MapPin, Layers, Loader2,
+  ArrowLeft, TrendingUp, MapPin, Loader2,
 } from 'lucide-react';
 
 const PIE_COLORS = ['#0EA5A6', '#0B1220', '#FFAA45', '#22C55E', '#3B82F6', '#A855F7'];
@@ -20,23 +20,17 @@ const PIE_COLORS = ['#0EA5A6', '#0B1220', '#FFAA45', '#22C55E', '#3B82F6', '#A85
 interface KPICardProps {
   title: string;
   value: ReactNode;
-  icon: ComponentType<{ className?: string }>;
   description?: string;
 }
 
-const KPICard = ({ title, value, icon: Icon, description }: KPICardProps) => (
+// Senza icona, come le KPI della dashboard interna (vedi DashboardPage.tsx):
+// il soggetto della card è il numero.
+const KPICard = ({ title, value, description }: KPICardProps) => (
   <Card className="shadow-sm">
     <CardContent className="p-4 lg:p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
-          <p className="text-2xl md:text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</p>
-          {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-        </div>
-        <div className="p-2 rounded-lg bg-accent">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-      </div>
+      <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
+      <p className="font-display text-2xl md:text-3xl font-bold tracking-tight">{value}</p>
+      {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
     </CardContent>
   </Card>
 );
@@ -80,7 +74,7 @@ export default function CustomerDashboardPage() {
           <Button asChild variant="ghost" size="sm" className="mb-1 h-7 text-xs gap-1">
             <Link to="/customers"><ArrowLeft className="h-3.5 w-3.5" /> Clienti</Link>
           </Button>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">
             {customer.ragione_sociale}
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -95,25 +89,21 @@ export default function CustomerDashboardPage() {
         <KPICard
           title="Ordini Totali"
           value={kpi.ordini_totali}
-          icon={ClipboardList}
           description={`${kpi.ordini_pianificabili || 0} da pianificare`}
         />
         <KPICard
           title="In Viaggio"
           value={kpi.ordini_in_viaggio}
-          icon={Layers}
           description={`${kpi.ordini_chiusi || 0} chiusi`}
         />
         <KPICard
           title="Fatturati"
           value={kpi.ordini_fatturati}
-          icon={FileText}
           description={`Tariffa media € ${formatEuro(kpi.tariffa_media || 0)}`}
         />
         <KPICard
           title="Fatturato Netto"
           value={`€ ${formatEuro(kpi.fatturato_netto || 0)}`}
-          icon={TrendingUp}
           description="Ordini con fattura collegata"
         />
       </div>
@@ -122,7 +112,7 @@ export default function CustomerDashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-4">
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <CardTitle className="font-display text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4" /> Andamento ultimi 12 mesi
             </CardTitle>
           </CardHeader>
@@ -155,7 +145,7 @@ export default function CustomerDashboardPage() {
 
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <CardTitle className="font-display text-base flex items-center gap-2">
               <MapPin className="h-4 w-4" /> Top destinazioni
             </CardTitle>
           </CardHeader>
@@ -185,7 +175,7 @@ export default function CustomerDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <CardTitle className="font-display text-base">
               Per tipologia
             </CardTitle>
           </CardHeader>
@@ -211,7 +201,7 @@ export default function CustomerDashboardPage() {
 
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <CardTitle className="font-display text-base">
               Per categoria trasporto
             </CardTitle>
           </CardHeader>

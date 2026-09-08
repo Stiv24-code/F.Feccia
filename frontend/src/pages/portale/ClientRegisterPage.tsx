@@ -58,11 +58,11 @@ export default function ClientRegisterPage() {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--sidebar-accent)' }}>
               <Truck className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+            <span className="font-display text-xl font-bold tracking-tight" style={{ color: 'var(--sidebar-text)' }}>
               TMS <span className="font-normal" style={{ color: 'var(--sidebar-muted)' }}>· F.lli Feccia</span>
             </span>
           </div>
-          <h2 className="text-4xl font-bold leading-tight mb-4" style={{ color: 'var(--sidebar-text)', fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h2 className="font-display text-4xl font-bold leading-tight mb-4" style={{ color: 'var(--sidebar-text)' }}>
             Portale Cliente
           </h2>
           <p className="text-base leading-relaxed max-w-md" style={{ color: 'var(--sidebar-muted)' }}>
@@ -77,14 +77,14 @@ export default function ClientRegisterPage() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--sidebar-accent)' }}>
               <Truck className="h-4 w-4 text-white" />
             </div>
-            <span className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>TMS · F.lli Feccia</span>
+            <span className="font-display text-lg font-bold">TMS · F.lli Feccia</span>
           </div>
 
           <Card className="border shadow-sm">
             {pendingMessage ? (
               <CardContent className="pt-6 pb-8 text-center space-y-3">
                 <MailCheck className="h-10 w-10 mx-auto text-primary" />
-                <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Controlla la tua email</p>
+                <p className="font-display text-lg font-semibold">Controlla la tua email</p>
                 <p className="text-sm text-muted-foreground">{pendingMessage}</p>
                 <p className="text-sm text-center text-muted-foreground pt-2">
                   Hai già confermato? <Link to="/login" className="underline hover:text-primary">Accedi</Link>
@@ -93,7 +93,7 @@ export default function ClientRegisterPage() {
             ) : (
             <>
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Registrati come cliente</CardTitle>
+              <CardTitle className="font-display text-xl">Registrati come cliente</CardTitle>
               <CardDescription>Crea il tuo account per inviare ordini di trasporto</CardDescription>
             </CardHeader>
             <CardContent>

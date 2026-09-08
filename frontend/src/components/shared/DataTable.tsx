@@ -2,6 +2,8 @@ import * as React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+import { SlabToolbar } from '@/components/layout/PageSlab';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, Download, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -38,35 +40,47 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className="space-y-3">
-      {/* Filter bar */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between" data-testid="filter-bar">
-        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              data-testid="masterdata-search-input"
-              placeholder="Cerca..."
-              value={searchValue || ''}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
+      {/* Barra filtri — atterra nella lastra di testa insieme alle tab quando
+          la pagina vive dentro un layout che ce l'ha (Anagrafiche, Ordini);
+          altrimenti resta qui in linea. Vedi PageSlab.tsx. */}
+      <SlabToolbar>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between" data-testid="filter-bar">
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                data-testid="masterdata-search-input"
+                placeholder="Cerca..."
+                value={searchValue || ''}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                className="pl-9 h-9 text-sm"
+              />
+            </div>
+            {filters}
           </div>
-          {filters}
+          <div className="flex gap-2">
+            {/* L'esportazione resta fra i filtri: è un'azione secondaria e
+                dipende da quello che i filtri stanno mostrando. */}
+            {onExport && (
+              <Button variant="outline" size="sm" onClick={onExport} className="text-xs gap-1.5">
+                <Download className="h-3.5 w-3.5" /> Esporta
+              </Button>
+            )}
+            {/* La CTA sale sulla lastra di testa, sempre nello stesso posto in
+                ogni pagina (vedi PageHeaderActions.tsx). Il portale è annidato
+                in <SlabToolbar> di proposito: se una shell non avesse la
+                lastra, il fallback in linea ricadrebbe qui, dov'era prima. */}
+            <PageHeaderActions>
+              {addSlot}
+              {onAdd && (
+                <Button size="sm" onClick={onAdd} className="text-xs gap-1.5" data-testid="masterdata-new-button">
+                  <Plus className="h-3.5 w-3.5" /> {addLabel || 'Nuovo'}
+                </Button>
+              )}
+            </PageHeaderActions>
+          </div>
         </div>
-        <div className="flex gap-2">
-          {addSlot}
-          {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport} className="text-xs gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Esporta
-            </Button>
-          )}
-          {onAdd && (
-            <Button size="sm" onClick={onAdd} className="text-xs gap-1.5" data-testid="masterdata-new-button">
-              <Plus className="h-3.5 w-3.5" /> {addLabel || 'Nuovo'}
-            </Button>
-          )}
-        </div>
-      </div>
+      </SlabToolbar>
 
       {/* Table */}
       <Card className="rounded-xl border shadow-sm" data-testid={testId || 'data-table'}>

@@ -141,7 +141,7 @@ export default function OrderDetailPage() {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{order.cliente?.ragione_sociale}</h2>
+              <h2 className="font-display text-xl font-bold">{order.cliente?.ragione_sociale}</h2>
               <StatusBadge stato={order.stato} />
             </div>
             <p className="text-sm text-muted-foreground mt-1">

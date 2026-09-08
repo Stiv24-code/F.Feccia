@@ -5,6 +5,7 @@ import { useGetCustomersQuery } from '@/store/api/appApi';
 import type { DtoPriceListRequest, DtoPriceListResponse, DtoPriceListItemRequestDTO, DtoPriceListItemResponseDTO, DtoDestinationResponse, DtoProductResponse } from '@/api/data-contracts';
 import { formatEuro } from '@/lib/format';
 import { Card } from '@/components/ui/card';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -181,7 +182,7 @@ export default function PriceListsPage() {
         <Card className="p-4 lg:p-5 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
             <div>
-              <h2 className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h2 className="font-display text-lg font-semibold">
                 Listino: {selectedList.cliente?.ragione_sociale}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -263,7 +264,7 @@ export default function PriceListsPage() {
         <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <DialogTitle className="font-display">
                 {editingItemId ? 'Modifica Regola Tariffaria' : 'Aggiungi Regola Tariffaria'}
               </DialogTitle>
             </DialogHeader>
@@ -373,14 +374,16 @@ export default function PriceListsPage() {
   // ===========================
   return (
     <div className="space-y-3" data-testid="pricelists-page">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Cerca per cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
-        </div>
+      {/* CTA sulla lastra di testa, come in ogni altra pagina. */}
+      <PageHeaderActions>
         <Button size="sm" onClick={openNew} className="text-xs gap-1.5" data-testid="pricelist-new-button">
           <Plus className="h-3.5 w-3.5" /> Nuovo Listino
         </Button>
+      </PageHeaderActions>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input placeholder="Cerca per cliente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
       </div>
 
       <Card className="rounded-xl border shadow-sm">
@@ -424,7 +427,7 @@ export default function PriceListsPage() {
       {/* Nuovo Listino */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Nuovo Listino</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Nuovo Listino</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Cliente *</Label>

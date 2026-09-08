@@ -1,6 +1,8 @@
-import { useMemo, type ComponentType, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatEuro } from '@/lib/format';
+import { formatEuro, formatDayMonth } from '@/lib/format';
+import { PageHeaderActions, PageHeaderMeta } from '@/components/layout/PageHeaderActions';
+import { Button } from '@/components/ui/button';
 import {
   useGetDashboardStatsQuery,
   useGetOrdersListQuery,
@@ -10,7 +12,7 @@ import {
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClipboardList, Truck, CalendarClock, Euro, TrendingUp, ArrowRight } from 'lucide-react';
+import { TrendingUp, ArrowRight, Upload } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import type { DtoOrderResponse, DtoTripResponse } from '@/api/data-contracts';
@@ -18,29 +20,24 @@ import type { DtoOrderResponse, DtoTripResponse } from '@/api/data-contracts';
 interface KPICardProps {
   title: string;
   value: ReactNode;
-  icon: ComponentType<{ className?: string }>;
   description?: ReactNode;
   testId?: string;
   onClick?: () => void;
 }
 
-const KPICard = ({ title, value, icon: Icon, description, testId, onClick }: KPICardProps) => (
+// Nessuna icona: in queste card il soggetto è il numero, e l'icona in cornice
+// a destra gli competeva accanto senza aggiungere informazione (rilievo 09
+// dell'audit sul tema Glass — nel prototipo è stata rimossa).
+const KPICard = ({ title, value, description, testId, onClick }: KPICardProps) => (
   <Card
     data-testid={testId || 'kpi-card'}
     onClick={onClick}
     className={`shadow-sm ${onClick ? 'cursor-pointer transition-shadow hover:shadow-md' : ''}`}
   >
     <CardContent className="p-4 lg:p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
-          <p className="text-2xl md:text-3xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</p>
-          {description && <p className="text-xs mt-1">{description}</p>}
-        </div>
-        <div className="p-2 rounded-lg bg-accent">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-      </div>
+      <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
+      <p className="font-display text-2xl md:text-3xl font-bold tracking-tight">{value}</p>
+      {description && <p className="text-xs mt-1">{description}</p>}
     </CardContent>
   </Card>
 );
@@ -62,6 +59,16 @@ const HeaderLink = ({ label, onClick }: { label: string; onClick: () => void }) 
     {label} <ArrowRight className="h-3 w-3" />
   </button>
 );
+
+// Data corrente per la fascia di testa ("Lunedì 8 settembre 2026"). Calcolata
+// al primo render: la pagina non resta aperta a cavallo della mezzanotte in un
+// uso normale, e un timer solo per questo non vale.
+const todayLabel = (() => {
+  const label = new Date().toLocaleDateString('it-IT', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+})();
 
 const toIso = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
@@ -106,13 +113,6 @@ function tripAutista(t: DtoTripResponse): string {
   if (!t.autista) return '—';
   return `${t.autista.nome || ''} ${t.autista.cognome || ''}`.trim() || '—';
 }
-
-const formatDDMM = (iso?: string) => {
-  if (!iso) return '';
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-};
 
 // Percentuale di avanzamento stimata da partenza/arrivo pianificati (non da
 // una posizione GPS reale, che non abbiamo) — solo per i viaggi IN_CORSO.
@@ -251,12 +251,28 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 lg:space-y-6" data-testid="dashboard-page">
+      {/* Data corrente accanto al titolo: nel prototipo ce l'ha solo la
+          Dashboard, le altre pagine hanno il titolo nudo. */}
+      <PageHeaderMeta>
+        <span className="text-xs text-muted-foreground whitespace-nowrap" data-testid="page-header-date">
+          {todayLabel}
+        </span>
+      </PageHeaderMeta>
+
+      {/* Azione primaria sulla fascia di testa (vedi PageHeaderActions.tsx):
+          il caricamento di un ordine da PDF è il punto d'ingresso più usato
+          della Dashboard e prima non c'era, si passava dalla sidebar. */}
+      <PageHeaderActions>
+        <Button size="sm" className="text-xs gap-1.5" onClick={() => navigate('/ordini-in-ingresso')} data-testid="dashboard-upload-pdf">
+          <Upload className="h-3.5 w-3.5" /> Carica PDF
+        </Button>
+      </PageHeaderActions>
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4" data-testid="dashboard-kpi">
         <KPICard
           title={`Ordini · ${curMonthLabel}`}
           value={stats?.orders_this_month || 0}
-          icon={ClipboardList}
           description={<span className={ordiniDelta.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{ordiniDelta.text}</span>}
           onClick={() => navigate('/ordini')}
           testId="kpi-orders-month"
@@ -264,7 +280,6 @@ export default function DashboardPage() {
         <KPICard
           title="Viaggi in corso"
           value={liveTrips.length}
-          icon={Truck}
           description={<span className="text-muted-foreground">{nLive} mezzi propri · {terziAttiviN} {terziAttiviN === 1 ? 'vettore terzo' : 'vettori terzi'}</span>}
           onClick={() => navigate('/planner')}
           testId="kpi-viaggi-in-corso"
@@ -272,7 +287,6 @@ export default function DashboardPage() {
         <KPICard
           title="Da pianificare"
           value={stats?.pianificabili || 0}
-          icon={CalendarClock}
           description={<span className={planSubColor}>{planSub}</span>}
           onClick={goPlanQueue}
           testId="kpi-da-pianificare"
@@ -280,7 +294,6 @@ export default function DashboardPage() {
         <KPICard
           title={`Fatturato · ${curMonthLabel}`}
           value={`€ ${formatEuro(stats?.revenue_this_month || 0)}`}
-          icon={Euro}
           description={<span className={fatturatoDelta.positive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{fatturatoDelta.text}</span>}
           onClick={() => navigate('/ordini')}
           testId="kpi-fatturato-month"
@@ -292,7 +305,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-baseline gap-2">
-              <CardTitle className="text-base flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <CardTitle className="font-display text-base flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" /> Andamento ordini
               </CardTitle>
               <span className="text-xs text-muted-foreground">ultime 8 settimane</span>
@@ -326,7 +339,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-baseline gap-2">
-              <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Flotta</CardTitle>
+              <CardTitle className="font-display text-base">Flotta</CardTitle>
               <span className="ml-auto text-xs text-muted-foreground">{stats?.total_motrici || 0} motrici · {stats?.total_drivers || 0} autisti</span>
             </div>
           </CardHeader>
@@ -354,7 +367,7 @@ export default function DashboardPage() {
         {/* Da approvare */}
         <Card className="shadow-sm">
           <CardHeader className="pb-2 flex flex-row items-center gap-2">
-            <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Da approvare</CardTitle>
+            <CardTitle className="font-display text-base">Da approvare</CardTitle>
             <CountPill n={daApprovareAll.length} tone="red" />
             <HeaderLink label="In arrivo" onClick={() => navigate('/ordini-in-ingresso')} />
           </CardHeader>
@@ -371,7 +384,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium truncate">{o.client || '—'}</p>
                   <p className="text-xs text-muted-foreground truncate">{o.load_place || '?'} → {o.delivery_place || '?'}</p>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{o.load_date || ''}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{formatDayMonth(o.load_date)}</span>
               </button>
             ))}
           </CardContent>
@@ -380,7 +393,7 @@ export default function DashboardPage() {
         {/* Da pianificare */}
         <Card className="shadow-sm">
           <CardHeader className="pb-2 flex flex-row items-center gap-2">
-            <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Da pianificare</CardTitle>
+            <CardTitle className="font-display text-base">Da pianificare</CardTitle>
             <CountPill n={stats?.pianificabili || 0} tone="amber" />
             <HeaderLink label="Registro" onClick={goPlanQueue} />
           </CardHeader>
@@ -402,7 +415,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground truncate">{o.destinazione_carico?.nome || '?'} → {o.destinazione_scarico?.nome || '?'}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`text-xs font-semibold whitespace-nowrap ${late ? 'text-red-600 dark:text-red-400' : soon ? 'text-amber-600 dark:text-amber-400' : ''}`}>ritiro {o.data_ritiro || '—'}</p>
+                    <p className={`text-xs font-semibold whitespace-nowrap ${late ? 'text-red-600 dark:text-red-400' : soon ? 'text-amber-600 dark:text-amber-400' : ''}`}>ritiro <span className="tabular-nums">{formatDayMonth(o.data_ritiro)}</span></p>
                     {(late || soon) && <p className={`text-[10px] whitespace-nowrap ${late ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>{late ? 'ritiro in ritardo' : 'entro 48h'}</p>}
                   </div>
                 </button>
@@ -415,7 +428,7 @@ export default function DashboardPage() {
       {/* Viaggi in corso e pianificati */}
       <Card className="shadow-sm">
         <CardHeader className="pb-2 flex flex-row items-center gap-2">
-          <CardTitle className="text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Viaggi in corso e pianificati</CardTitle>
+          <CardTitle className="font-display text-base">Viaggi in corso e pianificati</CardTitle>
           <HeaderLink label="Apri planner" onClick={() => navigate('/planner')} />
         </CardHeader>
         <CardContent className="p-0" data-testid="dashboard-viaggi">
@@ -437,7 +450,7 @@ export default function DashboardPage() {
                     <span className="text-xs text-muted-foreground w-24 shrink-0 truncate">{tripMezzo(t)}</span>
                     <span className="text-sm flex-1 truncate">{tripTratta(t, orderById)}</span>
                     {live ? (
-                      <span className="text-xs text-muted-foreground whitespace-nowrap w-20 shrink-0">{t.data_arrivo ? `ETA ${formatDDMM(t.data_arrivo)}` : ''}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap w-20 shrink-0">{t.data_arrivo ? `ETA ${formatDayMonth(t.data_arrivo)}` : ''}</span>
                     ) : (
                       <span className="text-xs text-muted-foreground whitespace-nowrap w-20 shrink-0">pianificato</span>
                     )}

@@ -5,22 +5,25 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { DtoOrderResponse } from '@/api/data-contracts';
 import { format, parseISO, isValid, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { formatDayMonth, formatTime } from '@/lib/format';
+import { PageSlab, SlabToolbar } from '@/components/layout/PageSlab';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import SearchableSelect from '@/components/shared/SearchableSelect';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TypeBadge } from '@/components/shared/TypeBadge';
+import { RowActionButton } from '@/components/shared/RowActionButton';
+import { StatusFilterChips, ORDER_STATUSES, type OrderStatus } from '@/components/shared/StatusFilterChips';
 import PlannerCalendar from '@/components/planner/PlannerCalendar';
 import AssignOrderDialog from '@/components/planner/AssignOrderDialog';
 import { toast } from 'sonner';
 import { Search, CalendarRange, Truck, CheckCircle, PlayCircle, Ban, List as ListIcon, CalendarDays } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
-type OrderStatus = 'PIANIFICABILE' | 'PIANIFICATO' | 'VIAGGIO' | 'CHIUSO' | 'SCARTATO';
 type PlannerView = 'calendar' | 'list';
 
 // Nome completo autista, o stringa vuota se non ancora assegnato — fonte
@@ -68,9 +71,13 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
           ) : orders.map(o => (
             <TableRow key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => onOpenDetail(o)} data-testid="planner-row">
               <TableCell className="py-2 font-mono font-medium">{o.progressivo}</TableCell>
-              <TableCell className="py-2 whitespace-nowrap">{o.data_ritiro} {o.ora_ritiro_da}</TableCell>
-              <TableCell className="py-2 whitespace-nowrap">{o.data_consegna} {o.ora_consegna_da}</TableCell>
-              <TableCell className="py-2"><Badge variant="outline" className="text-[10px]">{o.tipologia}</Badge></TableCell>
+              <TableCell className="py-2 whitespace-nowrap tabular-nums">
+                {formatDayMonth(o.data_ritiro)} <span className="text-muted-foreground text-[11px]">{formatTime(o.ora_ritiro_da)}</span>
+              </TableCell>
+              <TableCell className="py-2 whitespace-nowrap tabular-nums">
+                {formatDayMonth(o.data_consegna)} <span className="text-muted-foreground text-[11px]">{formatTime(o.ora_consegna_da)}</span>
+              </TableCell>
+              <TableCell className="py-2"><TypeBadge tipologia={o.tipologia} /></TableCell>
               <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_carico?.nome}</TableCell>
               <TableCell className="py-2 max-w-[100px] truncate">{o.destinazione_scarico?.nome}</TableCell>
               <TableCell className="py-2 max-w-[120px] truncate">{o.cliente?.ragione_sociale}</TableCell>
@@ -84,9 +91,9 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
                       <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onAssign(o)} data-testid="planner-assign-button">
                         <Truck className="h-3 w-3" /> Assegna
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" data-testid="planner-discard-button">
+                      <RowActionButton className="text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" aria-label="Scarta ordine" data-testid="planner-discard-button">
                         <Ban className="h-3.5 w-3.5" />
-                      </Button>
+                      </RowActionButton>
                     </>
                   )}
                   {o.stato === 'PIANIFICATO' && (
@@ -97,9 +104,9 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
                         <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onStart(o)} data-testid="planner-start-button">
                           <PlayCircle className="h-3 w-3" /> Avvia viaggio
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" data-testid="planner-discard-button">
+                        <RowActionButton className="text-destructive" onClick={() => onDiscard(o)} title="Scarta ordine" aria-label="Scarta ordine" data-testid="planner-discard-button">
                           <Ban className="h-3.5 w-3.5" />
-                        </Button>
+                        </RowActionButton>
                       </>
                     )
                   )}
@@ -117,15 +124,6 @@ const OrderGrid = ({ orders, loading, onAssign, onStart, onClose, onDiscard, onO
     </div>
   </Card>
 );
-
-const STATUS_CHIPS: { key: OrderStatus | null; label: string; className: string }[] = [
-  { key: null, label: 'Tutti', className: 'border-muted-foreground/30 bg-background text-foreground' },
-  { key: 'PIANIFICABILE', label: 'Da pianificare', className: 'status-order-red' },
-  { key: 'PIANIFICATO', label: 'Pianificati', className: 'status-order-yellow' },
-  { key: 'VIAGGIO', label: 'In viaggio', className: 'status-order-blue' },
-  { key: 'CHIUSO', label: 'Consegnati', className: 'status-order-green' },
-  { key: 'SCARTATO', label: 'Scartati', className: 'status-order-gray' },
-];
 
 // ============================
 // Pagina Planner
@@ -203,7 +201,7 @@ export default function PlannerPage() {
 
   const chipCounts = useMemo(() => {
     const counts: Record<string, number> = { all: searchAndDriverFiltered.length };
-    (['PIANIFICABILE', 'PIANIFICATO', 'VIAGGIO', 'CHIUSO', 'SCARTATO'] as OrderStatus[]).forEach(s => {
+    ORDER_STATUSES.forEach(s => {
       counts[s] = searchAndDriverFiltered.filter(o => o.stato === s).length;
     });
     return counts;
@@ -233,8 +231,11 @@ export default function PlannerPage() {
   }, []);
 
   return (
-    <div className="space-y-3" data-testid="planner-page">
-      {/* Toolbar */}
+    <PageSlab>
+      <div data-testid="planner-page">
+      {/* Toolbar — dentro la lastra di testa, insieme ai chip di stato
+          (vedi PageSlab.tsx): prima galleggiava sul fondale per conto suo. */}
+      <SlabToolbar>
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -303,20 +304,8 @@ export default function PlannerPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full lg:w-auto">
-          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
-            {STATUS_CHIPS.map(c => {
-              const active = statusFilter === c.key;
-              const count = c.key ? chipCounts[c.key] : chipCounts.all;
-              return (
-                <button
-                  key={c.key ?? 'all'} type="button" onClick={() => setStatusFilter(c.key)}
-                  data-testid={`planner-chip-${c.key ?? 'all'}`}
-                  className={`text-xs font-semibold rounded-full border px-3 py-1 transition ${c.className} ${active ? 'ring-2 ring-offset-1 ring-primary' : 'opacity-70 hover:opacity-100'}`}
-                >
-                  {c.label} {count}
-                </button>
-              );
-            })}
+          <div className="flex-1 min-w-0">
+            <StatusFilterChips value={statusFilter} onChange={setStatusFilter} counts={chipCounts} testIdPrefix="planner" />
           </div>
           <div className="flex items-center gap-0.5 border rounded-md p-0.5 shrink-0 ml-auto">
             <Button variant={view === 'calendar' ? 'default' : 'ghost'} size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setView('calendar')} data-testid="planner-view-calendar">
@@ -328,6 +317,7 @@ export default function PlannerPage() {
           </div>
         </div>
       </div>
+      </SlabToolbar>
 
       {view === 'calendar' ? (
         <PlannerCalendar orders={filtered} onOpen={openDetail} />
@@ -336,6 +326,7 @@ export default function PlannerPage() {
       )}
 
       <AssignOrderDialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen} order={selectedOrder} onAssigned={fetchOrders} />
-    </div>
+      </div>
+    </PageSlab>
   );
 }

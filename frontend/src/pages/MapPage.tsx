@@ -3,13 +3,14 @@ import { getMapTrips } from '@/lib/api';
 import { formatEuro } from '@/lib/format';
 import type { DtoMapTripsResponse, DtoMapRoute, DtoMapNamedPoint } from '@/api/data-contracts';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PageSlab, SlabToolbar } from '@/components/layout/PageSlab';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Truck, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Truck, RefreshCw, Search, MapPin } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useAppSelector } from '@/store/hooks';
 
@@ -108,9 +109,14 @@ export default function MapPage() {
   const [data, setData] = useState<DtoMapTripsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRoute, setSelectedRoute] = useState<DtoMapRoute | null>(null);
+  // I tre stati sono ora accendibili/spegnibili tutti e tre: prima VIAGGIO
+  // era forzato sempre visibile e non c'era una pill per isolarlo.
+  const [showViaggio, setShowViaggio] = useState(true);
   const [showPianificabili, setShowPianificabili] = useState(false);
   const [showChiusi, setShowChiusi] = useState(false);
+  const [showPoi, setShowPoi] = useState(true);
   const [filterVeicolo, setFilterVeicolo] = useState('');
+  const [panelQuery, setPanelQuery] = useState('');
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -121,6 +127,7 @@ export default function MapPage() {
   const filteredRoutes = useMemo(() => {
     if (!data) return [];
     return (data.routes || []).filter(r => {
+      if (!showViaggio && r.stato === 'VIAGGIO') return false;
       if (!showPianificabili && r.stato === 'PIANIFICABILE') return false;
       if (!showChiusi && r.stato === 'CHIUSO') return false;
       if (filterVeicolo && r.motrice?.targa !== filterVeicolo) return false;
@@ -129,10 +136,32 @@ export default function MapPage() {
       if (isNaN(r.carico.lat) || isNaN(r.scarico.lat)) return false;
       return true;
     });
-  }, [data, showPianificabili, showChiusi, filterVeicolo]);
+  }, [data, showViaggio, showPianificabili, showChiusi, filterVeicolo]);
 
-  const inViaggio = useMemo(() => filteredRoutes.filter(r => r.stato === 'VIAGGIO'), [filteredRoutes]);
+  // Pill di stato della toolbar: etichetta, conteggio (dalle stats del
+  // backend, come i badge di prima) e interruttore, in un solo elemento.
+  const allShown = showViaggio && showPianificabili && showChiusi;
+  const showAll = () => { setShowViaggio(true); setShowPianificabili(true); setShowChiusi(true); };
+  const STATUS_CHIPS = [
+    { key: 'viaggio', label: 'In viaggio', className: 'status-order-blue', count: data?.stats?.in_viaggio || 0, on: showViaggio, toggle: () => setShowViaggio(v => !v) },
+    { key: 'pianificabili', label: 'Da pianificare', className: 'status-order-yellow', count: data?.stats?.pianificabili || 0, on: showPianificabili, toggle: () => setShowPianificabili(v => !v) },
+    { key: 'chiusi', label: 'Chiusi', className: 'status-chiuso', count: data?.stats?.chiusi || 0, on: showChiusi, toggle: () => setShowChiusi(v => !v) },
+  ];
+
   const uniqueVehicles = useMemo(() => data ? Array.from(new Set((data.routes || []).map(r => r.motrice?.targa).filter(Boolean))) : [], [data]);
+
+  // Lista del pannello laterale: tutti i viaggi tracciati sulla mappa, non
+  // solo quelli in viaggio. Prima era fissa su `inViaggio` e quindi ignorava
+  // i filtri della toolbar: attivando "Pianificabili" i percorsi comparivano
+  // sulla mappa ma il pannello restava vuoto.
+  const panelRoutes = useMemo(() => {
+    const q = panelQuery.trim().toLowerCase();
+    if (!q) return filteredRoutes;
+    return filteredRoutes.filter(r => {
+      const hay = `${r.progressivo || ''} ${r.cliente?.ragione_sociale || ''} ${r.autista?.nome || ''} ${r.autista?.cognome || ''} ${r.motrice?.targa || ''} ${r.carico?.nome || ''} ${r.scarico?.nome || ''}`;
+      return hay.toLowerCase().includes(q);
+    });
+  }, [filteredRoutes, panelQuery]);
 
   if (loading) {
     return (
@@ -146,45 +175,79 @@ export default function MapPage() {
   if (!data) return <p className="text-muted-foreground text-center py-12">Impossibile caricare i dati mappa.</p>;
 
   return (
-    <div className="space-y-3" data-testid="map-page">
-      {/* Toolbar — in tema Glass diventa un pannello di vetro fluttuante
-          sopra la mappa a tutto schermo (vedi ".glass [data-map-toolbar]"
-          in index.css: forma e vetro arrivano da lì, non da qui). */}
-      <div data-map-toolbar className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge className="status-viaggio border text-xs font-medium">{data.stats?.in_viaggio || 0} in viaggio</Badge>
-          <Badge className="status-pianificabile border text-xs font-medium">{data.stats?.pianificabili || 0} da pianificare</Badge>
-          <Badge className="status-chiuso border text-xs font-medium">{data.stats?.chiusi || 0} chiusi</Badge>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant={showPianificabili ? 'default' : 'outline'} size="sm" className="text-xs gap-1.5 h-8"
-            onClick={() => setShowPianificabili(!showPianificabili)}
-          >
-            {showPianificabili ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} Pianificabili
-          </Button>
-          <Button
-            variant={showChiusi ? 'default' : 'outline'} size="sm" className="text-xs gap-1.5 h-8"
-            onClick={() => setShowChiusi(!showChiusi)}
-          >
-            {showChiusi ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} Chiusi
-          </Button>
-          {uniqueVehicles.length > 0 && (
-            <select
-              className="h-8 px-2 text-xs border rounded-md bg-card"
-              value={filterVeicolo}
-              onChange={e => setFilterVeicolo(e.target.value)}
-              data-testid="map-filter-vehicle"
+    <PageSlab>
+      <div data-testid="map-page">
+      {/* Toolbar dentro la fascia di testa, come su ogni altra pagina (vedi
+          PageSlab.tsx). Prima in tema Glass era un'isola di vetro fissata in
+          alto a destra: da quando la testa di pagina è una lastra vera
+          (sticky, z-index 30) l'isola ci finiva sotto e sparivi del tutto.
+          Nel prototipo è comunque una riga piena: pill di stato a sinistra,
+          interruttore POI all'estrema destra. */}
+      <SlabToolbar>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          {/* Pill contatore: un solo elemento per stato invece di un badge
+              col numero più un bottone occhio per accenderlo/spegnerlo. */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={showAll}
+              aria-pressed={allShown}
+              data-testid="map-chip-all"
+              className={`text-xs font-semibold rounded-full border px-3 py-1 transition border-muted-foreground/30 bg-background text-foreground ${
+                allShown ? 'ring-2 ring-offset-1 ring-primary' : 'opacity-70 hover:opacity-100'
+              }`}
             >
-              <option value="">Tutti i mezzi</option>
-              {uniqueVehicles.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          )}
-          <Button variant="outline" size="sm" className="text-xs gap-1.5 h-8" onClick={fetchData}>
-            <RefreshCw className="h-3.5 w-3.5" /> Aggiorna
-          </Button>
+              Tutti
+            </button>
+            {STATUS_CHIPS.map(c => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={c.toggle}
+                aria-pressed={c.on}
+                data-testid={`map-chip-${c.key}`}
+                className={`text-xs font-semibold rounded-full border px-3 py-1 transition ${c.className} ${
+                  c.on ? 'ring-2 ring-offset-1 ring-primary' : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                {c.label} · <span className="tabular-nums">{c.count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap lg:ml-auto">
+            {uniqueVehicles.length > 0 && (
+              <select
+                className="h-8 px-2 text-xs border rounded-md bg-card"
+                value={filterVeicolo}
+                onChange={e => setFilterVeicolo(e.target.value)}
+                data-testid="map-filter-vehicle"
+              >
+                <option value="">Tutti i mezzi</option>
+                {uniqueVehicles.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            )}
+            <Button variant="outline" size="sm" className="text-xs gap-1.5 h-8" onClick={fetchData}>
+              <RefreshCw className="h-3.5 w-3.5" /> Aggiorna
+            </Button>
+            {/* POI: garage, punti di lavaggio e punti d'interesse sono i
+                marker "fissi" della mappa, distinti dai tracciati dei viaggi.
+                Prima erano sempre accesi e non c'era modo di pulire la vista. */}
+            <button
+              type="button"
+              onClick={() => setShowPoi(p => !p)}
+              aria-pressed={showPoi}
+              data-testid="map-toggle-poi"
+              className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <MapPin className="h-3.5 w-3.5" /> POI
+              <span className={`relative h-4 w-7 rounded-full transition-colors ${showPoi ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${showPoi ? 'left-3.5' : 'left-0.5'}`} />
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      </SlabToolbar>
 
       {/* Layout: mappa + pannello laterale. Nel tema Glass la mappa esce dal
           flusso (fixed, a tutto schermo, dietro a tutto) e il pannello
@@ -259,8 +322,11 @@ export default function MapPage() {
             </LayersControl>
             <FitBounds routes={filteredRoutes} garages={data.garages || []} washStations={data.wash_stations || []} />
 
-            {/* Garage */}
-            {(data.garages || []).map((g, i) => (
+            {/* Garage, lavaggi e destinazioni sono i "POI" del prototipo
+                (route-map.html: Carico/Scarico, Officina, Lavaggio): punti
+                fissi, distinti dai tracciati dei viaggi, spenti insieme
+                dall'interruttore POI in toolbar. */}
+            {showPoi && (data.garages || []).map((g, i) => (
               g.lat != null && g.lng != null && (
                 <Marker key={`g-${i}`} position={[g.lat, g.lng]} icon={garageIcon}>
                   <Popup><strong>{g.nome}</strong><br />Base operativa</Popup>
@@ -269,8 +335,7 @@ export default function MapPage() {
               )
             ))}
 
-            {/* Punti di lavaggio */}
-            {(data.wash_stations || []).map((w, i) => (
+            {showPoi && (data.wash_stations || []).map((w, i) => (
               w.lat != null && w.lng != null && (
                 <Marker key={`wash-${i}`} position={[w.lat, w.lng]} icon={washIcon}>
                   <Popup><strong>{w.nome}</strong><br />Punto di lavaggio</Popup>
@@ -279,8 +344,7 @@ export default function MapPage() {
               )
             ))}
 
-            {/* Destinazioni (punti piccoli) */}
-            {(data.poi || []).map((p, i) => (
+            {showPoi && (data.poi || []).map((p, i) => (
               p.lat != null && p.lng != null && (
                 <Marker key={`poi-${i}`} position={[p.lat, p.lng]} icon={destIcon}>
                   <Tooltip direction="top" offset={[0, -8]}>{p.nome}</Tooltip>
@@ -408,16 +472,34 @@ export default function MapPage() {
           data-testid="map-sidebar"
         >
           <div className="px-4 py-3 border-b bg-muted/30">
-            <h3 className="text-sm font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Viaggi attivi ({inViaggio.length})
+            <h3 className="font-display text-sm font-semibold">
+              Viaggi sulla mappa ({panelRoutes.length})
             </h3>
           </div>
+          {/* Ricerca nel pannello: c'è nel prototipo e qui mancava del tutto.
+              Filtra solo la lista laterale (progressivo, cliente, autista,
+              targa, tratta) — i tracciati sulla mappa restano quelli scelti
+              con i filtri della toolbar. */}
+          <div className="px-3 py-2.5 border-b shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={panelQuery}
+                onChange={(e) => setPanelQuery(e.target.value)}
+                placeholder="Cerca viaggio, autista, targa..."
+                className="pl-9 h-9 text-sm"
+                data-testid="map-panel-search"
+              />
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto">
-            {inViaggio.length === 0 ? (
-              <p className="text-sm text-muted-foreground p-4 text-center">Nessun viaggio attivo con percorso mappabile.</p>
+            {panelRoutes.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                {panelQuery ? 'Nessun viaggio corrisponde alla ricerca.' : 'Nessun viaggio da mostrare con i filtri attivi.'}
+              </p>
             ) : (
               <div className="divide-y">
-                {inViaggio.map(route => (
+                {panelRoutes.map(route => (
                   <button
                     key={route.id}
                     className={`w-full text-left px-4 py-3 transition-colors duration-150 hover:bg-muted/50 ${selectedRoute?.id === route.id ? 'bg-accent/50 border-l-2 border-l-primary' : ''}`}
@@ -428,7 +510,12 @@ export default function MapPage() {
                       <span className="font-mono text-xs font-medium">{route.progressivo}</span>
                       <StatusBadge stato={route.stato} />
                     </div>
-                    <p className="text-xs font-medium truncate">→</p>
+                    {/* La tratta: era un "→" nudo perché i punti carico/
+                        scarico dell'API non portavano il nome (ora sì, vedi
+                        dto.MapNamedPoint lato backend). */}
+                    <p className="text-xs font-medium truncate">
+                      {route.carico?.nome || '?'} → {route.scarico?.nome || '?'}
+                    </p>
                     <div className="flex items-center gap-2 mt-1.5">
                       {route.motrice?.targa && (
                         <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono">
@@ -466,13 +553,13 @@ export default function MapPage() {
           {selectedRoute && (
             <div className="border-t px-4 py-3 bg-card shrink-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dettaglio</span>
+                <span className="font-display text-xs font-semibold">Dettaglio</span>
                 <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => setSelectedRoute(null)}>Chiudi</Button>
               </div>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Ordine:</span><span className="font-mono">{selectedRoute.progressivo}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="truncate ml-2">{selectedRoute.cliente?.ragione_sociale}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Tratta:</span><span className="truncate ml-2">→</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tratta:</span><span className="truncate ml-2">{selectedRoute.carico?.nome || '?'} → {selectedRoute.scarico?.nome || '?'}</span></div>
                 {selectedRoute.garage && <div className="flex justify-between"><span className="text-muted-foreground">Partenza:</span><span className="truncate ml-2">{selectedRoute.garage.nome}</span></div>}
                 {selectedRoute.wash_station && <div className="flex justify-between"><span className="text-muted-foreground">Lavaggio:</span><span className="truncate ml-2">{selectedRoute.wash_station.nome}</span></div>}
                 <div className="flex justify-between"><span className="text-muted-foreground">Mezzo:</span><span className="font-mono">{selectedRoute.motrice?.targa || '—'}</span></div>
@@ -485,6 +572,7 @@ export default function MapPage() {
           )}
         </Card>
       </div>
-    </div>
+      </div>
+    </PageSlab>
   );
 }

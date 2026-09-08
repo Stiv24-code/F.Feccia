@@ -1,9 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 
-// Ordine (PIANIFICABILE/PIANIFICATO/VIAGGIO/CHIUSO/SCARTATO) e Viaggio
-// (IN_CORSO) usano classi dedicate (status-order-*, rosso/giallo/blu/verde/
-// grigio) per non toccare i colori di Fatture/Proforma/Definitiva, che
-// restano sulle classi condivise originali.
+// Pill di stato come nel design (ui/tms-unificato.html, mappa `badge`):
+// fondo tenue + bordo + testo nel colore semantico, non fondo pieno.
+//
+//   plan    → --neg  #c0392b su --neg-bg  #fdecec, bordo --neg-bd  #f0c5c0
+//   planned → --warn #8a6508 su --warn-bg #fdf1c7, bordo --warn-bd #eedda0
+//   trip    → --acc-2 #1d55ad su --acc-bg #e4eefc, bordo --acc-bd #bfd3f2
+//   closed  → --pos  #1f7a4d su --pos-bg  #e9f5ee, bordo --pos-bd  #bfe0cd
+//
+// Sono esattamente i valori delle classi `.status-order-*` in index.css, che
+// erano già allineati: il passaggio al pieno era una lettura sbagliata del
+// rilievo 05 dell'audit ("Stato con il colore semantico pieno"), smentita dal
+// design. Il pieno resta solo sul tag Tipo (vedi TypeBadge.tsx), ed è quello
+// che distingue le due colonne a colpo d'occhio.
 const statusConfig: Record<string, { label: string; className: string; dot: string }> = {
   PIANIFICABILE: { label: 'Da pianificare', className: 'status-order-red', dot: '#C0392B' },
   PIANIFICATO: { label: 'Pianificato', className: 'status-order-yellow', dot: '#8A6508' },
@@ -19,17 +28,10 @@ const statusConfig: Record<string, { label: string; className: string; dot: stri
 export interface StatusBadgeProps {
   stato?: string;
   // Punto lampeggiante (replica lo stile "live" del mockup, es. viaggi
-  // IN_CORSO in dashboard) — opt-in, default spento per non far lampeggiare
-  // ogni riga IN_CORSO/VIAGGIO nelle liste normali (Ordini, Planner, ecc.).
+  // IN_CORSO in dashboard) — opt-in, default spento: nel design le pill in
+  // tabella non hanno pallino, ce l'ha solo l'indicatore "in diretta".
   pulse?: boolean;
 }
 
 export const StatusBadge = ({ stato, pulse }: StatusBadgeProps) => {
-  const config = (stato && statusConfig[stato]) || { label: stato, className: '', dot: '#999' };
-  return (
-    <Badge variant="outline" className={`${config.className} border text-[10px] px-2 py-0.5 font-medium gap-1.5`} data-testid="order-status-badge">
-      <span className={`h-1.5 w-1.5 rounded-full ${pulse ? 'animate-pulse' : ''}`} style={{ backgroundColor: config.dot }} />
-      {config.label}
-    </Badge>
-  );
-};
+  const config = (stato && statusConfig[stato]) || { label: stato, className: 'status-order-gray', dot: '#7C879A' }

@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md border shadow-sm">
           <CardContent className="pt-8 pb-8 text-center space-y-3">
             <XCircle className="h-10 w-10 mx-auto text-destructive" />
-            <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Link non valido</p>
+            <p className="font-display text-lg font-semibold">Link non valido</p>
             <p className="text-sm text-muted-foreground">Il link non contiene un token di reset.</p>
             <Button asChild><Link to="/password-dimenticata">Richiedi un nuovo link</Link></Button>
           </CardContent>
@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm">
         <Card className="border shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reimposta password</CardTitle>
+            <CardTitle className="font-display text-xl">Reimposta password</CardTitle>
             <CardDescription>Scegli una nuova password per il tuo account</CardDescription>
           </CardHeader>
           <CardContent>

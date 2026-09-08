@@ -1083,8 +1083,13 @@ type MapRoute struct {
 	DataRitiro      string            `json:"data_ritiro"`
 	DataConsegna    string            `json:"data_consegna"`
 	Tariffa         float64           `json:"tariffa"`
-	Carico          MapPoint          `json:"carico"`
-	Scarico         MapPoint          `json:"scarico"`
+	// Carico/Scarico sono punti CON nome: il pannello viaggi della mappa
+	// mostra la tratta ("Alba (CN) → Bologna"), non solo i marker. Il nome
+	// arriva già da geo.NamedPoint dentro buildMapRoute e prima veniva
+	// scartato, per cui il frontend non aveva modo di comporre la tratta.
+	// CurrentPosition e RoadPoints restano MapPoint: un nome non avrebbe senso.
+	Carico          MapNamedPoint     `json:"carico"`
+	Scarico         MapNamedPoint     `json:"scarico"`
 	CurrentPosition MapPoint          `json:"current_position"`
 	Progress        float64           `json:"progress"`
 	RoadPoints      []MapPoint        `json:"road_points"`

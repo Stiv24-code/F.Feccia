@@ -10,6 +10,7 @@ import type {
 } from '@/api/data-contracts';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -227,15 +228,17 @@ export default function PdfTemplatesPage() {
   if (!cur) {
     return (
       <div data-testid="pdf-templates-page" className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
-            e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
-          </p>
+        {/* CTA sulla lastra di testa, come in ogni altra pagina. */}
+        <PageHeaderActions>
           <Button size="sm" className="gap-1.5 text-xs" onClick={newTemplate}>
             <Plus className="h-3.5 w-3.5" /> Nuovo template
           </Button>
-        </div>
+        </PageHeaderActions>
+
+        <p className="text-sm text-muted-foreground">
+          Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
+          e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
+        </p>
 
         <Card className="rounded-xl border shadow-sm">
           <div className="overflow-x-auto">
@@ -294,18 +297,25 @@ export default function PdfTemplatesPage() {
 
   return (
     <div data-testid="pdf-templates-page" className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
-          e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
-        </p>
+      {/* In editor l'azione primaria è il salvataggio: sta sulla lastra di
+          testa, sempre visibile, invece che in fondo alla colonna dei campi
+          dove bisognava scorrere per trovarla. */}
+      <PageHeaderActions>
         <Button
           variant="ghost" size="sm" className="gap-1.5 text-xs"
           onClick={() => { if (confirmDiscard()) { setCur(null); setDirty(false); } }}
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Torna all’elenco
         </Button>
-      </div>
+        <Button size="sm" className="text-xs" onClick={save} disabled={busy === 'save'}>
+          {busy === 'save' ? 'Salvataggio…' : 'Salva template'}
+        </Button>
+      </PageHeaderActions>
+
+      <p className="text-sm text-muted-foreground">
+        Ogni cliente invia i propri ordini PDF con un layout diverso: disegna le zone
+        e collegale ai campi dell’ordine. Il template giusto viene scelto dal mittente.
+      </p>
 
       <div className="grid gap-4 items-start md:grid-cols-[240px_1fr_300px]">
         {/* ── Lista template ── */}
@@ -488,10 +498,9 @@ export default function PdfTemplatesPage() {
                 </Card>
               ))}
 
-              <Button size="sm" className="mt-2 text-xs" onClick={save} disabled={busy === 'save'}>
-                {busy === 'save' ? 'Salvataggio…' : 'Salva template'}
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={testExtraction} disabled={busy === 'test'}>
+              {/* "Salva template" è salito sulla lastra di testa (vedi sopra):
+                  qui restano solo le azioni secondarie. */}
+              <Button variant="outline" size="sm" className="mt-2 gap-1.5 text-xs" onClick={testExtraction} disabled={busy === 'test'}>
                 <FileText className="h-3.5 w-3.5" /> {busy === 'test' ? 'Estrazione…' : 'Prova estrazione sul PDF caricato'}
               </Button>
               {cur.id && (

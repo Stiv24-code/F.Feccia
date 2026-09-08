@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { DtoInvoiceResponse, DtoOrderResponse, DtoInvoiceLineDTO, DtoCustomerResponse } from '@/api/data-contracts';
 import { formatEuro } from '@/lib/format';
 import { Card } from '@/components/ui/card';
+import { PageHeaderActions } from '@/components/layout/PageHeaderActions';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import SearchableSelect from '@/components/shared/SearchableSelect';
@@ -153,17 +154,19 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-3" data-testid="invoices-page">
-      <div className="flex justify-between items-center">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as InvoiceTab)} data-testid="invoicing-tabs">
-          <TabsList>
-            <TabsTrigger value="proforma">Proforma ({proforma.length})</TabsTrigger>
-            <TabsTrigger value="definitive">Definitive ({definitive.length})</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* CTA sulla lastra di testa, come in ogni altra pagina. */}
+      <PageHeaderActions>
         <Button size="sm" onClick={openNew} className="text-xs gap-1.5" data-testid="invoice-new-button">
           <Plus className="h-3.5 w-3.5" /> Nuova Fattura
         </Button>
-      </div>
+      </PageHeaderActions>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as InvoiceTab)} data-testid="invoicing-tabs">
+        <TabsList>
+          <TabsTrigger value="proforma">Proforma ({proforma.length})</TabsTrigger>
+          <TabsTrigger value="definitive">Definitive ({definitive.length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <Card className="rounded-xl border shadow-sm">
         <div className="overflow-x-auto">
@@ -212,7 +215,7 @@ export default function InvoicesPage() {
       {/* New Invoice Dialog */}
       <Dialog open={newDialogOpen} onOpenChange={setNewDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Nuova Fattura Proforma</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Nuova Fattura Proforma</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Filtra per Cliente</Label>
@@ -257,7 +260,7 @@ export default function InvoicesPage() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Fattura {selectedInvoice?.numero}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display">Fattura {selectedInvoice?.numero}</DialogTitle></DialogHeader>
           {selectedInvoice && (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span>{selectedInvoice.cliente?.ragione_sociale}</span></div>

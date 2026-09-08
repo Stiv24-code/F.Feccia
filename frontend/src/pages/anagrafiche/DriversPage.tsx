@@ -117,7 +117,7 @@ function DriverFerieDialog({ driver, onClose }: { driver: DtoDriverResponse; onC
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ferie e assenze — {driver.nome} {driver.cognome}</DialogTitle>
+          <DialogTitle className="font-display">Ferie e assenze — {driver.nome} {driver.cognome}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-2 items-end border-b pb-4 mb-2">
@@ -168,7 +168,7 @@ function DriverTripsDialog({ driver, onClose }: { driver: DtoDriverResponse; onC
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Viaggi assegnati — {driver.nome} {driver.cognome}</DialogTitle>
+          <DialogTitle className="font-display">Viaggi assegnati — {driver.nome} {driver.cognome}</DialogTitle>
         </DialogHeader>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Caricamento...</p>

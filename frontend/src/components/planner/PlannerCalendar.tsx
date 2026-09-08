@@ -87,9 +87,18 @@ export default function PlannerCalendar({ orders, onOpen }: PlannerCalendarProps
     else setWeekStart(w => addWeeks(w, 1));
   };
 
+  // Altezza costante e piena: prima la griglia si fermava dove finiva la
+  // giornata più carica e sotto restavano ~500px di vuoto, e la settimana
+  // cambiava forma al cambio di periodo. Ora la card occupa lo spazio
+  // disponibile e sono le singole colonne a scorrere.
+  //
+  // 11rem = lastra di testa (3.5) + padding del main (2) + lastra dei filtri
+  // (3.5) + stacco (0.75), con un pelo di margine: sotto-stimare lascia un
+  // filo di vuoto, sovra-stimare farebbe comparire una seconda barra di
+  // scorrimento. `min-h` tiene la griglia usabile su schermi bassi.
   return (
-    <Card className="rounded-xl border shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30">
+    <Card className="rounded-xl border shadow-sm flex flex-col h-[calc(100vh-11rem)] min-h-[420px] overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={goToday} data-testid="calendar-today-button">
             Oggi
@@ -119,17 +128,27 @@ export default function PlannerCalendar({ orders, onOpen }: PlannerCalendarProps
         </div>
       </div>
 
-      <div className={`grid divide-x ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
+      {/* La colonna di oggi è evidenziata come nel prototipo: velo più marcato
+          del 5% precedente (sul vetro non si vedeva) più una barra in testa. */}
+      <div className={`grid divide-x shrink-0 ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
         {days.map(day => (
-          <div key={day.toISOString()} className={`px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wide border-b ${isToday(day) ? 'bg-primary/5 text-primary' : 'text-muted-foreground'}`}>
+          <div
+            key={day.toISOString()}
+            className={`px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wide border-b ${
+              isToday(day) ? 'bg-primary/10 text-primary border-t-2 border-t-primary' : 'text-muted-foreground'
+            }`}
+          >
             {format(day, 'EEE d MMM', { locale: it })}
           </div>
         ))}
       </div>
 
-      <div className={`grid divide-x min-h-[320px] ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
+      <div className={`grid divide-x flex-1 min-h-0 ${mode === 'day' ? 'grid-cols-1' : 'grid-cols-7'}`}>
         {ordersByDay.map((list, i) => (
-          <div key={days[i].toISOString()} className={`flex flex-col gap-1.5 p-1.5 ${isToday(days[i]) ? 'bg-primary/5' : ''}`}>
+          <div
+            key={days[i].toISOString()}
+            className={`flex flex-col gap-1.5 p-1.5 overflow-y-auto ${isToday(days[i]) ? 'bg-primary/[0.07]' : ''}`}
+          >
             {list.length === 0 && (
               <span className="text-[11px] text-muted-foreground/50 text-center pt-2">—</span>
             )}

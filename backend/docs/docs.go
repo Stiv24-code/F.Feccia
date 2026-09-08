@@ -8876,7 +8876,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/dto.DriverResponse"
                 },
                 "carico": {
-                    "$ref": "#/definitions/dto.MapPoint"
+                    "description": "Carico/Scarico sono punti CON nome: il pannello viaggi della mappa\nmostra la tratta (\"Alba (CN) → Bologna\"), non solo i marker. Il nome\narriva già da geo.NamedPoint dentro buildMapRoute e prima veniva\nscartato, per cui il frontend non aveva modo di comporre la tratta.\nCurrentPosition e RoadPoints restano MapPoint: un nome non avrebbe senso.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.MapNamedPoint"
+                        }
+                    ]
                 },
                 "cliente": {
                     "$ref": "#/definitions/dto.CustomerResponse"
@@ -8924,7 +8929,7 @@ const docTemplate = `{
                     }
                 },
                 "scarico": {
-                    "$ref": "#/definitions/dto.MapPoint"
+                    "$ref": "#/definitions/dto.MapNamedPoint"
                 },
                 "stato": {
                     "type": "string"

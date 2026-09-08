@@ -18,7 +18,7 @@ export const FormDialog = ({ open, onClose, title, children, onSubmit, loading, 
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{title}</DialogTitle>
+          <DialogTitle className="font-display">{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit?.(); }} className="space-y-4">
           {children}

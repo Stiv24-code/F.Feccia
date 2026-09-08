@@ -58,7 +58,7 @@ export default function ClientAnagraficaPage() {
   return (
     <div data-testid="client-anagrafica-page">
       <Card className="rounded-xl border shadow-sm p-5 space-y-4 max-w-3xl">
-        <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>La mia anagrafica</h2>
+        <h2 className="font-display text-xl font-bold">La mia anagrafica</h2>
         <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2 space-y-1.5"><Label>Ragione Sociale *</Label><Input value={form.ragione_sociale} onChange={e => setForm({ ...form, ragione_sociale: e.target.value })} required /></div>

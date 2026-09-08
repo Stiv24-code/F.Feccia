@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { PageSlab } from '@/components/layout/PageSlab';
 import { apiClient } from '@/lib/apiClient';
 import { getOrders } from '@/lib/api';
 
@@ -36,38 +37,39 @@ export default function OrdiniTabsLayout({ children }: { children: ReactNode }) 
     return null;
   };
 
-  return (
-    <div className="space-y-4">
-      {/* La forma "a pillole" del tema Glass arriva dal CSS (.glass
-          [role="tablist"] in index.css), non da qui: così basta la classe
-          .glass sul root per cambiare tutto il tema. */}
-      <div className="flex items-center gap-1 border-b" role="tablist" aria-label="Sezioni Ordini">
-        {TABS.map((tab) => {
-          const active = location.pathname === tab.path;
-          const count = countFor(tab.path);
-          return (
-            <button
-              key={tab.path}
-              role="tab"
-              aria-selected={active}
-              onClick={() => navigate(tab.path)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab.label}
-              {count != null && (
-                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      {children}
+  // Tab e toolbar della pagina figlia stanno nella stessa lastra (vedi
+  // PageSlab.tsx): la pagina ci porta i propri filtri con <SlabToolbar>.
+  const tabs = (
+    /* La forma "a pillole" del tema Glass arriva dal CSS (.glass
+       [role="tablist"] in index.css), non da qui: così basta la classe
+       .glass sul root per cambiare tutto il tema. */
+    <div className="flex items-center gap-1 border-b" role="tablist" aria-label="Sezioni Ordini">
+      {TABS.map((tab) => {
+        const active = location.pathname === tab.path;
+        const count = countFor(tab.path);
+        return (
+          <button
+            key={tab.path}
+            role="tab"
+            aria-selected={active}
+            onClick={() => navigate(tab.path)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              active
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+            {count != null && (
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                {count}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
+
+  return <PageSlab tabs={tabs}>{children}</PageSlab>;
 }

@@ -32,6 +32,21 @@
     --chart-5: 15 75% 55%;
     --radius: 0.5rem;
 
+    /* Famiglie tipografiche — un solo posto da cui passano sia le regole di
+       @layer base qui sotto sia le utility font-sans/font-display/font-mono
+       (vedi theme.extend.fontFamily in tailwind.config.cjs). */
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+    /* Chip: cornice dei bottoni-icona di riga e dei contatori (valori
+       --chip-bg/--bd-3 del mockup "TMS Unificato"). */
+    --chip-bg: #EDF2F9;
+    --chip-border: #D2DCEA;
+    /* Navy pieno dei tag "Tipo" (--navy del mockup) con testo bianco. */
+    --tag-navy: #182742;
+    --tag-navy-fg: #FFFFFF;
+
     /* Sidebar — valori presi 1:1 dal render reale del mockup "TMS
        Unificato" (funzione che calcola sideWrapStyle/sideOn/sideOff/
        sideSub, non le sole classi CSS): background #1c2534 (non
@@ -89,6 +104,15 @@
     --sidebar-muted: #5B6B80;
     --sidebar-border: rgba(28,37,52,0.15);
     --sidebar-active-bg: rgba(28,37,52,0.08);
+
+    /* Chip e tag su fondo navy: la cornice chiara del tema light qui
+       sparirebbe, quindi diventa un velo chiaro su scuro. Il tag "Tipo"
+       resta pieno con testo chiaro, ma schiarito: il navy del tema light
+       non si staccherebbe dalla card scura. */
+    --chip-bg: rgba(255,255,255,0.07);
+    --chip-border: rgba(255,255,255,0.16);
+    --tag-navy: #3A4A63;
+    --tag-navy-fg: #FFFFFF;
   }
 
   /* ── Tema "Glass" (SBG, #tema nel mockup "TMS Unificato") ──────────────
@@ -189,19 +213,65 @@ html.glass.dark body {
   background-attachment: fixed;
 }
 
-/* Superfici "vetro": qualunque Card/Popover/Select (bg-card/bg-popover, già
-   applicate dai primitivi shadcn — non li tocchiamo) diventa traslucida e
-   sfocata automaticamente ovunque nell'app quando il tema Glass è attivo,
-   senza dover toccare ogni pagina che usa <Card>. */
-.glass .bg-card,
-.glass .bg-popover {
-  background-color: hsl(var(--card) / 0.6) !important;
-  backdrop-filter: blur(16px) saturate(1.5);
-  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+/* ── Vetro a tre livelli ───────────────────────────────────────────────────
+   Prima ogni superficie era identica (bianco al 60%, blur 16) e il vetro non
+   si leggeva: sembravano card opache su uno sfondo colorato. La profondità
+   del tema viene da livelli distinti — la fascia di testa è quasi solo
+   sfocatura, i pannelli che ci stanno sotto sono più pieni, righe e chip più
+   pieni ancora. Valori del mockup. */
+.glass {
+  --glass-panel: hsl(var(--card) / 0.56);
+  --glass-panel-blur: blur(14px) saturate(1.5);
+  --glass-row: hsl(var(--card) / 0.84);
+  --glass-row-blur: blur(10px) saturate(1.4);
+  --glass-topbar: hsl(var(--card) / 0.12);
+  --glass-topbar-blur: blur(30px) saturate(1.6);
   /* Nel mockup il vetro non ha hairline sui pannelli: il bordo va via e al
      suo posto c'è un'ombra ampia e morbida. */
+  --glass-shadow: 0 18px 44px hsl(220 60% 30% / 0.1);
+}
+
+/* Livello 2 (pannello) — default di qualunque Card/Popover/Select
+   (bg-card/bg-popover, già applicate dai primitivi shadcn: non li tocchiamo),
+   così ogni pagina che usa <Card> diventa vetro senza modifiche. I due
+   livelli espliciti qui sotto vanno DOPO, a pari specificità: è l'ordine che
+   li fa vincere su questa regola. */
+.glass .bg-card,
+.glass .bg-popover {
+  background-color: var(--glass-panel) !important;
+  backdrop-filter: var(--glass-panel-blur);
+  -webkit-backdrop-filter: var(--glass-panel-blur);
   border-color: transparent !important;
-  box-shadow: 0 18px 44px hsl(220 60% 30% / 0.1);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Livello 1 (fascia di testa) — titolo + CTA, tab e filtri sono un piano
+   solo, quello più trasparente: quasi solo sfocatura, il fondale a mesh si
+   legge attraverso. Stesso valore della topbar (non uno intermedio) proprio
+   perché le due parti devono risultare la stessa superficie continua: un
+   gradino di tinta fra la testa e le tab rimetterebbe i "due piani" che il
+   rilievo 02 chiedeva di unire. Niente angoli, bordo o ombra: non è una
+   card. */
+.glass [data-glass='header'] {
+  background-color: var(--glass-topbar) !important;
+  backdrop-filter: var(--glass-topbar-blur);
+  -webkit-backdrop-filter: var(--glass-topbar-blur);
+  border-color: transparent !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Livello 3 (righe e chip) — il più pieno: deve restare leggibile appoggiato
+   sopra un pannello già traslucido. Vale anche per i controlli dentro la
+   fascia di testa: sopra un piano al 12% un input trasparente non si vede, e
+   con il fondale a mesh dietro diventa illeggibile. */
+.glass [data-glass='row'],
+.glass [data-glass='chip'],
+.glass [data-glass='toolbar'] input,
+.glass [data-glass='toolbar'] [role='combobox'] {
+  background-color: var(--glass-row) !important;
+  backdrop-filter: var(--glass-row-blur);
+  -webkit-backdrop-filter: var(--glass-row-blur);
 }
 
 /* Divisori interni (righe di tabelle/liste, intestazioni di sezione): nel
@@ -251,21 +321,24 @@ html.glass.dark body {
    condizioni in JSX, così basta togliere/mettere la classe per cambiare
    l'intero tema — inclusa la forma di tab/sidebar/mappa. */
 
-/* Topbar: nel tema Glass non esiste come barra — si dissolve. Niente fondo,
-   niente bordo, niente ombra: resta solo il titolo che "galleggia" sopra il
-   contenuto, come nel mockup. Il selettore include .bg-card per battere in
-   specificità la regola generica ".glass .bg-card" sopra, che altrimenti
-   rimetterebbe fondo e sfocatura. */
+/* Testa di pagina: è una lastra fissa, non testo nudo appoggiato sul
+   fondale. Porta la data corrente e l'azione primaria della pagina (vedi
+   AppShell.js + PageHeaderActions.tsx). Quasi solo sfocatura — il velo è al
+   12%, il contenuto sotto si intravede mentre scorre. Il selettore include
+   .bg-card per battere in specificità la regola generica ".glass .bg-card"
+   sopra, che altrimenti rimetterebbe il livello "pannello". */
 .glass header.bg-card {
-  background-color: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background-color: var(--glass-topbar) !important;
+  backdrop-filter: var(--glass-topbar-blur);
+  -webkit-backdrop-filter: var(--glass-topbar-blur);
   border-bottom-color: transparent !important;
   box-shadow: none;
-  /* z-index: il titolo non deve finire sotto la mappa a tutto schermo della
-     pagina Mappa (che sta a z-index 0 per restare interattiva). */
-  position: relative;
-  z-index: 5;
+  /* z-index alto: la lastra passa sopra i pannelli di vetro e sopra la mappa
+     a tutto schermo della pagina Mappa (che sta a z-index 0 per restare
+     interattiva). */
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 /* Sidebar: da rail incollato al bordo a scheda che galleggia — margine su
@@ -299,8 +372,17 @@ html.glass.dark body {
   border-bottom-color: transparent !important;
   border-radius: 9999px;
   padding: 0.25rem;
-  background: hsl(var(--foreground) / 0.06);
+  /* Il binario. Al 6% era impercettibile sul fondale a mesh: la pill attiva
+     si vedeva ma la capsula che la contiene no, e le tab inattive restavano
+     sospese sul nulla. Ora è la capsula scura comune del mockup. */
+  background: hsl(219 47% 18% / 0.14);
+  box-shadow: inset 0 1px 2px hsl(219 47% 18% / 0.12);
   max-width: 100%;
+}
+/* Su fondo navy il velo scuro sparirebbe: qui il binario è chiaro. */
+.glass.dark [role="tablist"] {
+  background: hsl(0 0% 100% / 0.08);
+  box-shadow: inset 0 1px 2px hsl(0 0% 0% / 0.25);
 }
 .glass [role="tab"] {
   border-radius: 9999px;
@@ -336,30 +418,25 @@ html.glass.dark body {
 .glass [data-map-shell] {
   height: auto;
 }
-/* Toolbar: isola di vetro compatta in alto a destra (nel mockup è un
-   gruppetto di chip a pillola, non una barra a tutta larghezza). */
-.glass [data-map-toolbar] {
-  position: fixed;
-  top: 0.75rem;
-  right: 1rem;
+/* La toolbar della mappa non è più un'isola fissata in alto a destra: sta
+   nella fascia di testa come su ogni altra pagina (vedi PageSlab.tsx e
+   MapPage.tsx). Da isola finiva sotto la lastra della testa — che ora è
+   sticky a z-index 30 — e in tema Glass spariva del tutto; nel prototipo è
+   comunque una riga piena, non un gruppetto a destra.
+
+   La fascia però va portata sopra la mappa: la mappa è `fixed` a z-index 0,
+   quindi vincerebbe sul contenuto in flusso (che non ha z-index). Stesso
+   trattamento già dato alla sidebar più sopra. */
+.glass [data-glass='header'] {
+  position: relative;
   z-index: 20;
-  width: auto;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  padding: 0.375rem 0.625rem;
-  background-color: hsl(var(--card) / 0.62);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  box-shadow: 0 8px 24px hsl(220 60% 30% / 0.14);
 }
 /* Pannello "Viaggi sulla mappa": scheda di vetro che galleggia a destra,
-   sotto la toolbar, alta fin quasi al fondo finestra. */
+   sotto la fascia di testa, alta fin quasi al fondo finestra. 7.5rem = testa
+   (3.5) + riga filtri (~3.25) + stacco. */
 .glass [data-map-aside] {
   position: fixed;
-  top: 4.25rem;
+  top: 7.5rem;
   right: 1rem;
   bottom: 1rem;
   z-index: 20;
@@ -374,15 +451,25 @@ html.glass.dark body {
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: var(--font-sans);
+    /* 14px: il corpo del TMS è denso (tabelle a text-xs/text-sm). Lasciato al
+       default del browser (16px) i testi delle celle andavano a capo o
+       venivano troncati. Su `body`, non su `html`: le utility Tailwind e gli
+       spazi sono in rem e non devono riscalarsi. */
+    font-size: 0.875rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: var(--font-display);
+    /* Space Grotesk porta titoli e numeri (KPI, tariffe, contatori): cifre a
+       larghezza fissa così le colonne numeriche restano incolonnate. */
+    font-variant-numeric: tabular-nums;
   }
   code, .font-mono {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-family: var(--font-mono);
   }
 }
 
@@ -407,6 +494,48 @@ html.glass.dark body {
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
 }
+
+/* ── Tag e chip di riga ───────────────────────────────────────────────────
+   Indipendenti dal tema Glass: sono forme del componente, non della
+   superficie, quindi valgono anche in chiaro e in scuro. */
+
+/* Tag "Tipo": pill piena su fondo navy con testo bianco. In outline, con il
+   testo in minuscolo, a colpo d'occhio non si distingueva dallo Stato. */
+.tag-navy {
+  background-color: var(--tag-navy) !important;
+  color: var(--tag-navy-fg) !important;
+  border-color: var(--tag-navy) !important;
+}
+
+/* Bottoni-icona dentro le tabelle: stanno in una cornice chip — è quello che
+   li fa leggere come bottoni invece che come glifi appoggiati sulla riga. */
+.row-action {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background-color: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+}
+
+/* Stato: pill piena col colore semantico e testo chiaro, così una riga da
+   pianificare non si confonde con una consegnata. Stessi valori delle
+   varianti pastello qui sotto (censimento colori "TMS Unificato"), usati
+   come fondo invece che come testo. */
+.status-solid-red { background-color: #C0392B; color: #FFF; border-color: #C0392B; }
+.status-solid-yellow { background-color: #8A6508; color: #FFF; border-color: #8A6508; }
+.status-solid-blue { background-color: #1D55AD; color: #FFF; border-color: #1D55AD; }
+.status-solid-green { background-color: #1F7A4D; color: #FFF; border-color: #1F7A4D; }
+.status-solid-orange { background-color: #A05A1C; color: #FFF; border-color: #A05A1C; }
+.status-solid-gray { background-color: #5B6B80; color: #FFF; border-color: #5B6B80; }
+
+/* In tema scuro gli stessi pieni sono troppo vicini al fondo navy delle
+   card: stessa tinta, un gradino più chiara. */
+.dark .status-solid-red { background-color: #D2503F; border-color: #D2503F; }
+.dark .status-solid-yellow { background-color: #A67C0A; border-color: #A67C0A; }
+.dark .status-solid-blue { background-color: #2A6FDB; border-color: #2A6FDB; }
+.dark .status-solid-green { background-color: #248C59; border-color: #248C59; }
+.dark .status-solid-orange { background-color: #B96D25; border-color: #B96D25; }
+.dark .status-solid-gray { background-color: #6B7A90; border-color: #6B7A90; }
 
 /* Status badge colors — bg/border erano già identici 1:1 al mockup, i
    colori testo sono stati allineati agli stessi valori esatti (censimento

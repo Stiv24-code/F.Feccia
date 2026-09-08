@@ -50,14 +50,14 @@ export default function VerifyEmailPage() {
           {status === 'success' && (
             <>
               <CheckCircle2 className="h-10 w-10 mx-auto text-primary" />
-              <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Account confermato</p>
+              <p className="font-display text-lg font-semibold">Account confermato</p>
               <p className="text-sm text-muted-foreground">Ti stiamo portando al portale...</p>
             </>
           )}
           {status === 'error' && (
             <>
               <XCircle className="h-10 w-10 mx-auto text-destructive" />
-              <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Verifica non riuscita</p>
+              <p className="font-display text-lg font-semibold">Verifica non riuscita</p>
               <p className="text-sm text-muted-foreground">{error}</p>
               <div className="flex justify-center gap-2 pt-2">
                 <Button variant="outline" asChild><Link to="/registrati">Registrati di nuovo</Link></Button>

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { PageSlab } from '@/components/layout/PageSlab';
 import { useAuth } from '@/lib/auth-context';
 
 type Tab = { path: string; label: string; roles?: readonly string[] };
@@ -29,31 +30,32 @@ export default function AnagraficheTabsLayout({ children }: { children: ReactNod
   const { user } = useAuth();
   const tabs = TABS.filter((t) => !t.roles || t.roles.includes(user?.role ?? ''));
 
-  return (
-    <div className="space-y-4">
-      {/* La forma "a pillole" del tema Glass arriva dal CSS (.glass
-          [role="tablist"] in index.css), non da qui. */}
-      <div className="flex items-center gap-1 border-b overflow-x-auto" role="tablist" aria-label="Sezioni Anagrafiche">
-        {tabs.map((tab) => {
-          const active = location.pathname === tab.path;
-          return (
-            <button
-              key={tab.path}
-              role="tab"
-              aria-selected={active}
-              onClick={() => navigate(tab.path)}
-              className={`shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                active
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-      {children}
+  // Stessa lastra unica di Ordini (vedi PageSlab.tsx): le pagine Anagrafiche
+  // usano DataTable, che porta la propria barra filtri dentro la lastra.
+  const tabStrip = (
+    /* La forma "a pillole" del tema Glass arriva dal CSS (.glass
+       [role="tablist"] in index.css), non da qui. */
+    <div className="flex items-center gap-1 border-b overflow-x-auto" role="tablist" aria-label="Sezioni Anagrafiche">
+      {tabs.map((tab) => {
+        const active = location.pathname === tab.path;
+        return (
+          <button
+            key={tab.path}
+            role="tab"
+            aria-selected={active}
+            onClick={() => navigate(tab.path)}
+            className={`shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              active
+                ? 'border-primary text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
+
+  return <PageSlab tabs={tabStrip}>{children}</PageSlab>;
 }

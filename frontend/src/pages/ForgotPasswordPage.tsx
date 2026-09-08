@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm">
         <Card className="border shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Password dimenticata</CardTitle>
+            <CardTitle className="font-display text-xl">Password dimenticata</CardTitle>
             <CardDescription>Ti mandiamo un link per reimpostarla</CardDescription>
           </CardHeader>
           <CardContent>
