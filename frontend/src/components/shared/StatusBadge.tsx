@@ -34,4 +34,15 @@ export interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ stato, pulse }: StatusBadgeProps) => {
-  const config = (stato && statusConfig[stato]) || { label: stato, className: 'status-order-gray', dot: '#7C879A' }
+  const config = (stato && statusConfig[stato]) || { label: stato, className: 'status-order-gray', dot: '#7C879A' };
+  return (
+    <Badge
+      variant="outline"
+      className={`${config.className} border rounded-full text-[10px] font-semibold px-[9px] py-[3px] gap-1.5 whitespace-nowrap`}
+      data-testid="order-status-badge"
+    >
+      {pulse && <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: config.dot }} />}
+      {config.label}
+    </Badge>
+  );
+};

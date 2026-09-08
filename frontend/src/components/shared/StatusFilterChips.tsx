@@ -52,6 +52,8 @@ export const StatusFilterChips = ({ value, onChange, counts, testIdPrefix }: Sta
           }`}
         >
           {c.label} <span className="tabular-nums">{count ?? 0}</span>
+          {/* Solo il chip "Tutti" porta il sostantivo, come nel design. */}
+          {c.key === null && ' ordini'}
         </button>
       );
     })}

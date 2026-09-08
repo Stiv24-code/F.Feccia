@@ -43,9 +43,11 @@
        --chip-bg/--bd-3 del mockup "TMS Unificato"). */
     --chip-bg: #EDF2F9;
     --chip-border: #D2DCEA;
-    /* Navy pieno dei tag "Tipo" (--navy del mockup) con testo bianco. */
-    --tag-navy: #182742;
-    --tag-navy-fg: #FFFFFF;
+    /* Tag "Tipo" pieni, valori di `tipoFill` nel design: slate per Nazionale,
+       navy scuro per Import/estero. Export segue --primary, vedi
+       ".tipo-export" più sotto. */
+    --tipo-nazionale: #5B6B86;
+    --tipo-estero: #22375A;
 
     /* Sidebar — valori presi 1:1 dal render reale del mockup "TMS
        Unificato" (funzione che calcola sideWrapStyle/sideOn/sideOff/
@@ -106,13 +108,13 @@
     --sidebar-active-bg: rgba(28,37,52,0.08);
 
     /* Chip e tag su fondo navy: la cornice chiara del tema light qui
-       sparirebbe, quindi diventa un velo chiaro su scuro. Il tag "Tipo"
-       resta pieno con testo chiaro, ma schiarito: il navy del tema light
-       non si staccherebbe dalla card scura. */
+       sparirebbe, quindi diventa un velo chiaro su scuro. I tag "Tipo"
+       restano pieni con testo bianco ma schiariti di un gradino: il navy
+       #22375a del tema chiaro non si staccherebbe dalla card scura. */
     --chip-bg: rgba(255,255,255,0.07);
     --chip-border: rgba(255,255,255,0.16);
-    --tag-navy: #3A4A63;
-    --tag-navy-fg: #FFFFFF;
+    --tipo-nazionale: #7C8AA6;
+    --tipo-estero: #3A4A63;
   }
 
   /* ── Tema "Glass" (SBG, #tema nel mockup "TMS Unificato") ──────────────
@@ -499,12 +501,29 @@ html.glass.dark body {
    Indipendenti dal tema Glass: sono forme del componente, non della
    superficie, quindi valgono anche in chiaro e in scuro. */
 
-/* Tag "Tipo": pill piena su fondo navy con testo bianco. In outline, con il
-   testo in minuscolo, a colpo d'occhio non si distingueva dallo Stato. */
-.tag-navy {
-  background-color: var(--tag-navy) !important;
-  color: var(--tag-navy-fg) !important;
-  border-color: var(--tag-navy) !important;
+/* Tag "Tipo": pill piena con testo bianco, di colore diverso per tipo — sono
+   i valori di `tipoFill` nel design (Nazionale #5b6b86, Import #22375a,
+   Export l'accento). Prima era un unico navy per tutti i tipi, e in outline
+   col testo minuscolo non si distingueva dalla colonna Stato accanto. */
+.tipo-nazionale,
+.tipo-estero,
+.tipo-export {
+  color: #fff !important;
+}
+.tipo-nazionale {
+  background-color: var(--tipo-nazionale) !important;
+  border-color: var(--tipo-nazionale) !important;
+}
+.tipo-estero {
+  background-color: var(--tipo-estero) !important;
+  border-color: var(--tipo-estero) !important;
+}
+/* Export segue l'accento della palette: #2a6fdb nel tema base, #3565af in
+   Glass — come `var(--acc)` nel design, che cambia con il set di token. */
+.tipo-export {
+  background-color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
 }
 
 /* Bottoni-icona dentro le tabelle: stanno in una cornice chip — è quello che
@@ -516,26 +535,6 @@ html.glass.dark body {
   background-color: var(--chip-bg);
   border: 1px solid var(--chip-border);
 }
-
-/* Stato: pill piena col colore semantico e testo chiaro, così una riga da
-   pianificare non si confonde con una consegnata. Stessi valori delle
-   varianti pastello qui sotto (censimento colori "TMS Unificato"), usati
-   come fondo invece che come testo. */
-.status-solid-red { background-color: #C0392B; color: #FFF; border-color: #C0392B; }
-.status-solid-yellow { background-color: #8A6508; color: #FFF; border-color: #8A6508; }
-.status-solid-blue { background-color: #1D55AD; color: #FFF; border-color: #1D55AD; }
-.status-solid-green { background-color: #1F7A4D; color: #FFF; border-color: #1F7A4D; }
-.status-solid-orange { background-color: #A05A1C; color: #FFF; border-color: #A05A1C; }
-.status-solid-gray { background-color: #5B6B80; color: #FFF; border-color: #5B6B80; }
-
-/* In tema scuro gli stessi pieni sono troppo vicini al fondo navy delle
-   card: stessa tinta, un gradino più chiara. */
-.dark .status-solid-red { background-color: #D2503F; border-color: #D2503F; }
-.dark .status-solid-yellow { background-color: #A67C0A; border-color: #A67C0A; }
-.dark .status-solid-blue { background-color: #2A6FDB; border-color: #2A6FDB; }
-.dark .status-solid-green { background-color: #248C59; border-color: #248C59; }
-.dark .status-solid-orange { background-color: #B96D25; border-color: #B96D25; }
-.dark .status-solid-gray { background-color: #6B7A90; border-color: #6B7A90; }
 
 /* Status badge colors — bg/border erano già identici 1:1 al mockup, i
    colori testo sono stati allineati agli stessi valori esatti (censimento
