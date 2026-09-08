@@ -335,9 +335,7 @@ html.glass.dark body {
   -webkit-backdrop-filter: var(--glass-topbar-blur);
   border-bottom-color: transparent !important;
   box-shadow: none;
-  /* z-index alto: la lastra passa sopra i pannelli di vetro e sopra la mappa
-     a tutto schermo della pagina Mappa (che sta a z-index 0 per restare
-     interattiva). */
+  /* Sticky con z-index sopra i pannelli di vetro, che le scorrono sotto. */
   position: sticky;
   top: 0;
   z-index: 30;
@@ -357,8 +355,18 @@ html.glass.dark body {
    senza il media query :has() lo troverebbe comunque rientrando il contenuto
    di una sidebar che non c'è. */
 @media (min-width: 1024px) {
-  .glass:has(aside[data-sidebar-rail='expanded']) { --rail-w: 260px; }
-  .glass:has(aside[data-sidebar-rail='collapsed']) { --rail-w: 58px; }
+  /* In Glass la scheda della sidebar galleggia, e i 12px di stacco escono dal
+     padding del rail (vedi ".glass aside[data-sidebar-rail]" più sotto): il
+     rail va quindi allargato di altrettanto, altrimenti la scheda finisce più
+     stretta che nel tema base. Da collassata era il caso peggiore — 58px
+     scendevano a 46 e il logo (32px + px-2 = 48) non ci stava più dentro. */
+  .glass aside[data-sidebar-rail='expanded'] { width: 272px; }
+  .glass aside[data-sidebar-rail='collapsed'] { width: 70px; }
+
+  /* Un solo posto da cui esce il rientro della fascia di testa: la larghezza
+     del rail, stacco compreso. */
+  .glass:has(aside[data-sidebar-rail='expanded']) { --rail-w: 272px; }
+  .glass:has(aside[data-sidebar-rail='collapsed']) { --rail-w: 70px; }
 
   /* La testa parte dal bordo destro della sidebar: la si tira fino a 0 e si
      rimette il contenuto al suo posto col padding. */
@@ -383,10 +391,9 @@ html.glass.dark body {
   box-sizing: border-box;
   padding: 12px 0 12px 12px;
   box-shadow: none !important;
-  /* La scheda galleggia sopra tutto il resto: sopra la mappa a tutto schermo
-     della pagina Mappa (z-index 0, per restare cliccabile) e sopra la fascia
-     di testa, che ora le passa dietro a tutta larghezza (vedi il media query
-     più sopra). Prima era 5 — bastava per la mappa, non per la fascia. */
+  /* La scheda galleggia sopra la fascia di testa, che le passa dietro a tutta
+     larghezza (vedi il media query più sopra): senza z-index la fascia, che è
+     posizionata, la coprirebbe. */
   position: relative;
   z-index: 40;
 }
@@ -429,55 +436,96 @@ html.glass.dark body {
   box-shadow: 0 1px 6px hsl(220 50% 25% / 0.2);
 }
 
-/* Mappa Viaggi: la mappa diventa il fondo a tutto schermo, toolbar e
-   pannello viaggi restano in flusso e "galleggiano" sopra (replica
-   l'effetto command center del mockup). */
-/* La mappa è il fondo a tutto schermo, ma resta INTERATTIVA: z-index 0 (non
-   negativo, altrimenti finisce sotto il contenuto in flusso e non riceve più
-   click/rotellina) e nessun trattamento vetro sopra i tile — sidebar, topbar
-   e pannelli le passano sopra con z-index maggiore (come nel mockup, che dà
-   z-index:5 alla sidebar). Il selettore include .bg-card per battere la
-   regola generica delle superfici di vetro. */
-.glass [data-map-canvas].bg-card {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  border-radius: 0;
-  border: 0;
-  background-color: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
-  pointer-events: auto;
-}
-.glass [data-map-shell] {
-  height: auto;
-}
-/* La toolbar della mappa non è più un'isola fissata in alto a destra: sta
-   nella fascia di testa come su ogni altra pagina (vedi PageSlab.tsx e
-   MapPage.tsx). Da isola finiva sotto la lastra della testa — che ora è
-   sticky a z-index 30 — e in tema Glass spariva del tutto; nel prototipo è
-   comunque una riga piena, non un gruppetto a destra.
+/* ── Mappa Viaggi in tema Glass ────────────────────────────────────────────
+   La mappa diventa il fondo di finestra, come nel mockup:
 
-   La fascia però va portata sopra la mappa: la mappa è `fixed` a z-index 0,
-   quindi vincerebbe sul contenuto in flusso (che non ha z-index). Stesso
-   trattamento già dato alla sidebar più sopra. */
-.glass [data-glass='header'] {
-  position: relative;
-  z-index: 20;
-}
-/* Pannello "Viaggi sulla mappa": scheda di vetro che galleggia a destra,
-   sotto la fascia di testa, alta fin quasi al fondo finestra. 7.5rem = testa
-   (3.5) + riga filtri (~3.25) + stacco. */
-.glass [data-map-aside] {
-  position: fixed;
-  top: 7.5rem;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 20;
-  height: auto;
-  margin-left: 0;
-  border-radius: 18px;
+     .tms-glass iframe[title="Mappa flotta"] {
+       position: fixed; inset: 0; z-index: -1; border: none; border-radius: 0 }
+
+   e la griglia si dissolve, così filtri e pannello diventano una colonna
+   allineata a DESTRA che galleggia sopra la mappa, con la mappa in chiaro a
+   sinistra:
+
+     .tms-glass [grid-template-columns:1.9fr 1fr] { display:block; padding:0 }
+     .tms-glass div:has(> iframe[title="Mappa flotta"]) { display:contents }
+
+   Tutto scoped a lg: sotto quella soglia le due colonne del markup sono già
+   impilate e una mappa `fixed` a tutto schermo con i pannelli sopra non
+   avrebbe senso su un telefono.
+
+   z-index 0 e non -1: a -1 la mappa finirebbe sotto il gradiente che il tema
+   Glass dipinge su body (vedi "html.glass body" più sopra), che nel mockup non
+   esiste. A 0 resta dietro al contenuto in flusso ma davanti al fondale, e
+   soprattutto continua a ricevere click e rotellina. */
+@media (min-width: 1024px) {
+  .glass [data-map-canvas].bg-card {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    /* I tile riempiono la card: niente vetro sopra la mappa. Il selettore
+       include .bg-card per battere la regola generica ".glass .bg-card". */
+    background-color: transparent !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    pointer-events: auto;
+  }
+
+  /* La griglia diventa un blocco e la colonna della mappa si dissolve: filtri
+     e pannello restano i soli elementi in flusso e si impilano. */
+  .glass [data-map-shell] {
+    display: block;
+    height: auto;
+  }
+  .glass [data-map-col] {
+    display: contents;
+  }
+
+  /* Entrambi in colonna a destra, sopra la mappa. `margin-left:auto` è ciò che
+     li tiene a destra ora che non c'è più la griglia a collocarli, e li tiene
+     allineati FRA LORO: prima erano due `position:fixed` con coordinate
+     proprie (toolbar a `top:.75rem`, pannello a `top:7.5rem`) e bastava
+     cambiare l'altezza di uno per disallinearli.
+
+     z-index: senza, la mappa — che è posizionata — li coprirebbe. Dove la
+     colonna non c'è i click passano alla mappa, che è lo strato sotto. */
+  .glass [data-map-toolbar],
+  .glass [data-map-panel] {
+    position: relative;
+    z-index: 10;
+    max-width: 100%;
+    margin-left: auto;
+  }
+
+  /* La toolbar si stringe sul contenuto e diventa un'isola di vetro: sopra i
+     tile della mappa le pill nude non si leggerebbero. */
+  .glass [data-map-toolbar] {
+    width: fit-content;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    border-radius: 9999px;
+    padding: 0.375rem 0.75rem;
+    background-color: hsl(var(--card) / 0.62);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: 0 8px 24px hsl(220 60% 30% / 0.14);
+  }
+
+  .glass [data-map-panel] {
+    /* Larghezza del pannello: la stessa proporzione della colonna 1fr della
+       griglia, ora che la griglia non c'è più a imporla. */
+    width: 400px;
+    /* Il gap della griglia non vale più fra due blocchi: lo rimette il margine
+       (10px, lo stesso del mockup). */
+    margin-top: 0.625rem;
+    /* Senza l'altezza piena della griglia il pannello si stringe sul contenuto
+       (come nel design); il tetto evita che una lista lunga sfondi la finestra
+       e la rimanda a scorrere dentro. */
+    height: auto;
+    max-height: calc(100vh - 12rem);
+  }
 }
 
 @layer base {

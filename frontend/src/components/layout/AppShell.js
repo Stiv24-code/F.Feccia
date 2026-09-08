@@ -175,8 +175,16 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
                     data-testid={`sidebar-nav-group-${item.label.toLowerCase()}`}
                     onClick={() => collapsed ? handleNav(item.children[0].path) : toggleGroup(item.label)}
                     title={collapsed ? item.label : undefined}
-                    className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] ${hasActiveChild ? 'font-semibold' : 'font-medium'} transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${collapsed ? 'justify-center' : ''}`}
-                    style={{ color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
+                    // Da collassata la sotto-lista non c'è e questo bottone è
+                    // l'unica traccia della voce corrente: prende quindi lo
+                    // stesso fondo attivo delle voci semplici, altrimenti il
+                    // click cambiava solo la tinta dell'icona e sembrava non
+                    // aver fatto nulla. Da espansa no: lì l'evidenza sta già
+                    // sul figlio attivo e sarebbero due pill sovrapposte.
+                    className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[12.5px] ${hasActiveChild ? 'font-semibold' : 'font-medium'} transition-colors duration-150 ${collapsed ? 'justify-center' : ''} ${collapsed && hasActiveChild ? '' : 'hover:bg-white/5 dark:hover:bg-black/5'}`}
+                    style={collapsed && hasActiveChild
+                      ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)' }
+                      : { color: hasActiveChild ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && (
@@ -246,7 +254,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
           data-testid="theme-toggle-button"
           aria-label={theme === 'dark' ? 'Passa al tema chiaro' : 'Passa al tema scuro'}
           title={theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5"
+          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${collapsed ? 'justify-center' : ''}`}
           style={{ color: 'var(--sidebar-muted)' }}
         >
           {theme === 'dark' ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
@@ -259,8 +267,10 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
           aria-pressed={glass}
           aria-label={glass ? 'Disattiva tema Glass' : 'Attiva tema Glass'}
           title="Tema Glass (in prova · uso interno)"
-          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${glass ? 'font-semibold' : ''}`}
-          style={{ color: glass ? 'var(--sidebar-active-text)' : 'var(--sidebar-muted)' }}
+          className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 hover:bg-white/5 dark:hover:bg-black/5 ${glass ? 'font-semibold' : ''} ${collapsed ? 'justify-center' : ''}`}
+          style={glass
+            ? { background: 'var(--sidebar-active-bg)', color: 'var(--sidebar-active-text)' }
+            : { color: 'var(--sidebar-muted)' }}
         >
           <Sparkles className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Glass{glass ? ' ✓' : ''}</span>}
@@ -268,7 +278,7 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
       </div>
 
       {/* User section */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+      <div className={`py-3 shrink-0 ${collapsed ? 'px-2' : 'px-3'}`} style={{ borderTop: '1px solid var(--sidebar-border)' }}>
         {!collapsed && user && (
           <div className="flex items-center gap-2 mb-2 px-1">
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: '#3A4A63', color: '#fff' }}>
@@ -285,7 +295,9 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
           variant="ghost"
           size="sm"
           onClick={logout}
-          className="w-full justify-start gap-2 text-xs hover:bg-white/[0.08] dark:hover:bg-black/[0.08]"
+          aria-label="Esci"
+          title={collapsed ? 'Esci' : undefined}
+          className={`w-full gap-2 text-xs hover:bg-white/[0.08] dark:hover:bg-black/[0.08] ${collapsed ? 'justify-center px-0' : 'justify-start'}`}
           style={{ color: 'var(--sidebar-muted)' }}
         >
           <LogOut className="h-3.5 w-3.5" />

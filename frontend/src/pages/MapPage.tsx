@@ -5,7 +5,6 @@ import type { DtoMapTripsResponse, DtoMapRoute, DtoMapNamedPoint } from '@/api/d
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageSlab, SlabToolbar } from '@/components/layout/PageSlab';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { MapContainer, TileLayer, LayersControl, Marker, Popup, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet';
@@ -175,16 +174,23 @@ export default function MapPage() {
   if (!data) return <p className="text-muted-foreground text-center py-12">Impossibile caricare i dati mappa.</p>;
 
   return (
-    <PageSlab>
-      <div data-testid="map-page">
-      {/* Toolbar dentro la fascia di testa, come su ogni altra pagina (vedi
-          PageSlab.tsx). Prima in tema Glass era un'isola di vetro fissata in
-          alto a destra: da quando la testa di pagina è una lastra vera
-          (sticky, z-index 30) l'isola ci finiva sotto e sparivi del tutto.
-          Nel prototipo è comunque una riga piena: pill di stato a sinistra,
-          interruttore POI all'estrema destra. */}
-      <SlabToolbar>
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+    /* Impianto del mockup (ui/tms-unificato.html, blocco MAPPA LIVE): due
+       colonne 1.9fr / 1fr, a sinistra la riga di filtri sopra la mappa che
+       riempie l'altezza, a destra il pannello viaggi a tutta altezza.
+       In tema Glass il mockup manda la sola mappa a fondo di finestra e lascia
+       il resto dov'è — quel pezzo è in index.css (".glass [data-map-canvas]"):
+       la griglia qui è una, e filtri e pannello non si spostano cambiando
+       tema. */
+    <div
+      data-map-shell
+      data-testid="map-page"
+      className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1.9fr_1fr] lg:h-[calc(100vh-5.5rem)] lg:min-h-[520px]"
+    >
+      {/* Colonna sinistra: filtri (altezza propria) + mappa (il resto).
+          In Glass questa colonna si dissolve (`display:contents`) e i filtri
+          diventano fratelli del pannello — vedi index.css. */}
+      <div data-map-col className="flex flex-col gap-2.5 min-w-0 lg:min-h-0">
+        <div data-map-toolbar className="shrink-0 flex flex-col gap-2 lg:flex-row lg:items-center">
           {/* Pill contatore: un solo elemento per stato invece di un badge
               col numero più un bottone occhio per accenderlo/spegnerlo. */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -247,17 +253,12 @@ export default function MapPage() {
             </button>
           </div>
         </div>
-      </SlabToolbar>
 
-      {/* Layout: mappa + pannello laterale. Nel tema Glass la mappa esce dal
-          flusso (fixed, a tutto schermo, dietro a tutto) e il pannello
-          laterale viene spinto a destra come vetro fluttuante — tutto da CSS
-          (".glass [data-map-canvas]/[data-map-shell]/[data-map-aside]"). */}
-      <div data-map-shell className="flex gap-3 h-[calc(100vh-200px)]">
-        {/* Mappa */}
+        {/* La mappa riempie l'altezza della colonna. In tema Glass
+            `data-map-canvas` la porta a fondo di finestra (vedi index.css). */}
         <Card
           data-map-canvas
-          className="flex-1 rounded-xl overflow-hidden shadow-sm relative"
+          className="h-[60vh] lg:h-auto lg:flex-1 lg:min-h-0 rounded-xl overflow-hidden shadow-sm relative"
           data-testid="map-container"
         >
           <MapContainer
@@ -462,15 +463,16 @@ export default function MapPage() {
             })}
           </MapContainer>
         </Card>
+      </div>
 
-        {/* Pannello laterale — in Glass resta l'unico figlio in flusso (la
-            mappa è fixed): il CSS lo spinge a destra e gli dà un'altezza
-            esplicita, così la lista viaggi resta scrollabile al suo interno. */}
-        <Card
-          data-map-aside
-          className="w-80 shrink-0 rounded-xl shadow-sm overflow-hidden flex flex-col"
-          data-testid="map-sidebar"
-        >
+      {/* Colonna destra: pannello viaggi a tutta altezza, la lista scorre al
+          suo interno. La larghezza la decide la griglia (1fr), non un w-80
+          fisso: è la proporzione del mockup. */}
+      <Card
+        data-map-panel
+        className="h-[70vh] lg:h-auto min-w-0 lg:min-h-0 rounded-xl shadow-sm overflow-hidden flex flex-col"
+        data-testid="map-sidebar"
+      >
           <div className="px-4 py-3 border-b bg-muted/30">
             <h3 className="font-display text-sm font-semibold">
               Viaggi sulla mappa ({panelRoutes.length})
@@ -570,9 +572,7 @@ export default function MapPage() {
               </div>
             </div>
           )}
-        </Card>
-      </div>
-      </div>
-    </PageSlab>
+      </Card>
+    </div>
   );
 }
