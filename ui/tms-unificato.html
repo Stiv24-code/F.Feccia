@@ -136,7 +136,7 @@ body{margin:0;background:#f0eee9;font-family:var(--font)}a{color:var(--acc)}a:ho
   border:1px solid rgba(255,255,255,.5)!important;border-radius:16px!important;box-shadow:0 18px 48px rgba(30,60,120,.18)!important}
 </style></helmet>
 
-<div class="tms-app {{ mDarkClass }}" style="position:relative;height:calc(100vh - 26px);background:var(--bg);font-family:var(--font);display:flex">
+<div class="tms-app {{ mDarkClass }}" style="position:relative;height:100vh;background:var(--bg);font-family:var(--font);display:flex">
   <!-- ── LOGIN (demo: campi precompilati) ── -->
   <sc-if value="{{ mIsLogin }}" hint-placeholder-val="{{ false }}">
   <div style="position:absolute;inset:0;z-index:600;background:linear-gradient(160deg,#eef1f5 0%,#e4e9f0 55%,#dfe6ef 100%);display:grid;place-items:center">
@@ -1682,7 +1682,7 @@ body{margin:0;background:#f0eee9;font-family:var(--font)}a{color:var(--acc)}a:ho
                 </div>
             </div>
             <div>
-              <div style="font:600 11px var(--font);color:var(--tx-2);margin-bottom:6px">Punto di lavaggio <span style="font-weight:400;color:var(--tx-4)">— dopo lo scarico</span></div>
+              <div style="font:600 11px var(--font);color:var(--tx-2);margin-bottom:6px">Punto di lavaggio <span style="font-weight:400;color:var(--tx-4)">— prima del carico</span></div>
                 <div style="position:relative">
                   <div onClick="{{ mWashDdToggle }}" style="{{ mWashTrigStyle }}">
                     <span style="{{ mWashTrigIconStyle }}">{{ mWashTrigIcon }}</span>
@@ -1746,6 +1746,19 @@ body{margin:0;background:#f0eee9;font-family:var(--font)}a{color:var(--acc)}a:ho
                 <div style="position:absolute;top:7px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 11px var(--font);color:var(--tx-5)">{{ mGarageKm }} km</div>
               </div>
             </sc-if>
+            <sc-if value="{{ mHasWash }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;flex:none;width:15px;display:flex;justify-content:center;z-index:1">
+                <div style="width:15px;height:15px;border-radius:99px;background:#fff;border:3px solid #0d9488;box-sizing:border-box;flex:none"></div>
+                <div style="{{ mCreateWashLblStyle }}">
+                  <div style="font:700 9px var(--font);letter-spacing:.08em;color:#0d9488">⟳ LAVAGGIO</div>
+                  <div style="font:700 12.5px var(--font);color:var(--navy);margin-top:3px;line-height:1.3">{{ mWashName }}</div>
+                  <div style="font:400 10.5px var(--font);color:var(--tx-4);margin-top:3px">{{ mWashTipo }}</div>
+                </div>
+              </div>
+              <div style="position:relative;flex:.55;height:2px;background-image:linear-gradient(90deg,#0d9488 55%,transparent 55%);background-size:8px 2px">
+                <div style="position:absolute;top:7px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 11px var(--font);color:#0d9488">{{ mWashKm }} km</div>
+              </div>
+            </sc-if>
             <div style="position:relative;flex:none;width:13px;display:flex;justify-content:center;z-index:1">
               <div style="width:13px;height:13px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(42,111,219,.15);flex:none"></div>
               <div style="{{ mCreateCarLblStyle }}">
@@ -1773,19 +1786,6 @@ body{margin:0;background:#f0eee9;font-family:var(--font)}a{color:var(--acc)}a:ho
                 </div>
               </div>
             </div>
-            <sc-if value="{{ mHasWash }}" hint-placeholder-val="{{ false }}">
-              <div style="position:relative;flex:.55;height:2px;background-image:linear-gradient(90deg,#0d9488 55%,transparent 55%);background-size:8px 2px">
-                <div style="position:absolute;top:7px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 11px var(--font);color:#0d9488">{{ mWashKm }} km</div>
-              </div>
-              <div style="position:relative;flex:none;width:15px;display:flex;justify-content:center;z-index:1">
-                <div style="width:15px;height:15px;border-radius:99px;background:#fff;border:3px solid #0d9488;box-sizing:border-box;flex:none"></div>
-                <div style="position:absolute;top:22px;right:0;width:160px;text-align:right">
-                  <div style="font:700 9px var(--font);letter-spacing:.08em;color:#0d9488">⟳ LAVAGGIO</div>
-                  <div style="font:700 12.5px var(--font);color:var(--navy);margin-top:3px;line-height:1.3">{{ mWashName }}</div>
-                  <div style="font:400 10.5px var(--font);color:var(--tx-4);margin-top:3px">{{ mWashTipo }}</div>
-                </div>
-              </div>
-            </sc-if>
           </div>
           
         </div>
@@ -2466,8 +2466,6 @@ body{margin:0;background:#f0eee9;font-family:var(--font)}a{color:var(--acc)}a:ho
 
   </div>
 </div>
-<div style="height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:#1c2534;color:#c8d2e2;font:600 10.5px Inter,sans-serif;letter-spacing:.03em">Build design TMS · 03/09/2026 · 17:31 — generata dal canvas, non modificare a mano</div>
-
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 function mapUrl(qs) {
@@ -2817,8 +2815,10 @@ class Component extends DCLogic {
     const docDefaults = { 'VG-114': { cmr: 1, peso: 1 }, 'VG-113': { cmr: 1 }, 'VG-109': { cmr: 1, peso: 1, lav: 1 } };
     const docsGot = { ...(docDefaults[docVid] || {}), ...((st.tripDocs || {})[docVid] || {}) };
     if (tripClosed) { docsGot.cmr = 1; docsGot.peso = 1; docsGot.lav = 1; }
-    const docsAll = !!(docsGot.cmr && docsGot.peso && docsGot.lav);
-    const docsN = (docsGot.cmr ? 1 : 0) + (docsGot.peso ? 1 : 0) + (docsGot.lav ? 1 : 0);
+    // chiusura viaggio: CMR + ticket di peso. Il certificato di lavaggio (ECD) non sta
+    // qui: il lavaggio precede il carico, quindi l'ECD e' un pre-requisito di partenza.
+    const docsAll = !!(docsGot.cmr && docsGot.peso);
+    const docsN = (docsGot.cmr ? 1 : 0) + (docsGot.peso ? 1 : 0);
     const tripActive = viewingOther ? (!otherPlanned && viewSrc.length > 0) : st.started;
     const setDoc = d => () => set({ tripDocs: { ...(st.tripDocs || {}), [docVid]: { ...docsGot, [d]: 1 } } });
     const pesoCaricatoN = tripSrc.reduce((s, o) => s + parseInt((o.peso || '0').replace(/\./g, ''), 10), 0);
@@ -3220,11 +3220,13 @@ class Component extends DCLogic {
     };
     const geo = { 'Deposito Milano Rho': [45.53, 9.04], 'Perugia': [43.11, 12.39], 'Alba (CN)': [44.70, 8.04], 'Moretta (CN)': [44.76, 7.54], 'Carasco (GE)': [44.35, 9.34], 'Conselice (RA)': [44.51, 11.83], 'Zola Predosa (BO)': [44.49, 11.22], 'Milano': [45.46, 9.19], 'Bologna': [44.49, 11.34], 'Torino': [45.07, 7.69], 'Verona': [45.44, 10.99], 'Vercelli': [45.32, 8.42], 'Gallarate (VA)': [45.66, 8.79], 'M\u00fcnchen (DE)': [48.14, 11.58], 'Lyon (FR)': [45.76, 4.84], 'Paris (FR)': [48.86, 2.35], 'Z\u00fcrich (CH)': [47.38, 8.54], 'Wien (AT)': [48.21, 16.37], 'Rotterdam (NL)': [51.92, 4.48], 'Villers-\u00c9calles (FR)': [49.54, 0.93], 'Lummen (BE)': [50.99, 5.19], 'Wormer (NL)': [52.49, 4.79], 'Induno Olona (VA)': [45.85, 8.84], 'Juelsminde (DK)': [55.71, 10.02] };
     const hav = (a, b) => { if (!a || !b) return 0; const r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r, h = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) ** 2; return 2 * 6371 * Math.asin(Math.sqrt(h)) * 1.25; };
+    // deviazione per passare dal lavaggio prima del carico: garage → lavaggio → carico
+    // meno garage → carico diretto (il lavaggio precede il carico, non il rientro)
     const washDetour = w => {
       if (!w) return null;
-      const B = geo[detR.consegna], W = spotGeo[w.name], G = spotGeo[st.garage] || spotGeo['Garage Milano Rho'];
-      if (!B || !W) return null;
-      return Math.max(5, Math.round((hav(B, W) + hav(W, G) - hav(B, G)) / 5) * 5);
+      const A = geo[detR.carico], W = spotGeo[w.name], G = spotGeo[st.garage] || spotGeo['Garage Milano Rho'];
+      if (!A || !W) return null;
+      return Math.max(5, Math.round((hav(G, W) + hav(W, A) - hav(G, A)) / 5) * 5);
     };
     // percorsi alternativi (km/durate reali via postMessage dalla mappa OSRM)
     const crAltsArr = Array.isArray(st.routeAlts) ? st.routeAlts : null;
@@ -4346,10 +4348,20 @@ class Component extends DCLogic {
       capNoteStyle: 'font:400 10.5px/1.5 var(--font);color:' + (overweight ? '#c05050' : 'var(--tx-4)'),
       createStops,
       hasGarage: !!selGarage, garageShort: selGarage ? selGarage.name : '',
-      garageKm: selGarage ? fmt((detR.km1 || 30) + selGarage.extra) : '',
-      hasWash: !!selWash, washName: selWash ? selWash.name : '', washTipo: selWash ? selWash.tipo : '', washKm: selWash ? String(washDetour(selWash) != null ? washDetour(selWash) : selWash.km) : '',
-      createCarLblStyle: 'position:absolute;top:22px;' + (selGarage ? 'left:50%;transform:translateX(-50%);width:150px;text-align:center' : 'left:0;width:150px;text-align:left'),
-      createScaLblStyle: 'position:absolute;top:22px;' + (selWash ? 'left:50%;transform:translateX(-50%);width:150px;text-align:center' : 'right:0;width:150px;text-align:right'),
+      // km delle tratte che precedono il carico: col lavaggio in mezzo la prima è
+      // garage → lavaggio e la seconda lavaggio → carico, non più la deviazione sul
+      // rientro. Senza lavaggio resta il diretto garage → carico.
+      garageKm: selGarage ? ((selWash && spotGeo[selGarage.name] && spotGeo[selWash.name])
+        ? fmt(Math.round(hav(spotGeo[selGarage.name], spotGeo[selWash.name])))
+        : fmt((detR.km1 || 30) + selGarage.extra)) : '',
+      hasWash: !!selWash, washName: selWash ? selWash.name : '', washTipo: selWash ? selWash.tipo : '', washKm: selWash ? ((spotGeo[selWash.name] && geo[detR.carico])
+        ? String(Math.round(hav(spotGeo[selWash.name], geo[detR.carico])))
+        : String(washDetour(selWash) != null ? washDetour(selWash) : selWash.km)) : '',
+      createCarLblStyle: 'position:absolute;top:22px;' + ((selGarage || selWash) ? 'left:50%;transform:translateX(-50%);width:150px;text-align:center' : 'left:0;width:150px;text-align:left'),
+      // lo scarico chiude sempre l'itinerario: etichetta a destra
+      createScaLblStyle: 'position:absolute;top:22px;right:0;width:150px;text-align:right',
+      // il lavaggio sta fra partenza e carico: centrato se c'è la partenza, altrimenti primo
+      createWashLblStyle: 'position:absolute;top:22px;' + (selGarage ? 'left:50%;transform:translateX(-50%);width:160px;text-align:center' : 'left:0;width:160px;text-align:left'),
       createMapSrc: mapUrl('c=' + encodeURIComponent(detR.carico) + '&s=' + encodeURIComponent(detR.consegna) + (selGarage ? '&g=' + encodeURIComponent(selGarage.name) : '') + (selWash ? '&w=' + encodeURIComponent(selWash.name) : '') + (selGarage && selWash ? '&alt=' + crSel : '')),
       garagesList: garages.filter(g => !st.garQ || (g.name + ' ' + g.sub).toLowerCase().includes(st.garQ.toLowerCase())).map(g => ({ g, d: (spotGeo[g.name] && geo[detR.carico]) ? Math.max(5, Math.round(hav(spotGeo[g.name], geo[detR.carico]) / 5) * 5) : null })).sort((a, b) => (a.d == null ? 9e9 : a.d) - (b.d == null ? 9e9 : b.d)).map(({ g, d }, i) => ({ name: g.name, sub: g.sub,
         metaLbl: (d != null ? 'a ' + d + ' km dal carico · ' : '') + (depotMezzi[g.name] || []).length + ' mezzi liberi',
@@ -4408,8 +4420,11 @@ class Component extends DCLogic {
         const hs0 = stops.filter(s => s.num !== '\u2302');
         const hs = [];
         if (tripGarageName) hs.push({ label: 'Partenza \u00b7 ' + tripGarageName, time: '' });
-        hs0.forEach(s => hs.push(s));
+        // sequenza: partenza \u2192 lavaggio \u2192 carico \u2192 scarico. Il lavaggio precede il
+        // carico (cisterna pulita prima di caricare), partenza e lavaggio sono
+        // entrambi opzionali e indipendenti l'uno dall'altro.
         if (tripWashObj) hs.push({ label: 'Lavaggio \u00b7 ' + tripWashObj.name, time: '', sub: tripWashObj.tipo });
+        hs0.forEach(s => hs.push(s));
         const nH = hs.length, inTransit = progPct > 0 && progPct < 100;
         const drv = viewingOther ? ((tripSrc[0] && tripSrc[0].autista) || '\u2014') : (st.mode === 'own' ? (drvSafe ? drvSafe[0] : '\u2014') : 'Vettore terzo');
         return {
@@ -4457,7 +4472,7 @@ class Component extends DCLogic {
         : (st.closed ? () => {} : (st.started
           ? (docsAll ? () => set({ closed: true }) : () => {})
           : () => set({ started: true }))),
-      confirmLabel: tripClosed ? '\u2713 Consegnato \u00b7 ordine Chiuso' : (((viewingOther && !otherPlanned) || st.started) ? (docsAll ? '\u2713 Conferma consegna' : '\u2713 Conferma consegna \u00b7 ' + docsN + '/3 documenti') : '\u25b6 Avvia viaggio'),
+      confirmLabel: tripClosed ? '\u2713 Consegnato \u00b7 ordine Chiuso' : (((viewingOther && !otherPlanned) || st.started) ? (docsAll ? '\u2713 Conferma consegna' : '\u2713 Conferma consegna \u00b7 ' + docsN + '/2 documenti') : '\u25b6 Avvia viaggio'),
       confirmStyle: tripClosed
         ? 'margin-left:auto;font:600 12px var(--font);color:var(--pos);background:var(--pos-bg);border:1px solid var(--pos-bd);border-radius:var(--r-7);padding:8px 16px;cursor:default'
         : ((tripActive && !docsAll)
@@ -4465,13 +4480,12 @@ class Component extends DCLogic {
           : 'margin-left:auto;font:600 12px var(--font);color:#fff;background:var(--acc);border-radius:var(--r-7);padding:8px 16px;cursor:pointer'),
       // documenti di chiusura
       tdShow: tripActive || tripClosed,
-      tdTitle: 'Documenti di chiusura \u00b7 ' + docsN + '/3',
+      tdTitle: 'Documenti di chiusura \u00b7 ' + docsN + '/2',
       tdNote: tripClosed ? 'Viaggio chiuso: set documentale completo e archiviato.' : (docsAll ? 'Tutti i documenti ricevuti: puoi confermare la consegna.' : 'Il viaggio passa a Chiuso solo quando tutti i documenti sono presenti.'),
       tdNoteStyle: 'font:400 10.5px/1.5 var(--font);color:' + (docsAll ? 'var(--pos)' : 'var(--tx-4)') + ';margin-top:10px',
       tdRows: [
         { key: 'cmr', label: 'CMR firmato', got: !!docsGot.cmr, sub: docsGot.cmr ? 'Ricevuto \u00b7 foto WhatsApp autista' : 'In attesa dallo scarico' },
-        { key: 'peso', label: 'Ticket di peso', got: !!docsGot.peso, sub: docsGot.peso ? ('Caricato ' + fmt(pesoCaricatoN) + ' kg \u00b7 scaricato ' + fmt(Math.max(0, pesoCaricatoN - docDelta)) + ' kg') : 'In attesa dalla pesa' },
-        { key: 'lav', label: 'Certificato lavaggio (EFTCO)', got: !!docsGot.lav, sub: docsGot.lav ? 'ECD \u00b7 piombi 0021784\u201386 \u00b7 ' + ((tripWashObj || {}).name || 'stazione autorizzata') : 'In attesa dalla stazione di lavaggio' }
+        { key: 'peso', label: 'Ticket di peso', got: !!docsGot.peso, sub: docsGot.peso ? ('Caricato ' + fmt(pesoCaricatoN) + ' kg \u00b7 scaricato ' + fmt(Math.max(0, pesoCaricatoN - docDelta)) + ' kg') : 'In attesa dalla pesa' }
       ].map(r => ({
         ...r,
         dotStyle: 'width:22px;height:22px;border-radius:99px;flex:none;display:grid;place-items:center;' + (r.got ? 'background:var(--pos-bg);color:var(--pos)' : 'background:var(--chip-bg);color:var(--tx-5)'),
@@ -4500,11 +4514,15 @@ class Component extends DCLogic {
         open: () => set({ screen: 'orderDetail', detailId: o.id, detailFrom: 'trips' }),
       })),
       preShow: (otherPlanned || (!viewingOther && st.created && !st.started)) && !tripClosed,
-      preN: (() => { const ok = [true, st.viewTrip !== 'VG-111', false]; return ok.filter(Boolean).length + '/3'; })(),
+      preN: (() => { const ok = [!!tripWashObj].concat(tripWashObj ? [!!docsGot.lav] : [])
+        .concat([st.viewTrip !== 'VG-111', false]); return ok.filter(Boolean).length + '/' + ok.length; })(),
       preRows: (() => {
         const okSlot = st.viewTrip !== 'VG-111';
         const rows = [
           { label: 'Lavaggio prenotato', sub: tripWashObj ? tripWashObj.name + ' · ' + tripWashObj.tipo : 'da prenotare', ok: !!tripWashObj },
+          // l'ECD si ritira alla stazione, che sta prima del carico: il caricatore lo
+          // pretende allo slot, quindi e' un pre-requisito e non un documento di chiusura
+          ...(tripWashObj ? [{ label: 'Certificato di lavaggio (ECD)', sub: docsGot.lav ? 'ECD · piombi 0021784–86 · ' + tripWashObj.name : 'da ritirare alla stazione, prima del carico', ok: !!docsGot.lav }] : []),
           { label: 'Slot di carico confermato', sub: okSlot ? 'PO cliente confermato sul portale' : 'in attesa di conferma dal cliente', ok: okSlot },
           { label: 'Documenti di trasporto', sub: 'DDT · CMR da precompilare', ok: false },
         ];

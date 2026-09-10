@@ -181,8 +181,11 @@ if (fleetQ !== null) {
   if (G) {
     L.circleMarker(G, { radius: 7, color: '#38445a', weight: 2.5, fillColor: '#1c2534', fillOpacity: 1 }).addTo(map)
       .bindTooltip('<span class="lbl">⌂ ' + gQ + '</span>', { permanent: true, direction: 'left', offset: [-9, 0], className: 'no-bg', opacity: 1 });
-    var gLine = L.polyline([G, A], { color: '#5b6b80', weight: 3.5, opacity: .8, dashArray: '5 7' }).addTo(map);
-    roadRoute([G, A]).then(function(coords) {
+    // il garage porta al lavaggio quando c'è (partenza → lavaggio → carico),
+    // altrimenti direttamente al carico
+    var gTo = W || A;
+    var gLine = L.polyline([G, gTo], { color: '#5b6b80', weight: 3.5, opacity: .8, dashArray: '5 7' }).addTo(map);
+    roadRoute([G, gTo]).then(function(coords) {
       map.removeLayer(gLine);
       L.polyline(coords, { color: '#5b6b80', weight: 3.5, opacity: .85 }).addTo(map);
     }).catch(function() { gLine.setStyle({ opacity: .85, dashArray: null }); });
@@ -190,8 +193,9 @@ if (fleetQ !== null) {
   if (W) {
     L.circleMarker(W, { radius: 7, color: '#0d9488', weight: 3, fillColor: '#fff', fillOpacity: 1 }).addTo(map)
       .bindTooltip('<span class="lbl">⟳ ' + wQ + '</span>', { permanent: true, direction: 'right', offset: [9, 0], className: 'no-bg', opacity: 1 });
-    var wLine = L.polyline([B, W], { color: '#0d9488', weight: 3, opacity: .6, dashArray: '6 6' }).addTo(map);
-    roadRoute([B, W]).then(function(coords) {
+    // lavaggio → carico: la cisterna si lava prima di caricare
+    var wLine = L.polyline([W, A], { color: '#0d9488', weight: 3, opacity: .6, dashArray: '6 6' }).addTo(map);
+    roadRoute([W, A]).then(function(coords) {
       map.removeLayer(wLine);
       L.polyline(coords, { color: '#0d9488', weight: 3, dashArray: '7 7' }).addTo(map);
     }).catch(function() {});
