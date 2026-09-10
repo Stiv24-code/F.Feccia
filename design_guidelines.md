@@ -34,21 +34,21 @@
   "design_tokens": {
     "fonts": {
       "heading": {
-        "google_font": "Space Grotesk",
-        "tailwind": "font-[\"Space_Grotesk\",system-ui,sans-serif]",
+        "google_font": "Outfit",
+        "tailwind": "font-display",
         "usage": "Titoli, KPI numbers, intestazioni moduli"
       },
       "body": {
-        "google_font": "IBM Plex Sans",
-        "tailwind": "font-[\"IBM_Plex_Sans\",system-ui,sans-serif]",
+        "google_font": "Outfit",
+        "tailwind": "font-sans (default)",
         "usage": "Testo UI, tabelle, form labels"
       },
       "mono": {
         "google_font": "IBM Plex Mono",
-        "tailwind": "font-[\"IBM_Plex_Mono\",ui-monospace,monospace]",
+        "tailwind": "font-mono",
         "usage": "Codici ordine/viaggio, ID fattura, targhe"
       },
-      "notes": "Import via Google Fonts in index.html (o @import in CSS) e applicare a body + headings. Evitare troppi pesi: 400/500/600."
+      "notes": "Una sola famiglia per titoli e testo — Outfit, come il prototipo 'TMS Unificato' (--font: 'Outfit', Inter, sans-serif). Sostituisce la coppia Space Grotesk / IBM Plex Sans indicata in origine. Il monospaziato resta IBM Plex Mono: Outfit non ne ha uno e per targhe/progressivi servono cifre a larghezza fissa. Outfit supporta tnum, quindi 'tabular-nums' funziona sulle colonne numeriche. Caricamento: unico <link> Google Fonts in index.html, pesi 400/500/600/700. Non usare classi font-[...] arbitrarie: le famiglie passano dai token --font-* in index.css e da theme.extend.fontFamily in tailwind.config.cjs."
     },
     "type_scale": {
       "h1": "text-4xl sm:text-5xl lg:text-6xl",

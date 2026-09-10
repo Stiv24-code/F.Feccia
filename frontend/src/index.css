@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -34,9 +33,20 @@
 
     /* Famiglie tipografiche — un solo posto da cui passano sia le regole di
        @layer base qui sotto sia le utility font-sans/font-display/font-mono
-       (vedi theme.extend.fontFamily in tailwind.config.cjs). */
-    --font-display: 'Space Grotesk', system-ui, sans-serif;
-    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+       (vedi theme.extend.fontFamily in tailwind.config.cjs). Il caricamento
+       sta nel <link> di index.html.
+
+       Outfit su tutta l'app, titoli e testo, come nel prototipo — che ha una
+       sola famiglia: `--font: 'Outfit', Inter, sans-serif`, applicata con
+       `font-family: var(--font)` a tutto. I due token restano distinti perché
+       `--font-display` porta anche le cifre tabulari (vedi @layer base in
+       fondo) e perché è il punto in cui separare titoli e testo se un domani
+       servisse. Inter come primo fallback, di nuovo come nel prototipo.
+
+       Il monospaziato NON diventa Outfit: targhe, progressivi e ID hanno
+       bisogno di cifre a larghezza fissa, e Outfit non ha un monospaziato. */
+    --font-display: 'Outfit', Inter, system-ui, sans-serif;
+    --font-sans: 'Outfit', Inter, system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
     /* Chip: cornice dei bottoni-icona di riga e dei contatori (valori
