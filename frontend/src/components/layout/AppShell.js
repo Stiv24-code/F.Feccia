@@ -86,7 +86,10 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [openGroups, setOpenGroups] = useState({ 'Anagrafiche': true });
+  // Tutti i gruppi partono chiusi: è l'effetto qui sotto ad aprire quello che
+  // contiene la pagina corrente. Prima "Anagrafiche" era aperto a priori e la
+  // sidebar si apriva sempre con undici sotto-voci in vista.
+  const [openGroups, setOpenGroups] = useState({});
   const visibleNavItems = filterByRole(navItems, user?.role);
   const navBadges = useNavBadges();
 
@@ -99,9 +102,9 @@ const SidebarContent = ({ collapsed, onNavigate, theme, toggleTheme, glass, togg
     return location.pathname === path;
   };
 
-  // Espande automaticamente il gruppo di un item attivo raggiunto per URL
-  // diretto (refresh, link esterno) — senza, un gruppo diverso da
-  // "Anagrafiche" resterebbe chiuso pur avendo la voce corrente evidenziata.
+  // Espande automaticamente il gruppo che contiene la pagina corrente, anche
+  // quando ci si arriva per URL diretto (refresh, link esterno) — senza, la
+  // voce attiva resterebbe evidenziata dentro un gruppo chiuso.
   useEffect(() => {
     const activeGroup = visibleNavItems.find(item => item.children?.some(c => isActive(c.path)));
     if (activeGroup && !openGroups[activeGroup.label]) {
