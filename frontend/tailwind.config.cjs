@@ -7,8 +7,10 @@ module.exports = {
   ],
   theme: {
   	extend: {
-  		// Outfit su tutta l'app (il font del prototipo), IBM Plex Mono per
-  		// targhe/progressivi/ID. Stessi valori dei token --font-* in index.css.
+  		// Outfit su tutta l'app, un solo font come nel prototipo. Stessi valori
+  		// dei token --font-* in index.css. `mono` resta dichiarato — è usato in
+  		// ~40 punti per targhe/progressivi/IBAN — ma punta a Outfit: senza,
+  		// `font-mono` ricadrebbe sul monospaziato di default di Tailwind.
   		//
   		// Vanno dichiarate qui, non solo in index.css: senza `sans` il preflight
   		// di Tailwind mette `ui-sans-serif, system-ui` su <html> e ogni utility
@@ -17,7 +19,7 @@ module.exports = {
   		fontFamily: {
   			sans: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
   			display: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
-  			mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+  			mono: ['Outfit', 'Inter', 'system-ui', 'sans-serif']
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

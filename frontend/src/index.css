@@ -36,18 +36,22 @@
        (vedi theme.extend.fontFamily in tailwind.config.cjs). Il caricamento
        sta nel <link> di index.html.
 
-       Outfit su tutta l'app, titoli e testo, come nel prototipo — che ha una
-       sola famiglia: `--font: 'Outfit', Inter, sans-serif`, applicata con
-       `font-family: var(--font)` a tutto. I due token restano distinti perché
-       `--font-display` porta anche le cifre tabulari (vedi @layer base in
-       fondo) e perché è il punto in cui separare titoli e testo se un domani
-       servisse. Inter come primo fallback, di nuovo come nel prototipo.
+       Outfit su TUTTA l'app — titoli, testo e codici — come nel prototipo,
+       che ha una sola famiglia (`--font: 'Outfit', Inter, sans-serif` con
+       `font-family: var(--font)` applicato a tutto) e nessun monospaziato.
+       Inter come primo fallback, di nuovo come nel prototipo.
 
-       Il monospaziato NON diventa Outfit: targhe, progressivi e ID hanno
-       bisogno di cifre a larghezza fissa, e Outfit non ha un monospaziato. */
+       I tre token restano distinti pur avendo lo stesso valore: sono i tre
+       ruoli (titolo / testo / codice) e ognuno porta un trattamento diverso
+       delle cifre, vedi @layer base in fondo. Servono anche perché la utility
+       `font-mono` è usata in ~40 punti (targhe, progressivi, IBAN, IVA): senza
+       il token `mono` ricadrebbe sul monospaziato di default di Tailwind.
+
+       Le cifre a larghezza fissa non le dà più una famiglia monospaziata ma
+       la feature `tnum`, che Outfit ha: vedi ".font-mono" in @layer base. */
     --font-display: 'Outfit', Inter, system-ui, sans-serif;
     --font-sans: 'Outfit', Inter, system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --font-mono: 'Outfit', Inter, system-ui, sans-serif;
 
     /* Chip: cornice dei bottoni-icona di riga e dei contatori (valori
        --chip-bg/--bd-3 del mockup "TMS Unificato"). */
@@ -563,6 +567,12 @@ html.glass.dark body {
   }
   code, .font-mono {
     font-family: var(--font-mono);
+    /* Qui ci finiscono targhe, progressivi, IBAN/BIC, codici contabili e
+       partite IVA, spesso incolonnati in tabella. Non essendo più un
+       monospaziato, l'allineamento delle cifre lo tiene `tnum` (Outfit lo
+       supporta); le lettere restano proporzionali, che è il prezzo di avere
+       una sola famiglia — ed è quello che fa il prototipo. */
+    font-variant-numeric: tabular-nums;
   }
 }
 

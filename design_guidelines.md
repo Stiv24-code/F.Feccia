@@ -44,11 +44,11 @@
         "usage": "Testo UI, tabelle, form labels"
       },
       "mono": {
-        "google_font": "IBM Plex Mono",
+        "google_font": "Outfit",
         "tailwind": "font-mono",
-        "usage": "Codici ordine/viaggio, ID fattura, targhe"
+        "usage": "Codici ordine/viaggio, ID fattura, targhe, IBAN/BIC, partite IVA"
       },
-      "notes": "Una sola famiglia per titoli e testo — Outfit, come il prototipo 'TMS Unificato' (--font: 'Outfit', Inter, sans-serif). Sostituisce la coppia Space Grotesk / IBM Plex Sans indicata in origine. Il monospaziato resta IBM Plex Mono: Outfit non ne ha uno e per targhe/progressivi servono cifre a larghezza fissa. Outfit supporta tnum, quindi 'tabular-nums' funziona sulle colonne numeriche. Caricamento: unico <link> Google Fonts in index.html, pesi 400/500/600/700. Non usare classi font-[...] arbitrarie: le famiglie passano dai token --font-* in index.css e da theme.extend.fontFamily in tailwind.config.cjs."
+      "notes": "UN SOLO font su tutta l'app — Outfit, come il prototipo 'TMS Unificato' (--font: 'Outfit', Inter, sans-serif applicato a tutto, nessun monospaziato). Sostituisce la terna Space Grotesk / IBM Plex Sans / IBM Plex Mono indicata in origine. I tre ruoli restano come token distinti (--font-display / --font-sans / --font-mono in index.css, theme.extend.fontFamily in tailwind.config.cjs) perché cambia il trattamento delle cifre, non la famiglia: display e mono aggiungono 'tabular-nums'. L'allineamento delle colonne numeriche non dipende più da una famiglia monospaziata ma dalla feature tnum, che Outfit supporta (verificato nel file del font); le lettere di codici e IBAN restano proporzionali. Caricamento: unico <link> Google Fonts in index.html, pesi 400/500/600/700/800. Non usare classi font-[...] arbitrarie."
     },
     "type_scale": {
       "h1": "text-4xl sm:text-5xl lg:text-6xl",
